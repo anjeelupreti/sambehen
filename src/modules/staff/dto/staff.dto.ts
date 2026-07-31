@@ -4,6 +4,7 @@ import {
   IsEmail,
   IsEnum,
   IsOptional,
+  IsIn,
   IsUUID,
   IsBoolean,
   MinLength,
@@ -126,8 +127,18 @@ export class ReassignRunnerDto {
   newManagerId!: string;
 }
 
+/** Columns the staff list may be sorted by. */
+export const STAFF_SORT_FIELDS = [
+  'email',
+  'username',
+  'role',
+  'isActive',
+  'lastLoginAt',
+  'createdAt',
+] as const;
+
 export class StaffFilterDto extends BaseFilterDto {
-  @ApiPropertyOptional({ enum: StaffRole })
+  @ApiPropertyOptional({ enum: StaffRole, enumName: 'StaffRole' })
   @IsEnum(StaffRole)
   @IsOptional()
   role?: StaffRole;
@@ -144,6 +155,15 @@ export class StaffFilterDto extends BaseFilterDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+  @ApiPropertyOptional({
+    enum: STAFF_SORT_FIELDS,
+    description:
+      'Column to sort by. One of: ' + STAFF_SORT_FIELDS.join(', ') + '. Defaults to createdAt.',
+    example: 'createdAt',
+  })
+  @IsIn(STAFF_SORT_FIELDS as unknown as string[])
+  @IsOptional()
+  declare sortBy?: string;
 }
 
 export class StaffResponseDto {
@@ -165,7 +185,7 @@ export class StaffResponseDto {
   @ApiProperty({ nullable: true })
   phone!: string | null;
 
-  @ApiProperty({ enum: StaffRole })
+  @ApiProperty({ enum: StaffRole, enumName: 'StaffRole' })
   role!: StaffRole;
 
   @ApiProperty({ format: 'uuid', nullable: true })
