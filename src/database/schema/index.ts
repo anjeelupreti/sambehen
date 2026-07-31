@@ -7,3 +7,5 @@ export * from './audit-logs.schema';
 export * from './staff-users.schema';
 export * from './customers.schema';
 export * from './auth-sessions.schema';
+export * from './games.schema';
+export * from './transactions.schema';
