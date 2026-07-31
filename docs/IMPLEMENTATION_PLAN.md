@@ -2,38 +2,41 @@
 
 NestJS 11 + Drizzle ORM (PostgreSQL) + Redis. Backend/API only.
 
-> **Scope: single monolithic NestJS application.** One codebase, one database, one deployable, feature modules inside `src/modules/`. No microservices, no message bus between services, no separate worker deployment. Anything that would only pay off across multiple instances is deliberately left out (noted inline as *"defer"*).
+> **Scope: single monolithic NestJS application.** One codebase, one database, one deployable, feature modules inside `src/modules/`. No microservices, no message bus between services, no separate worker deployment. Anything that would only pay off across multiple instances is deliberately left out (noted inline as _"defer"_).
 
 ---
 
 ## 0. Boilerplate Assessment
 
 ### Keep as-is
-| Asset | Notes |
-|---|---|
-| `src/config/*`, Joi `validation.schema.ts` | Extend with new env vars |
-| `src/database/database.provider.ts`, `drizzle.service.ts`, `transaction.helper.ts` | Solid foundation |
-| `src/common/filters`, `interceptors`, `middleware` (correlation id) | Reuse verbatim |
-| `src/shared/logger`, `shared/health`, `shared/cache` | Reuse; extend cache with pattern-delete + `getOrSet` |
-| `main.ts` bootstrap (helmet, compression, versioning, Swagger) | Extend Swagger with two bearer schemes |
+
+| Asset                                                                              | Notes                                                |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `src/config/*`, Joi `validation.schema.ts`                                         | Extend with new env vars                             |
+| `src/database/database.provider.ts`, `drizzle.service.ts`, `transaction.helper.ts` | Solid foundation                                     |
+| `src/common/filters`, `interceptors`, `middleware` (correlation id)                | Reuse verbatim                                       |
+| `src/shared/logger`, `shared/health`, `shared/cache`                               | Reuse; extend cache with pattern-delete + `getOrSet` |
+| `main.ts` bootstrap (helmet, compression, versioning, Swagger)                     | Extend Swagger with two bearer schemes               |
 
 ### Change
-| Item | Reason |
-|---|---|
-| `src/database/schema/users.schema.ts` | **Replace** — split into `staff_users` + `customers` (two auth realms) |
-| `src/modules/users/*` | **Delete** — superseded by `staff` and `customers` modules |
-| `UserRole` enum in `app.constants.ts` | Replace `admin/user/manager` with `MASTER/MANAGER/RUNNER` + `CustomerStatus` etc. |
-| `BaseRepository.findPaginated()` | **Bug**: counts by fetching every row and reading `.length` ([base.repository.ts:168-176](../src/database/repositories/base.repository.ts#L168-L176)). Rewrite with `count()` aggregate. Also `searchColumn` accepts a single column only — needs multi-column OR search. |
-| `IJwtPayload` / `ICurrentUser` | Add `realm: 'team' \| 'customer'`, `parentId`, drop `permissions` in favour of role+scope |
-| `ResponseTransformInterceptor` + `GlobalExceptionFilter` | **Both are written but never registered** — not in [main.ts](../src/main.ts) and not in [app.module.ts](../src/app.module.ts). Every response is currently raw and every error uses Nest's default shape. Must be wired as `APP_INTERCEPTOR` / `APP_FILTER`. See §1 *API response contract*. |
-| `ApiResponseDto` | `data` has no `@ApiProperty()`, so it never appears in Swagger; no `statusCode`; no generic support. Rewrite. |
-| `BusinessException` | Emits `{success, message, error:'BusinessException'}` — a *different* shape than the filter produces, and no stable machine-readable code. Rewrite around an error-code enum. |
-| `HashUtil` | Add argon2id password hashing (currently sha256 only — not password-safe) |
-| `RolesGuard` | Keep, but add realm check + a `ScopeGuard` for row-level access |
-| `src/queues/` | **Delete** — no external queue in a single-instance monolith (see below) |
-| `src/jobs/sample.job.ts` | Replace with real `@Cron` jobs: VIP drift recompute, email dispatcher, spin-event status flips |
+
+| Item                                                     | Reason                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/database/schema/users.schema.ts`                    | **Replace** — split into `staff_users` + `customers` (two auth realms)                                                                                                                                                                                                                       |
+| `src/modules/users/*`                                    | **Delete** — superseded by `staff` and `customers` modules                                                                                                                                                                                                                                   |
+| `UserRole` enum in `app.constants.ts`                    | Replace `admin/user/manager` with `MASTER/MANAGER/RUNNER` + `CustomerStatus` etc.                                                                                                                                                                                                            |
+| `BaseRepository.findPaginated()`                         | **Bug**: counts by fetching every row and reading `.length` ([base.repository.ts:168-176](../src/database/repositories/base.repository.ts#L168-L176)). Rewrite with `count()` aggregate. Also `searchColumn` accepts a single column only — needs multi-column OR search.                    |
+| `IJwtPayload` / `ICurrentUser`                           | Add `realm: 'team' \| 'customer'`, `parentId`, drop `permissions` in favour of role+scope                                                                                                                                                                                                    |
+| `ResponseTransformInterceptor` + `GlobalExceptionFilter` | **Both are written but never registered** — not in [main.ts](../src/main.ts) and not in [app.module.ts](../src/app.module.ts). Every response is currently raw and every error uses Nest's default shape. Must be wired as `APP_INTERCEPTOR` / `APP_FILTER`. See §1 _API response contract_. |
+| `ApiResponseDto`                                         | `data` has no `@ApiProperty()`, so it never appears in Swagger; no `statusCode`; no generic support. Rewrite.                                                                                                                                                                                |
+| `BusinessException`                                      | Emits `{success, message, error:'BusinessException'}` — a _different_ shape than the filter produces, and no stable machine-readable code. Rewrite around an error-code enum.                                                                                                                |
+| `HashUtil`                                               | Add argon2id password hashing (currently sha256 only — not password-safe)                                                                                                                                                                                                                    |
+| `RolesGuard`                                             | Keep, but add realm check + a `ScopeGuard` for row-level access                                                                                                                                                                                                                              |
+| `src/queues/`                                            | **Delete** — no external queue in a single-instance monolith (see below)                                                                                                                                                                                                                     |
+| `src/jobs/sample.job.ts`                                 | Replace with real `@Cron` jobs: VIP drift recompute, email dispatcher, spin-event status flips                                                                                                                                                                                               |
 
 ### Add (dependencies)
+
 ```
 argon2                          password hashing
 @nestjs/schedule                cron (VIP recompute, email batch dispatch, spin status flips)
@@ -49,7 +52,8 @@ exceljs                         .xlsx export (streaming workbook writer)
 ```
 
 **Deliberately not added** (single-instance monolith):
-- `bullmq` / `@nestjs/bullmq` — background work is handled by `@nestjs/event-emitter` (fire-and-forget in-process) plus a `@Cron` dispatcher that drains pending rows from `email_campaign_recipients`. The DB table *is* the queue, it survives restarts, and it's inspectable. Add BullMQ later only if you split out a worker process.
+
+- `bullmq` / `@nestjs/bullmq` — background work is handled by `@nestjs/event-emitter` (fire-and-forget in-process) plus a `@Cron` dispatcher that drains pending rows from `email_campaign_recipients`. The DB table _is_ the queue, it survives restarts, and it's inspectable. Add BullMQ later only if you split out a worker process.
 - `@socket.io/redis-adapter` — default in-memory adapter is correct for one instance. One-line swap if you ever run two.
 - Redis stays for **caching + throttling + presence** only, exactly as the boilerplate already uses it.
 
@@ -58,15 +62,18 @@ exceljs                         .xlsx export (streaming workbook writer)
 ## 1. Architecture & Conventions
 
 ### Two auth realms, one API
+
 ```
 POST /api/v1/auth/team/login          → JWT { realm: 'team',     role: master|manager|runner }
 POST /api/v1/auth/customer/login      → JWT { realm: 'customer' }
 ```
+
 - Separate JWT secrets **and** separate passport strategies (`jwt-team`, `jwt-customer`) so a customer token can never be replayed against a team route.
 - `@TeamAuth(...roles)` and `@CustomerAuth()` composite decorators wrap `UseGuards + ApiBearerAuth + Roles`.
 - Global `APP_GUARD` = team-JWT-by-default; `@Public()` opts out.
 
 ### Route namespaces
+
 ```
 /api/v1/auth/*            both realms
 /api/v1/team/*            staff-only (master, manager, runner)
@@ -74,29 +81,34 @@ POST /api/v1/auth/customer/login      → JWT { realm: 'customer' }
 ```
 
 ### The scoping engine — the single most important component
+
 `ScopeService` returns a composable Drizzle `SQL` predicate, never a raw id list:
 
-| Actor | Customer visibility | Extra filters allowed |
-|---|---|---|
-| MASTER | all | `managerId`, `runnerId` (any) |
+| Actor   | Customer visibility               | Extra filters allowed                                      |
+| ------- | --------------------------------- | ---------------------------------------------------------- |
+| MASTER  | all                               | `managerId`, `runnerId` (any)                              |
 | MANAGER | `customers.manager_id = :actorId` | `runnerId` — **validated to be a descendant of the actor** |
-| RUNNER | `customers.runner_id = :actorId` | none |
+| RUNNER  | `customers.runner_id = :actorId`  | none                                                       |
 
 Rules:
+
 1. **Every** list/detail/mutation query for customer-derived data (transactions, messages, VIP, referrals, spin winners, emails) composes this predicate. No exceptions.
 2. `ResourceAccessGuard` re-checks on `:id` routes so a manager cannot `GET /team/customers/:id` for another manager's customer — returns **404, not 403** (no existence leak).
 3. `staff_users.parentId` self-FK defines the chain. A manager may only create/read/update/deactivate runners where `parentId = self`.
 4. Denormalized `customers.managerId` / `customers.runnerId` are maintained by `CustomerAssignmentService` inside a transaction on create/reassign — never written ad-hoc.
 
 ### Layering
+
 ```
 Controller (DTO validation, Swagger)
   → Service (business rules, uses ScopeService)
     → Repository (Drizzle queries, extends BaseRepository)
 ```
+
 Cross-module reads go through the owning module's exported service, not raw repos.
 
 ### Final module layout (one app)
+
 ```
 src/
   common/          guards, decorators, dto, filters, interceptors, pipes   (existing, extended)
@@ -133,6 +145,7 @@ src/
 **Every** response — success, error, list — leaves the app in one envelope. No endpoint returns a bare object.
 
 **Success (single resource)**
+
 ```jsonc
 {
   "success": true,
@@ -141,26 +154,41 @@ src/
   "data": { "id": "…", "fullName": "…" },
   "timestamp": "2026-07-31T10:12:33.284Z",
   "path": "/api/v1/team/customers/8f3c…",
-  "correlationId": "0f9a-…"
+  "correlationId": "0f9a-…",
 }
 ```
 
 **Success (list)** — adds `meta` and the optional per-list `summary`:
+
 ```jsonc
 {
   "success": true,
   "statusCode": 200,
   "message": "Customers retrieved successfully",
-  "data": [ /* … */ ],
-  "meta": { "total": 1240, "page": 1, "limit": 25, "totalPages": 50,
-            "hasNextPage": true, "hasPreviousPage": false },
-  "summary": { "totalCustomers": 1240, "active": 812, "inactive": 428,
-               "totalSpent": "482900.00", "totalWithdrawn": "301240.50" },
-  "timestamp": "…", "path": "…", "correlationId": "…"
+  "data": [/* … */],
+  "meta": {
+    "total": 1240,
+    "page": 1,
+    "limit": 25,
+    "totalPages": 50,
+    "hasNextPage": true,
+    "hasPreviousPage": false,
+  },
+  "summary": {
+    "totalCustomers": 1240,
+    "active": 812,
+    "inactive": 428,
+    "totalSpent": "482900.00",
+    "totalWithdrawn": "301240.50",
+  },
+  "timestamp": "…",
+  "path": "…",
+  "correlationId": "…",
 }
 ```
 
 **Error (validation)** — `422`, one entry per failed constraint, nested paths dotted:
+
 ```jsonc
 {
   "success": false,
@@ -169,58 +197,72 @@ src/
   "error": {
     "code": "VALIDATION_FAILED",
     "details": [
-      { "field": "email",          "constraint": "isEmail", "message": "email must be an email" },
-      { "field": "amount",         "constraint": "min",     "message": "amount must not be less than 0.01" },
-      { "field": "winners.0.customerId", "constraint": "isUuid", "message": "customerId must be a UUID" }
-    ]
+      { "field": "email", "constraint": "isEmail", "message": "email must be an email" },
+      { "field": "amount", "constraint": "min", "message": "amount must not be less than 0.01" },
+      {
+        "field": "winners.0.customerId",
+        "constraint": "isUuid",
+        "message": "customerId must be a UUID",
+      },
+    ],
   },
-  "timestamp": "…", "path": "…", "correlationId": "…"
+  "timestamp": "…",
+  "path": "…",
+  "correlationId": "…",
 }
 ```
 
 **Error (business rule)** — stable machine code the frontend can switch on:
+
 ```jsonc
 {
   "success": false,
   "statusCode": 409,
   "message": "This customer already holds an active code for the program",
   "error": { "code": "REFERRAL_CODE_ALREADY_ASSIGNED", "details": null },
-  "timestamp": "…", "path": "…", "correlationId": "…"
+  "timestamp": "…",
+  "path": "…",
+  "correlationId": "…",
 }
 ```
 
 **Error (unexpected)** — `500`. `message` is generic, the stack goes to the logs only, and `correlationId` is how support ties the two together:
+
 ```jsonc
 {
-  "success": false, "statusCode": 500,
+  "success": false,
+  "statusCode": 500,
   "message": "An unexpected error occurred",
   "error": { "code": "INTERNAL_ERROR", "details": null },
-  "timestamp": "…", "path": "…", "correlationId": "0f9a-…"
+  "timestamp": "…",
+  "path": "…",
+  "correlationId": "0f9a-…",
 }
 ```
 
 Rules:
+
 - `success` is strictly `statusCode < 400`. `data` is present only on success; `error` only on failure. Never both.
-- `error.code` comes from a central `ErrorCode` enum — it is part of the API contract and must not be reworded once shipped. `message` is human-facing and *may* change.
+- `error.code` comes from a central `ErrorCode` enum — it is part of the API contract and must not be reworded once shipped. `message` is human-facing and _may_ change.
 - `error.details` is `null`, or an array for validation, or an object for structured cases (e.g. bulk operations returning per-row failures).
 - `correlationId` is echoed on every response and written into `audit_logs`.
 - 5xx never leaks stack traces, SQL, or driver text to the client.
 
 **Status code policy**
 
-| Code | Used for |
-|---|---|
-| 200 | successful read / update |
-| 201 | resource created (`POST` creating a row) |
-| 204 | never — always return the envelope with `data: null` |
-| 400 | malformed request, unparseable body/query, bad UUID in path |
-| 401 | missing / expired / invalid token |
-| 403 | authenticated, correct realm, but role lacks the capability |
-| 404 | not found **or** outside the actor's scope (deliberate — no existence leak) |
-| 409 | uniqueness / state conflict (duplicate email, duplicate spin winner, PG `23505`) |
-| 422 | DTO validation failed, or a business rule rejected semantically valid input |
-| 429 | throttled |
-| 500 | unexpected |
+| Code | Used for                                                                         |
+| ---- | -------------------------------------------------------------------------------- |
+| 200  | successful read / update                                                         |
+| 201  | resource created (`POST` creating a row)                                         |
+| 204  | never — always return the envelope with `data: null`                             |
+| 400  | malformed request, unparseable body/query, bad UUID in path                      |
+| 401  | missing / expired / invalid token                                                |
+| 403  | authenticated, correct realm, but role lacks the capability                      |
+| 404  | not found **or** outside the actor's scope (deliberate — no existence leak)      |
+| 409  | uniqueness / state conflict (duplicate email, duplicate spin winner, PG `23505`) |
+| 422  | DTO validation failed, or a business rule rejected semantically valid input      |
+| 429  | throttled                                                                        |
+| 500  | unexpected                                                                       |
 
 **Error code catalog** (`src/common/constants/error-codes.ts`) — grouped by domain, e.g.
 `AUTH_INVALID_CREDENTIALS`, `AUTH_TOKEN_EXPIRED`, `AUTH_REFRESH_REUSED`, `AUTH_ACCOUNT_DISABLED`,
@@ -231,10 +273,13 @@ Rules:
 `EMAIL_NO_RECIPIENTS`, `EMAIL_CAMPAIGN_ALREADY_SENT`, `VALIDATION_FAILED`, `INTERNAL_ERROR`.
 
 ### Universal list contract
+
 Every list endpoint accepts and returns the same shape:
+
 ```
 ?page=1&limit=25&search=&sortBy=&sortOrder=desc&<domain filters>
 ```
+
 `summary` carries the per-list metric block (unread counts, totals, etc.) computed in a **second aggregate query over the same WHERE clause** — not by summing the current page.
 
 ### Universal export contract
@@ -250,12 +295,13 @@ GET /api/v1/team/customers/export?<exact same query params as the list>&format=x
 Non-negotiable rules:
 
 1. **The export endpoint reuses the list's filter DTO and the list's `ScopeService` predicate — the same code path, not a parallel one.** A runner exporting customers gets exactly their own customers; a manager gets their chain. An export that can return a row the list wouldn't show is a data breach, so the query builder is shared by construction (`buildListQuery(filters, actor)` is called by both the list and the export).
-2. **Exports bypass the response envelope.** A `@RawResponse()` decorator makes `ResponseTransformInterceptor` pass the stream through untouched — otherwise the interceptor would wrap the binary. Errors *before* the stream opens still return the normal JSON error envelope.
+2. **Exports bypass the response envelope.** A `@RawResponse()` decorator makes `ResponseTransformInterceptor` pass the stream through untouched — otherwise the interceptor would wrap the binary. Errors _before_ the stream opens still return the normal JSON error envelope.
 3. **Every export is audit-logged** — actor, resource, filter snapshot, row count, timestamp. PII is leaving the system; that has to be reconstructable.
 4. **Streaming, not buffering.** `exceljs`'s `WorkbookWriter` writes rows to the response as they arrive; rows are pulled from Postgres in batches (keyset paging on `id`), so a 200k-row export uses flat memory.
 5. **Row cap + async fallback.** Synchronous streaming up to `EXPORT_SYNC_ROW_LIMIT` (default 50 000). Beyond that, the request returns `202` with an `exportJobId`, and a `@Cron` worker builds the file to `storage/exports/` and marks it ready — same durable-table-as-queue pattern as the email dispatcher. `GET /team/exports/:id` polls status, `GET /team/exports/:id/download` serves it. Files auto-purge after `EXPORT_RETENTION_HOURS` (default 48).
 
 **Declarative column definitions.** Each exportable resource registers an `ExportDefinition`:
+
 ```ts
 {
   key: 'customers',
@@ -274,26 +320,27 @@ Non-negotiable rules:
   ],
 }
 ```
+
 Formatting is centralised: `currency` → real Excel numbers with `'#,##0.00'` (never strings — the recipient must be able to `SUM()` the column), `datetime` → Excel date cells rendered in `EXPORT_TIMEZONE`, `enum` → human labels, booleans → `Yes`/`No`. Header row frozen, bold, auto-filter enabled, column widths set.
 
 **Exportable lists** (each `/export` mirrors its list's filters exactly):
 
-| Resource | Endpoint | Notable columns |
-|---|---|---|
-| Customers | `/team/customers/export` | owner chain, status, total transactions / spent / withdrawn / net, VIP tier, city, last activity |
-| Transactions log | `/team/transactions/export` | customer, type, amount, game, correction parent, status, entered-by, occurred-at |
-| VIPs | `/team/vips/export` | customer, criteria, tier, threshold, achieved amount, qualified at, window active? |
-| Managers | `/team/staff/export?role=manager` | runners count, customers count, aggregate net |
-| Runners | `/team/staff/export?role=runner` | parent manager, customers count, aggregate net |
-| Games | `/team/games/export` | code, category, active, total debit/credit, transaction count |
-| Email log | `/team/email/campaigns/export` | subject, status, recipients, sent/failed, created by, sent at |
-| Email recipients | `/team/email/campaigns/:id/recipients/export` | customer, email, status, provider id, error, sent at |
-| Referrals | `/team/referrals/export` | program, code, referrer, referee, status, reward, qualified/rewarded at |
-| Spin events | `/team/spin-events/export` | criteria, mode, status, scheduled at, winner count |
-| Spin winners | `/team/spin-events/:id/winners/export` | customer, prize, rank, preselected?, recorded by |
-| Conversations | `/team/conversations/export` | customer, assigned staff, messages, unread, last message at, responses today |
-| Audit log | `/team/audit-logs/export` | actor, action, entity, before/after, ip, correlation id — **master only** |
-| VIP criteria | `/team/vip-criteria/export` | tier, metric, threshold, period, active, qualified count |
+| Resource         | Endpoint                                      | Notable columns                                                                                  |
+| ---------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Customers        | `/team/customers/export`                      | owner chain, status, total transactions / spent / withdrawn / net, VIP tier, city, last activity |
+| Transactions log | `/team/transactions/export`                   | customer, type, amount, game, correction parent, status, entered-by, occurred-at                 |
+| VIPs             | `/team/vips/export`                           | customer, criteria, tier, threshold, achieved amount, qualified at, window active?               |
+| Managers         | `/team/staff/export?role=manager`             | runners count, customers count, aggregate net                                                    |
+| Runners          | `/team/staff/export?role=runner`              | parent manager, customers count, aggregate net                                                   |
+| Games            | `/team/games/export`                          | code, category, active, total debit/credit, transaction count                                    |
+| Email log        | `/team/email/campaigns/export`                | subject, status, recipients, sent/failed, created by, sent at                                    |
+| Email recipients | `/team/email/campaigns/:id/recipients/export` | customer, email, status, provider id, error, sent at                                             |
+| Referrals        | `/team/referrals/export`                      | program, code, referrer, referee, status, reward, qualified/rewarded at                          |
+| Spin events      | `/team/spin-events/export`                    | criteria, mode, status, scheduled at, winner count                                               |
+| Spin winners     | `/team/spin-events/:id/winners/export`        | customer, prize, rank, preselected?, recorded by                                                 |
+| Conversations    | `/team/conversations/export`                  | customer, assigned staff, messages, unread, last message at, responses today                     |
+| Audit log        | `/team/audit-logs/export`                     | actor, action, entity, before/after, ip, correlation id — **master only**                        |
+| VIP criteria     | `/team/vip-criteria/export`                   | tier, metric, threshold, period, active, qualified count                                         |
 
 Adding a new list later means registering one `ExportDefinition` — the controller, streaming, scoping, auditing, and Swagger docs come from the shared `ExportService`.
 
@@ -307,7 +354,7 @@ Target: a frontend developer can build against `/api/docs` without asking a ques
   - `@ApiCreatedData(TransactionDto)` → `201`
   - `@ApiErrors(401, 403, 404, 409, 422)` → attaches the documented error schema + a realistic example per code
   - `@ApiPaginatedQuery()` → documents page/limit/search/sortBy/sortOrder once
-  These live in `src/common/swagger/` and every controller uses them — no hand-written `@ApiResponse` blocks.
+    These live in `src/common/swagger/` and every controller uses them — no hand-written `@ApiResponse` blocks.
 - **Two security schemes**, `team-jwt` and `customer-jwt`, so "Authorize" in the UI reflects that a customer token cannot call team routes. `@TeamAuth()`/`@CustomerAuth()` attach the right one automatically.
 - Every DTO property carries `@ApiProperty`/`@ApiPropertyOptional` with `description`, `example`, `enum`, and `format`. Money fields documented as `type: 'string', format: 'decimal'` with a note that they are `numeric(18,2)` serialized as strings.
 - Filter DTOs are documented with their **enum values and semantics** — e.g. `spendingOperator: gt|gte|lt|lte|between|eq`, and what "active customer" means.
@@ -360,12 +407,13 @@ Indexes: `(managerId)`, `(runnerId)`, `(status)`, `(city)`, `(lastActivityAt)`, 
 Indexes: `(customerId, occurredAt)`, `(type, occurredAt)`, `(gameId)`, `(parentTransactionId)`, partial `(customerId) WHERE type='credit' AND parent_transaction_id IS NULL`.
 
 > **Semantics (locked in):**
+>
 > - `debit` = money **in** from the customer (deposit / spend).
 > - `credit` = money **out** to the customer.
-> - A `credit` **with** `parentTransactionId` is a *correction* against an existing transaction, **not** a withdrawal.
-> - `totalSpent`   = `SUM(amount) WHERE type='debit'`
+> - A `credit` **with** `parentTransactionId` is a _correction_ against an existing transaction, **not** a withdrawal.
+> - `totalSpent` = `SUM(amount) WHERE type='debit'`
 > - `totalWithdrawn` = `SUM(amount) WHERE type='credit' AND parent_transaction_id IS NULL`
-> - `net / balance` = `SUM(debit) − SUM(credit)`  ("in", "out", "balance")
+> - `net / balance` = `SUM(debit) − SUM(credit)` ("in", "out", "balance")
 
 **`referral_programs`** — `id, name, rewardType enum(fixed|percentage), referrerBonus numeric, refereeBonus numeric, minQualifyingDebit numeric, maxRewardsPerReferrer int, validFrom, validTo, isActive, createdByStaffId, timestamps`. **Master-only.**
 
@@ -405,6 +453,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 ## 3. Phased Task List
 
 ### Phase 0 — Foundation rework (blocking; do first)
+
 - [ ] **0.1** Add dependencies listed in §0; update `.env.example` + `validation.schema.ts` (`JWT_CUSTOMER_SECRET`, `JWT_CUSTOMER_EXPIRES_IN`, `SMTP_*`, `MAIL_FROM`, `APP_PUBLIC_URL`, `REFERRAL_LINK_BASE_URL`, `EMAIL_BATCH_SIZE`, `ACTIVE_CUSTOMER_WINDOW_DAYS`, `HIGH_SPENDER_THRESHOLD`, `EXPORT_SYNC_ROW_LIMIT`, `EXPORT_RETENTION_HOURS`, `EXPORT_STORAGE_PATH`, `EXPORT_TIMEZONE`).
 - [ ] **0.2** Delete `src/modules/users/*` and `users.schema.ts`; rewrite `app.constants.ts` with `StaffRole`, `AuthRealm`, `CustomerStatus`, `TransactionType`, `SpinSelectionMode`, `VipMetric`, `CampaignStatus`.
 - [ ] **0.3** Fix `BaseRepository.findPaginated` — `count()` aggregate; add `searchColumns: SQL[]` (OR'd `ilike`); add `withCount(conditions)` helper; add optional cursor pagination.
@@ -420,6 +469,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **0.13** Contract tests: assert the envelope shape on a success, a 422, a 404, a 409, and a 500 — so no later phase can silently break the format.
 
 ### Phase 1 — Identity, hierarchy, scoping
+
 - [ ] **1.1** `staff_users` + `customers` + `auth_sessions` schemas, relations, migration.
 - [ ] **1.2** `AuthModule`: `POST /auth/team/login`, `POST /auth/customer/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`. Refresh-token rotation with reuse detection; revoke all sessions on staff/customer deactivation.
 - [ ] **1.3** Login throttling per identifier+IP (dedicated `ThrottlerGuard` config, stricter than global).
@@ -429,6 +479,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **1.7** `CustomerAssignmentService` — assign/reassign customer owner, maintains denormalized `managerId`/`runnerId` atomically.
 
 ### Phase 2 — Customers module
+
 - [ ] **2.1** Staff CRUD: create customer (owner = actor if runner; else explicit), update profile, set/reset password, change status, soft delete. **All audit-logged.**
 - [ ] **2.2** `GET /team/customers` — scoped list. Filters: `status`, `isActive` (activity-based, see below), `managerId`, `runnerId`, `city`, `country`, `hasTransactions`, `isVip`, `registeredFrom/To`, `lastActiveFrom/To`, `minSpent/maxSpent`, `search` (name/email/username/phone).
   - Per-row aggregates via a lateral join / grouped subquery: `totalTransactions`, `totalSpent`, `totalWithdrawn` (credit **without** parent), `netBalance`, `lastTransactionAt`.
@@ -439,6 +490,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **2.5** Bulk actions: activate/deactivate, reassign owner. (Export is delivered centrally in Phase 10.)
 
 ### Phase 3 — Games & transactions (data entry core)
+
 - [ ] **3.1** `games` schema + master CRUD + list.
 - [ ] **3.2** `transactions` schema + migration.
 - [ ] **3.3** `POST /team/transactions` — data entry. Validates customer is in actor's scope, `amount > 0`, `occurredAt` not future-dated beyond tolerance. Updates `customers.balance` and `lastActivityAt` in the same DB transaction.
@@ -448,6 +500,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **3.7** Emit `TransactionCreated` event → triggers VIP recompute for that customer + referral qualification check.
 
 ### Phase 4 — VIP engine
+
 - [ ] **4.1** `vip_criteria` + `vip_qualifications` schemas.
 - [ ] **4.2** Master CRUD for criteria. Validation: `periodEnd > periodStart`; warn on overlapping ranges within the same tier.
 - [ ] **4.3** **`VipQualificationService`**
@@ -459,6 +512,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **4.6** `GET /me/vip-status` — customer sees their current tier, achieved amount, threshold, and progress %, for the currently active criteria.
 
 ### Phase 5 — Spin events & winners
+
 - [ ] **5.1** `spin_events` + `spin_winners` schemas.
 - [ ] **5.2** `POST /team/spin-events` (master). Requires `vipCriteriaId` pointing to an **active** criteria. If `selectionMode = 'preselected'`, `winners[]` is **required at creation** and every entry must have a `vip_qualifications` row for that criteria — reject otherwise with a per-row error. If `post_draw`, winners are recorded later.
 - [ ] **5.3** `POST /team/spin-events/:id/winners` — post-draw data entry. Same VIP-eligibility validation. Blocks duplicate winners per event. Master-only (or master + manager — see Open Decisions).
@@ -467,6 +521,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **5.6** `GET /me/recent-winners` and `GET /team/recent-winners` — public-ish feed of recent spin winners (masked names, e.g. `Jo**n D.`), paginated, filter by event/date. Cached in Redis with short TTL.
 
 ### Phase 6 — Referral & bonus system
+
 - [ ] **6.1** `referral_programs`, `referral_codes`, `referrals`, `bonus_ledger` schemas.
 - [ ] **6.2** Master CRUD for programs (bonus amounts, reward type, validity, caps).
 - [ ] **6.3** `GET /team/referral-programs/:id/eligible-customers` + `POST /team/referral-programs/:id/assign` — master selects eligible customers (bulk), system generates unique `code` (nanoid, collision-retry) and `linkSlug`; returns full referral URL from `REFERRAL_LINK_BASE_URL`.
@@ -476,6 +531,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **6.7** `GET /me/referral` — customer's own code, link, referral count, bonus earned.
 
 ### Phase 7 — Real-time messaging
+
 - [ ] **7.1** `conversations`, `messages`, `conversation_read_states` schemas.
 - [ ] **7.2** `MessagingGateway` (Socket.IO, `/ws/messaging`) with JWT handshake auth for **both** realms. Default in-memory adapter — single instance.
   - Rooms: `conversation:{id}`, `staff:{staffId}`, `customer:{customerId}`, plus `role:master`.
@@ -491,6 +547,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **7.7** Redis-backed presence + typing indicators; message rate-limit per customer.
 
 ### Phase 8 — Dashboard & analytics
+
 - [ ] **8.1** `GET /team/dashboard` — scope-aware, all metrics constrained by `ScopeService`:
   - **All-time net**: `totalIn` (Σ debit), `totalOut` (Σ credit), `balance` (in − out).
   - **This month net**: same three, `occurredAt` within current month; plus `%` delta vs previous month.
@@ -505,6 +562,7 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **8.4** Cache dashboard payloads in Redis (60–120 s TTL) keyed by `actorId + filter hash`; invalidate on `TransactionCreated`.
 
 ### Phase 9 — Email system
+
 - [ ] **9.1** `email_campaigns` + `email_campaign_recipients` schemas; `MailerService` (nodemailer SMTP, handlebars templates, retry/backoff).
 - [ ] **9.2** **`RecipientFilterService`** — turns a filter DTO into a scoped customer query. Supported filters:
   - Quick filters: `allActiveCustomers`, `withTransactions`, `withoutTransactions`, `recentTransactions` (30 d), `highSpenders` (≥ threshold), `lowSpenders` (< threshold). Thresholds configurable (default $250) via `system_settings`.
@@ -523,7 +581,9 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 - [ ] **9.6** Scheduled sends (`scheduledAt` picked up by the same cron), send-rate throttling via `EMAIL_BATCH_SIZE`, `POST /:id/cancel` (deletes remaining `pending` rows), unsubscribe token endpoint (`@Public()`).
 
 ### Phase 10 — Excel exports
+
 Built last on purpose: every list's filters and scoping must already exist, so exports are a thin, uniform layer over them rather than 14 bespoke queries.
+
 - [ ] **10.1** Refactor each list service to expose `buildListQuery(filters, actor)` returning a `$dynamic()` Drizzle query, so the list and its export share one query builder. This is the step that guarantees an export can never out-scope its list.
 - [ ] **10.2** `ExportModule`: `ExportDefinition` interface + registry, `ExportService` (batch-fetch by keyset, map rows through column definitions), `ExcelWriter` (`exceljs` `WorkbookWriter` streaming to the response — frozen bold header, auto-filter, widths, `#,##0.00` money cells, timezone-correct date cells), `CsvWriter`.
 - [ ] **10.3** `@RawResponse()` decorator + `ResponseTransformInterceptor` bypass, so binary streams aren't wrapped in the JSON envelope. Errors raised before the stream opens still return the standard error envelope.
@@ -533,8 +593,9 @@ Built last on purpose: every list's filters and scoping must already exist, so e
 - [ ] **10.7** Audit every export (actor, resource, filter snapshot, row count); throttle exports per staff member; **tests asserting a runner's export contains only their customers and a manager's excludes sibling chains.**
 
 ### Phase 11 — Hardening & delivery
+
 - [ ] **11.1** Unit tests: `ScopeService` (exhaustive role × resource matrix), `VipQualificationService`, `RecipientFilterService`, transaction-correction math, withdrawal calculation.
-- [ ] **11.2** E2E tests per module with three staff personas + one customer, asserting **cross-tenant denial** on every endpoint (manager A cannot touch manager B's data; runner cannot touch a sibling runner's) — lists *and* exports.
+- [ ] **11.2** E2E tests per module with three staff personas + one customer, asserting **cross-tenant denial** on every endpoint (manager A cannot touch manager B's data; runner cannot touch a sibling runner's) — lists _and_ exports.
 - [ ] **11.3** Index review + `EXPLAIN ANALYZE` on the customer list, conversation inbox, dashboard, and largest export against seeded volume (≥ 100k transactions).
 - [ ] **11.4** Rate limiting per route group; payload size limits; strict CORS; secrets checklist.
 - [ ] **11.5** Swagger audit: every route has `@ApiOperation` (summary + required role + scope rule), every DTO field has an example, every error code appears in at least one documented response. Regenerate and hand off `openapi.json`.
@@ -545,23 +606,23 @@ Built last on purpose: every list's filters and scoping must already exist, so e
 
 ## 4. Role → Capability Matrix
 
-| Capability | Master | Manager | Runner | Customer |
-|---|:--:|:--:|:--:|:--:|
-| Create/manage managers | ✅ | ❌ | ❌ | ❌ |
-| Create/manage runners | ✅ | ✅ (own) | ❌ | ❌ |
-| Create/manage customers | ✅ | ✅ (own chain) | ✅ (own) | ❌ |
-| Reset customer password / edit profile | ✅ | ✅ (own chain) | ✅ (own) | ❌ |
-| Enter transactions | ✅ | ✅ (own chain) | ✅ (own) | ❌ |
-| Edit / correct transactions | ✅ | ✅ (own chain) | ➖ correction only | ❌ |
-| VIP criteria CRUD | ✅ | ❌ | ❌ | ❌ |
-| View VIP lists | ✅ all | ✅ own chain | ✅ own | ➖ own status |
-| Spin events CRUD + winners | ✅ | ❌ | ❌ | ➖ view winners |
-| Referral programs / bonus setup | ✅ | ❌ | ❌ | ➖ own code |
-| Assign referral codes | ✅ | ❌ | ❌ | ❌ |
-| Messaging | ✅ all | ✅ own chain | ✅ own | ✅ own thread |
-| Dashboard | ✅ global | ✅ own chain | ✅ own | ➖ personal |
-| Email campaigns | ✅ | ✅ (own chain) | ❌ | ❌ |
-| Audit log | ✅ | ➖ own chain | ❌ | ❌ |
+| Capability                             |  Master   |    Manager     |       Runner       |    Customer     |
+| -------------------------------------- | :-------: | :------------: | :----------------: | :-------------: |
+| Create/manage managers                 |    ✅     |       ❌       |         ❌         |       ❌        |
+| Create/manage runners                  |    ✅     |    ✅ (own)    |         ❌         |       ❌        |
+| Create/manage customers                |    ✅     | ✅ (own chain) |      ✅ (own)      |       ❌        |
+| Reset customer password / edit profile |    ✅     | ✅ (own chain) |      ✅ (own)      |       ❌        |
+| Enter transactions                     |    ✅     | ✅ (own chain) |      ✅ (own)      |       ❌        |
+| Edit / correct transactions            |    ✅     | ✅ (own chain) | ➖ correction only |       ❌        |
+| VIP criteria CRUD                      |    ✅     |       ❌       |         ❌         |       ❌        |
+| View VIP lists                         |  ✅ all   |  ✅ own chain  |       ✅ own       |  ➖ own status  |
+| Spin events CRUD + winners             |    ✅     |       ❌       |         ❌         | ➖ view winners |
+| Referral programs / bonus setup        |    ✅     |       ❌       |         ❌         |   ➖ own code   |
+| Assign referral codes                  |    ✅     |       ❌       |         ❌         |       ❌        |
+| Messaging                              |  ✅ all   |  ✅ own chain  |       ✅ own       |  ✅ own thread  |
+| Dashboard                              | ✅ global |  ✅ own chain  |       ✅ own       |   ➖ personal   |
+| Email campaigns                        |    ✅     | ✅ (own chain) |         ❌         |       ❌        |
+| Audit log                              |    ✅     |  ➖ own chain  |         ❌         |       ❌        |
 
 Legend: ✅ full · ➖ limited · ❌ none
 
@@ -625,7 +686,7 @@ Defaults are assumed and implemented unless you say otherwise:
 3. **Can a manager create spin events / referral programs?** — assumed **no, master-only** per spec §5.2/§6.6. Managers get read access.
 4. **Can a manager own customers directly**, or must every customer sit under a runner? — assumed **yes, managers can own directly** (`runnerId` nullable).
 5. **Bonus vs. real balance** — assumed **separate ledgers** (`bonus_ledger` vs `transactions`) so referral bonuses don't distort dashboard net/game metrics.
-6. **Customer self-registration** — assumed **none**; customers are created by staff. Referral links produce a *lead* that staff converts. (If public signup via referral link is wanted, that's an extra `@Public()` endpoint in Phase 6.)
+6. **Customer self-registration** — assumed **none**; customers are created by staff. Referral links produce a _lead_ that staff converts. (If public signup via referral link is wanted, that's an extra `@Public()` endpoint in Phase 6.)
 7. **"Active customer" window** — assumed **30 days** of `lastActivityAt`, configurable in `system_settings`.
 8. **High/low spender threshold** — assumed **$250** per spec, configurable.
 9. **Multi-currency** — assumed **single currency**. Adding it later means a `currency` column on transactions and per-currency aggregates.
@@ -645,4 +706,5 @@ Phase 0 ─→ Phase 1 ─┬─→ Phase 2 ─→ Phase 3 ─┬─→ Phase 4 
                     └─→ Phase 7 ─────────────┤                      ├─→ Phase 10 ─→ Phase 11
                                              └─→ Phase 8 ─→ Phase 9 ┘
 ```
+
 Phases 0–3 are strictly sequential and carry the most risk (scoping + transaction semantics). Phases 4/6/7 can run in parallel once Phase 3 lands. Phase 8 needs Phase 3–4; Phase 9 needs Phase 2–3. **Phase 10 (exports) depends on all list endpoints existing**, so it comes last but before hardening.

@@ -18,7 +18,7 @@ This repository serves as a baseline foundation for enterprise microservices, in
 
 ## Tech Stack
 
-```mermaid 
+```mermaid
 flowchart LR
     subgraph DEV["🛠️ Developer Tooling"]
         direction TB
