@@ -1,77 +1,82 @@
-version: '3.8'
-
 services:
-  # ── NestJS Application Container ────────────────────────────────────
+  # ── NestJS application ──────────────────────────────────────────────
+  # For local development prefer `docker compose up -d db redis` and run
+  # the app on the host with `npm run start:dev`, so hot reload works.
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: dpay-app
+    container_name: sambehen-app
+    restart: unless-stopped
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - '${APP_PORT:-3000}:3000'
+    # env_file supplies everything else; only the values that must differ
+    # inside the compose network are overridden here.
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=${NODE_ENV:-development}
-      - APP_PORT=3000
-      - APP_HOST=0.0.0.0
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - DB_NAME=${DB_NAME:-dpay}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - JWT_SECRET=${JWT_SECRET:-change-me-please-secret}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-me-please-refresh-secret}
+      APP_PORT: 3000
+      APP_HOST: 0.0.0.0
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      EXPORT_STORAGE_PATH: /app/storage/exports
+    volumes:
+      # Generated .xlsx/.csv exports must survive container replacement.
+      - exports:/app/storage/exports
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - dpay-network
+      - sambehen
 
-  # ── PostgreSQL Database Container ───────────────────────────────────
+  # ── PostgreSQL ──────────────────────────────────────────────────────
   db:
-    image: postgres:15-alpine
-    container_name: dpay-db
+    image: postgres:16-alpine
+    container_name: sambehen-db
+    restart: unless-stopped
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - '${DB_PORT:-5432}:5432'
     environment:
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-dpay}
+      POSTGRES_DB: ${DB_NAME:-sambehen}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-dpay}"]
-      interval: 10s
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-sambehen}']
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
     networks:
-      - dpay-network
+      - sambehen
 
-  # ── Redis Cache Container ───────────────────────────────────────────
+  # ── Redis (cache, throttling, presence) ─────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: dpay-redis
+    container_name: sambehen-redis
+    restart: unless-stopped
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - '${REDIS_PORT:-6379}:6379'
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
     networks:
-      - dpay-network
+      - sambehen
 
 networks:
-  dpay-network:
+  sambehen:
     driver: bridge
 
 volumes:
   pgdata:
-    driver: local
   redisdata:
-    driver: local
+  exports:
