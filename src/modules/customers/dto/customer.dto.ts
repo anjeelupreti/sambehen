@@ -88,6 +88,17 @@ export class CreateCustomerDto {
   @MaxLength(2000)
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional({
+    maxLength: 32,
+    example: 'BRZK7QP4',
+    description:
+      'Referral code or link slug this customer arrived through. An unusable code is ignored rather than failing the signup, so a stale link never blocks a legitimate registration.',
+  })
+  @IsString()
+  @MaxLength(32)
+  @IsOptional()
+  referralCode?: string;
 }
 
 /**
