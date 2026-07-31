@@ -1,19 +1,18 @@
-import { relations } from 'drizzle-orm';
-import { users } from './schema';
-
 /**
  * Drizzle ORM relation definitions.
- * Add relations here as new schemas are added.
  *
- * Example — when you add a `posts` table:
- *   export const usersRelations = relations(users, ({ many }) => ({
- *     posts: many(posts),
- *   }));
+ * Relations live here rather than beside each table so that circular
+ * references between schemas (staff -> customers -> transactions -> staff)
+ * resolve cleanly at import time.
  *
- *   export const postsRelations = relations(posts, ({ one }) => ({
- *     author: one(users, { fields: [posts.authorId], references: [users.id] }),
+ * Populated from phase 1 onward, e.g.
+ *
+ *   export const customersRelations = relations(customers, ({ one, many }) => ({
+ *     owner: one(staffUsers, {
+ *       fields: [customers.ownerStaffId],
+ *       references: [staffUsers.id],
+ *     }),
+ *     transactions: many(transactions),
  *   }));
  */
-export const usersRelations = relations(users, () => ({
-  // Add relations as your schema grows
-}));
+export {};
