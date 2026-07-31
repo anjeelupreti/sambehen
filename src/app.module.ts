@@ -40,6 +40,7 @@ import { CustomersModule } from '@modules/customers/customers.module';
 import { GamesModule } from '@modules/games/games.module';
 import { TransactionsModule } from '@modules/transactions/transactions.module';
 import { VipModule } from '@modules/vip/vip.module';
+import { SpinsModule } from '@modules/spins/spins.module';
 
 import { CorrelationIdMiddleware } from '@common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middleware';
@@ -131,7 +132,8 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
     GamesModule,
     TransactionsModule,
     VipModule,
-    // Phase 5 onward: SpinsModule, ReferralsModule, ...
+    SpinsModule,
+    // Phase 6 onward: ReferralsModule, MessagingModule, ...
   ],
   providers: [
     // Order matters. Guards run first (authenticate, then authorize), then

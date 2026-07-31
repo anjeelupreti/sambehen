@@ -29,6 +29,13 @@
       "when": 1785489434986,
       "tag": "0003_vip_criteria_and_qualifications",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785491458641,
+      "tag": "0004_spin_events_and_winners",
+      "breakpoints": true
     }
   ]
 }
