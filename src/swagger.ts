@@ -2,6 +2,12 @@ import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder, OpenAPIObject } from '@nestjs/swagger';
 import { TEAM_BEARER, CUSTOMER_BEARER } from '@common/swagger/swagger.constants';
+import {
+  ApiResponseDto,
+  ApiErrorDto,
+  PaginationMetaDto,
+  ValidationErrorDetailDto,
+} from '@common/dto/api-response.dto';
 
 /**
  * Builds the OpenAPI document.
@@ -53,7 +59,14 @@ export function createSwaggerDocument(app: INestApplication, config: ConfigServi
     .addTag('Auth', 'Team and customer login gateways')
     .build();
 
-  return SwaggerModule.createDocument(app, documentConfig);
+  // The envelope DTOs are referenced through allOf/$ref by the response
+  // decorators, so they would only appear once a controller uses one.
+  // Registering them explicitly means the contract is documented from the
+  // start and the frontend team can generate types before the feature
+  // endpoints land.
+  return SwaggerModule.createDocument(app, documentConfig, {
+    extraModels: [ApiResponseDto, ApiErrorDto, PaginationMetaDto, ValidationErrorDetailDto],
+  });
 }
 
 /** Mounts Swagger UI and the raw JSON document. */

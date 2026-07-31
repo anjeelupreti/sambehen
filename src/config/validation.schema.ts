@@ -60,7 +60,12 @@ export const validationSchema = Joi.object({
   SMTP_SECURE: Joi.boolean().default(false),
   SMTP_USER: Joi.string().allow('').default(''),
   SMTP_PASSWORD: Joi.string().allow('').default(''),
-  MAIL_FROM: Joi.string().email().default('no-reply@sambehen.local'),
+  // tlds: false — Joi validates against the IANA TLD list by default,
+  // which rejects internal senders like no-reply@sambehen.local and any
+  // corporate .internal domain.
+  MAIL_FROM: Joi.string()
+    .email({ tlds: { allow: false } })
+    .default('no-reply@sambehen.local'),
   MAIL_FROM_NAME: Joi.string().default('Sambehen'),
   EMAIL_BATCH_SIZE: Joi.number().min(1).max(1000).default(50),
 

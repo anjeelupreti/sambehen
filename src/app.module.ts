@@ -136,6 +136,9 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(CorrelationIdMiddleware, RequestLoggerMiddleware).forRoutes('*');
+    // '{*path}' rather than '*': Express 5 / path-to-regexp v8 no longer
+    // accept a bare wildcard and only auto-convert it with a deprecation
+    // warning on every registration.
+    consumer.apply(CorrelationIdMiddleware, RequestLoggerMiddleware).forRoutes('{*path}');
   }
 }
