@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # ── NestJS Application Container ────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dpay-app
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - APP_PORT=3000
+      - APP_HOST=0.0.0.0
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_NAME=${DB_NAME:-dpay}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-change-me-please-secret}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change-me-please-refresh-secret}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dpay-network
+
+  # ── PostgreSQL Database Container ───────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: dpay-db
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-dpay}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-dpay}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dpay-network
+
+  # ── Redis Cache Container ───────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: dpay-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - dpay-network
+
+networks:
+  dpay-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local

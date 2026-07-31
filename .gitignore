@@ -1,0 +1,58 @@
+# ── Dependencies ─────────────────────────────────────────────
+node_modules/
+
+# ── Build output ─────────────────────────────────────────────
+dist/
+build/
+*.tsbuildinfo
+
+# ── Environment ──────────────────────────────────────────────
+# .env.example IS tracked — it documents every required variable.
+.env
+.env.local
+.env.*.local
+.env.development
+.env.staging
+.env.production
+
+# ── Runtime / generated data ─────────────────────────────────
+# Generated .xlsx/.csv export artifacts (see EXPORT_STORAGE_PATH).
+storage/
+uploads/
+tmp/
+
+# ── Testing ──────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# ── Tooling caches ───────────────────────────────────────────
+.eslintcache
+.cache/
+
+# ── Docker ───────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── IDE / OS ─────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── AI assistant workspaces ──────────────────────────────────
+.claude/
+.agents/
+.windsurf/
+skills-lock.json
+
+# NOTE: intentionally NOT ignored —
+#   package-lock.json          reproducible installs in CI and prod
+#   src/database/migrations/   including meta/ + _journal.json; drizzle
+#                              cannot apply migrations without them

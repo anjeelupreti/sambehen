@@ -1,0 +1,10 @@
+{
+  // Lint-only project. Extends the app tsconfig but widens `include` to
+  // cover root-level config files and tests, which are NOT part of the
+  // build output. Without this, typescript-eslint refuses to parse files
+  // outside `src/**` (e.g. drizzle.config.ts) and the pre-commit hook
+  // fails on every commit.
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*", "test/**/*", "*.ts", "*.js", ".husky/**/*"],
+  "exclude": ["node_modules", "dist", "coverage"]
+}
