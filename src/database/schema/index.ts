@@ -9,3 +9,5 @@ export * from './customers.schema';
 export * from './auth-sessions.schema';
 export * from './games.schema';
 export * from './transactions.schema';
+export * from './vip-criteria.schema';
+export * from './vip-qualifications.schema';
