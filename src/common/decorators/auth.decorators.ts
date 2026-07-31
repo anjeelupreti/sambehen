@@ -12,6 +12,26 @@ export const IS_PUBLIC_KEY = 'is_public';
 export const ROLES_KEY = 'staff_roles';
 
 /**
+ * Marks a route as belonging to the customer realm.
+ *
+ * Set by `@CustomerAuth()`. The globally registered TeamJwtGuard runs
+ * before any route-level guard, so without this marker it would try to
+ * verify a customer token against the TEAM secret and reject it as an
+ * invalid signature — making every customer route unreachable. Seeing this
+ * key, the team guard stands aside and lets CustomerJwtGuard authenticate.
+ */
+export const CUSTOMER_AUTH_KEY = 'customer_auth';
+
+/**
+ * Declares a route as customer-realm without attaching a guard.
+ *
+ * Prefer `@CustomerAuth()`, which applies this together with the guard and
+ * the Swagger security scheme. Exported separately so the marker and the
+ * guard can never be reasoned about independently.
+ */
+export const CustomerRealm = (): CustomDecorator<string> => SetMetadata(CUSTOMER_AUTH_KEY, true);
+
+/**
  * Marks a route as unauthenticated.
  *
  * The team JWT guard is registered globally, so every route requires a
