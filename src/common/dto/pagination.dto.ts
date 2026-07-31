@@ -48,7 +48,7 @@ export class PaginationQueryDto implements IPaginationOptions {
 
   @ApiPropertyOptional({
     description:
-      "Column to sort by. Restricted to the resource's sortable columns; anything else falls back to the default ordering.",
+      "Column to sort by. Each resource overrides this with its own enumerated list of sortable columns; see the specific endpoint. An unrecognised value falls back to the resource's default ordering rather than sorting by an arbitrary column.",
     example: 'createdAt',
   })
   @IsString()
@@ -56,7 +56,12 @@ export class PaginationQueryDto implements IPaginationOptions {
   @IsOptional()
   sortBy?: string;
 
-  @ApiPropertyOptional({ enum: SortOrder, default: SortOrder.DESC })
+  @ApiPropertyOptional({
+    enum: SortOrder,
+    enumName: 'SortOrder',
+    default: SortOrder.DESC,
+    description: 'Sort direction. Allowed values: `asc`, `desc`.',
+  })
   @IsEnum(SortOrder)
   @IsOptional()
   sortOrder?: SortOrder = SortOrder.DESC;

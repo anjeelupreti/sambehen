@@ -71,7 +71,7 @@ export class StaffProfileDto {
   @ApiProperty({ nullable: true })
   lastName!: string | null;
 
-  @ApiProperty({ enum: StaffRole })
+  @ApiProperty({ enum: StaffRole, enumName: 'StaffRole' })
   role!: StaffRole;
 
   @ApiProperty({ format: 'uuid', nullable: true, description: 'Managing staff member' })

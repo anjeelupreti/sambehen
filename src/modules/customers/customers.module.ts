@@ -3,6 +3,7 @@ import { CustomersController } from './customers.controller';
 import { PortalController } from './portal.controller';
 import { CustomersService } from './customers.service';
 import { StaffModule } from '@modules/staff/staff.module';
+import { TransactionRepository } from '@database/repositories/transaction.repository';
 
 /**
  * StaffModule is imported for CustomerAssignmentService, the only
@@ -11,7 +12,7 @@ import { StaffModule } from '@modules/staff/staff.module';
 @Module({
   imports: [StaffModule],
   controllers: [CustomersController, PortalController],
-  providers: [CustomersService],
+  providers: [CustomersService, TransactionRepository],
   exports: [CustomersService],
 })
 export class CustomersModule {}

@@ -12,6 +12,10 @@ import { IPaginatedResult } from '@common/interfaces/pagination.interface';
 import { ICurrentStaff } from '@common/interfaces/auth.interface';
 import { DRIZZLE_PROVIDER, DrizzleDB } from '@database/database.provider';
 import { CustomerRepository } from '@database/repositories/customer.repository';
+import {
+  TransactionRepository,
+  ICustomerTotals,
+} from '@database/repositories/transaction.repository';
 import { AuthSessionRepository } from '@database/repositories/auth-session.repository';
 import { customers, Customer } from '@database/schema/customers.schema';
 import { staffUsers } from '@database/schema/staff-users.schema';
@@ -34,6 +38,7 @@ export class CustomersService {
   constructor(
     @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
     private readonly customerRepository: CustomerRepository,
+    private readonly transactionRepository: TransactionRepository,
     private readonly sessionRepository: AuthSessionRepository,
     private readonly scopeService: ScopeService,
     private readonly auditService: AuditService,
@@ -104,12 +109,15 @@ export class CustomersService {
       defaultSort: { column: customers.createdAt, order: SortOrder.DESC },
     });
 
-    // Owner names are resolved for the page only, so the list query stays
-    // a plain indexed scan rather than a three-table join.
-    const ownerNames = await this.resolveOwnerNames(result.data);
+    // Owner names and money aggregates are resolved for the page only, so
+    // the list query stays a plain indexed scan rather than a wide join.
+    const [ownerNames, totals] = await Promise.all([
+      this.resolveOwnerNames(result.data),
+      this.transactionRepository.totalsForCustomers(result.data.map((row) => row.id)),
+    ]);
 
     return {
-      data: result.data.map((row) => this.toResponse(row, ownerNames)),
+      data: result.data.map((row) => this.toResponse(row, ownerNames, totals.get(row.id))),
       meta: result.meta,
       summary: await this.summarise(conditions, filters),
     };
@@ -171,8 +179,11 @@ export class CustomersService {
       throw new ResourceNotFoundException(ErrorCode.CUSTOMER_NOT_FOUND, 'Customer not found');
     }
 
-    const ownerNames = await this.resolveOwnerNames([customer]);
-    return this.toResponse(customer, ownerNames);
+    const [ownerNames, totals] = await Promise.all([
+      this.resolveOwnerNames([customer]),
+      this.transactionRepository.totalsForCustomers([customer.id]),
+    ]);
+    return this.toResponse(customer, ownerNames, totals.get(customer.id));
   }
 
   async create(actor: ICurrentStaff, dto: CreateCustomerDto): Promise<CustomerResponseDto> {
@@ -511,7 +522,11 @@ export class CustomersService {
   }
 
   /** Maps a row to its response shape. Never exposes passwordHash. */
-  private toResponse(customer: Customer, ownerNames?: Map<string, string>): CustomerResponseDto {
+  private toResponse(
+    customer: Customer,
+    ownerNames?: Map<string, string>,
+    totals?: ICustomerTotals,
+  ): CustomerResponseDto {
     return {
       id: customer.id,
       email: customer.email,
@@ -535,6 +550,15 @@ export class CustomersService {
       registeredAt: customer.registeredAt,
       notes: customer.notes,
       createdAt: customer.createdAt,
+
+      // Zeroed rather than omitted when a customer has no transactions, so
+      // the shape is stable and clients need no null-checking.
+      totalTransactions: totals?.totalTransactions ?? 0,
+      totalSpent: totals?.totalSpent ?? '0.00',
+      totalWithdrawn: totals?.totalWithdrawn ?? '0.00',
+      totalCorrections: totals?.totalCorrections ?? '0.00',
+      netBalance: totals?.netBalance ?? '0.00',
+      lastTransactionAt: totals?.lastTransactionAt ?? null,
     };
   }
 }

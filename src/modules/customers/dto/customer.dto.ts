@@ -7,6 +7,7 @@ import {
   IsUUID,
   IsBoolean,
   IsInt,
+  IsIn,
   Min,
   MinLength,
   MaxLength,
@@ -156,7 +157,7 @@ export class SetCustomerPasswordDto {
 }
 
 export class ChangeCustomerStatusDto {
-  @ApiProperty({ enum: CustomerStatus })
+  @ApiProperty({ enum: CustomerStatus, enumName: 'CustomerStatus' })
   @IsEnum(CustomerStatus)
   status!: CustomerStatus;
 
@@ -180,13 +181,26 @@ export class BulkReassignCustomersDto extends IdListDto {
 }
 
 export class BulkStatusDto extends IdListDto {
-  @ApiProperty({ enum: CustomerStatus })
+  @ApiProperty({ enum: CustomerStatus, enumName: 'CustomerStatus' })
   @IsEnum(CustomerStatus)
   status!: CustomerStatus;
 }
 
+/** Columns the customer list may be sorted by. */
+export const CUSTOMER_SORT_FIELDS = [
+  'email',
+  'username',
+  'fullName',
+  'status',
+  'city',
+  'balance',
+  'lastActivityAt',
+  'registeredAt',
+  'createdAt',
+] as const;
+
 export class CustomerFilterDto extends BaseFilterDto {
-  @ApiPropertyOptional({ enum: CustomerStatus })
+  @ApiPropertyOptional({ enum: CustomerStatus, enumName: 'CustomerStatus' })
   @IsEnum(CustomerStatus)
   @IsOptional()
   status?: CustomerStatus;
@@ -241,6 +255,15 @@ export class CustomerFilterDto extends BaseFilterDto {
   @IsBoolean()
   @IsOptional()
   emailOptOut?: boolean;
+  @ApiPropertyOptional({
+    enum: CUSTOMER_SORT_FIELDS,
+    description:
+      'Column to sort by. One of: ' + CUSTOMER_SORT_FIELDS.join(', ') + '. Defaults to createdAt.',
+    example: 'createdAt',
+  })
+  @IsIn(CUSTOMER_SORT_FIELDS as unknown as string[])
+  @IsOptional()
+  override sortBy?: string;
 }
 
 export class CustomerResponseDto {
@@ -268,7 +291,7 @@ export class CustomerResponseDto {
   @ApiProperty({ nullable: true })
   country!: string | null;
 
-  @ApiProperty({ enum: CustomerStatus })
+  @ApiProperty({ enum: CustomerStatus, enumName: 'CustomerStatus' })
   status!: CustomerStatus;
 
   @ApiProperty({
@@ -313,6 +336,43 @@ export class CustomerResponseDto {
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
+
+  // ── Transaction-derived, computed per row ──────────────────
+
+  @ApiPropertyOptional({ example: 42 })
+  totalTransactions?: number;
+
+  @ApiPropertyOptional({
+    type: String,
+    example: '4820.00',
+    description: 'Sum of debits: money the customer put in.',
+  })
+  totalSpent?: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    example: '1250.00',
+    description:
+      'Sum of credits with NO parent transaction. Corrections are excluded, so this is money the customer actually took out.',
+  })
+  totalWithdrawn?: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    example: '40.00',
+    description: 'Sum of credits WITH a parent transaction: bookkeeping fixes, not withdrawals.',
+  })
+  totalCorrections?: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    example: '3570.00',
+    description: 'totalSpent minus all credits.',
+  })
+  netBalance?: string;
+
+  @ApiPropertyOptional({ format: 'date-time', nullable: true })
+  lastTransactionAt?: Date | null;
 }
 
 /** Aggregates over the whole filtered set, not the current page. */
