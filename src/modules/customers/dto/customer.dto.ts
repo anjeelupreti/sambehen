@@ -263,7 +263,7 @@ export class CustomerFilterDto extends BaseFilterDto {
   })
   @IsIn(CUSTOMER_SORT_FIELDS as unknown as string[])
   @IsOptional()
-  declare sortBy?: string;
+  override sortBy?: string;
 }
 
 export class CustomerResponseDto {

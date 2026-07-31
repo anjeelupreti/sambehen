@@ -163,7 +163,7 @@ export class StaffFilterDto extends BaseFilterDto {
   })
   @IsIn(STAFF_SORT_FIELDS as unknown as string[])
   @IsOptional()
-  declare sortBy?: string;
+  override sortBy?: string;
 }
 
 export class StaffResponseDto {

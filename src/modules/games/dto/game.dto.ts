@@ -120,7 +120,7 @@ export class GameFilterDto extends BaseFilterDto {
   })
   @IsIn(GAME_SORT_FIELDS as unknown as string[])
   @IsOptional()
-  declare sortBy?: string;
+  override sortBy?: string;
 }
 
 export class GameResponseDto {
