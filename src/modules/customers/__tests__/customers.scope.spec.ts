@@ -5,6 +5,7 @@ import { and, SQL } from 'drizzle-orm';
 import { CustomersService } from '../customers.service';
 import { DRIZZLE_PROVIDER } from '@database/database.provider';
 import { CustomerRepository } from '@database/repositories/customer.repository';
+import { TransactionRepository } from '@database/repositories/transaction.repository';
 import { AuthSessionRepository } from '@database/repositories/auth-session.repository';
 import { ScopeService } from '@shared/scope/scope.service';
 import { AuditService } from '@shared/audit/audit.service';
@@ -47,6 +48,7 @@ describe('CustomersService — scope composition', () => {
         ScopeService,
         { provide: DRIZZLE_PROVIDER, useValue: { select: jest.fn(), update: jest.fn() } },
         { provide: CustomerRepository, useValue: {} },
+        { provide: TransactionRepository, useValue: { totalsForCustomers: jest.fn() } },
         { provide: AuthSessionRepository, useValue: {} },
         { provide: AuditService, useValue: { record: jest.fn() } },
         { provide: CustomerAssignmentService, useValue: {} },

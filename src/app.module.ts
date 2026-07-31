@@ -37,6 +37,8 @@ import { RolesGuard } from '@common/guards/roles.guard';
 import { AuthModule } from '@modules/auth/auth.module';
 import { StaffModule } from '@modules/staff/staff.module';
 import { CustomersModule } from '@modules/customers/customers.module';
+import { GamesModule } from '@modules/games/games.module';
+import { TransactionsModule } from '@modules/transactions/transactions.module';
 
 import { CorrelationIdMiddleware } from '@common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middleware';
@@ -125,7 +127,9 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
     AuthModule,
     StaffModule,
     CustomersModule,
-    // Phase 3 onward: GamesModule, TransactionsModule, ...
+    GamesModule,
+    TransactionsModule,
+    // Phase 4 onward: VipModule, SpinsModule, ...
   ],
   providers: [
     // Order matters. Guards run first (authenticate, then authorize), then
