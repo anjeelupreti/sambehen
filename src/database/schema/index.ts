@@ -13,3 +13,4 @@ export * from './vip-criteria.schema';
 export * from './vip-qualifications.schema';
 export * from './spin-events.schema';
 export * from './referrals.schema';
+export * from './messaging.schema';
