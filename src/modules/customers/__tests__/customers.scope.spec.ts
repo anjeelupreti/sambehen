@@ -10,6 +10,7 @@ import { AuthSessionRepository } from '@database/repositories/auth-session.repos
 import { ScopeService } from '@shared/scope/scope.service';
 import { AuditService } from '@shared/audit/audit.service';
 import { CustomerAssignmentService } from '@modules/staff/customer-assignment.service';
+import { ReferralsService } from '@modules/referrals/referrals.service';
 import { AuthRealm, CustomerStatus, StaffRole } from '@common/constants/app.constants';
 import { ICurrentStaff } from '@common/interfaces/auth.interface';
 import { ResourceNotFoundException } from '@common/exceptions/business.exception';
@@ -52,6 +53,7 @@ describe('CustomersService — scope composition', () => {
         { provide: AuthSessionRepository, useValue: {} },
         { provide: AuditService, useValue: { record: jest.fn() } },
         { provide: CustomerAssignmentService, useValue: {} },
+        { provide: ReferralsService, useValue: { attachReferral: jest.fn() } },
         {
           provide: 'StaffRepository',
           useValue: { findById: jest.fn(), findChildIds: jest.fn() },

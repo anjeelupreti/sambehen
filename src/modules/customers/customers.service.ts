@@ -22,6 +22,7 @@ import { staffUsers } from '@database/schema/staff-users.schema';
 import { ScopeService } from '@shared/scope/scope.service';
 import { AuditService } from '@shared/audit/audit.service';
 import { CustomerAssignmentService } from '@modules/staff/customer-assignment.service';
+import { ReferralsService } from '@modules/referrals/referrals.service';
 import {
   CreateCustomerDto,
   UpdateCustomerDto,
@@ -44,6 +45,7 @@ export class CustomersService {
     private readonly auditService: AuditService,
     private readonly assignmentService: CustomerAssignmentService,
     private readonly configService: ConfigService,
+    private readonly referralsService: ReferralsService,
   ) {}
 
   /**
@@ -227,9 +229,17 @@ export class CustomersService {
       createdByStaffId: actor.id,
     });
 
+    // Attach the referral the customer arrived through. Deliberately
+    // after creation and non-fatal on an unusable code: a stale link must
+    // never block a signup staff are keying in.
+    if (dto.referralCode) {
+      await this.referralsService.attachReferral(created.id, dto.referralCode);
+    }
+
     await this.audit(actor, 'customer.create', created.id, undefined, {
       email: created.email,
       username: created.username,
+      referralCode: dto.referralCode,
       ...ownership,
     });
 
