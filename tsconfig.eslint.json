@@ -5,6 +5,6 @@
   // outside `src/**` (e.g. drizzle.config.ts) and the pre-commit hook
   // fails on every commit.
   "extends": "./tsconfig.json",
-  "include": ["src/**/*", "test/**/*", "*.ts", "*.js", ".husky/**/*"],
+  "include": ["src/**/*", "test/**/*", "scripts/**/*", "*.ts", "*.js", ".husky/**/*"],
   "exclude": ["node_modules", "dist", "coverage"]
 }
