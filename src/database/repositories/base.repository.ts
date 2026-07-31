@@ -1,21 +1,42 @@
 import { Inject } from '@nestjs/common';
-import { eq, and, ilike, SQL, asc, desc, isNull, inArray } from 'drizzle-orm';
-import { PgTable, TableConfig } from 'drizzle-orm/pg-core';
+import { eq, and, or, ilike, count, SQL, asc, desc, isNull, isNotNull, inArray } from 'drizzle-orm';
+import { PgColumn, PgTable, TableConfig } from 'drizzle-orm/pg-core';
 import { DRIZZLE_PROVIDER, DrizzleDB } from '../database.provider';
 import { IPaginationOptions, IPaginatedResult } from '@common/interfaces/pagination.interface';
+import { SortOrder } from '@common/constants/app.constants';
+
+/** Options accepted by {@link BaseRepository.findPaginated}. */
+export interface IFindPaginatedOptions {
+  /** Extra WHERE predicates, ANDed together (scope predicates go here). */
+  conditions?: SQL[];
+  /** Columns the free-text `search` term is matched against, ORed together. */
+  searchColumns?: PgColumn[];
+  /**
+   * Columns the caller is permitted to sort by. A `sortBy` outside this
+   * list falls back to `defaultSort` rather than sorting by an arbitrary
+   * client-supplied column name.
+   */
+  sortableColumns?: Record<string, PgColumn>;
+  /** Ordering applied when no valid `sortBy` was supplied. */
+  defaultSort?: { column: PgColumn; order: SortOrder };
+  /** Include soft-deleted rows. Defaults to false. */
+  includeDeleted?: boolean;
+}
 
 /**
- * Generic base repository providing standard CRUD, pagination, filtering,
- * sorting, bulk operations, and soft-delete support.
+ * Generic repository providing CRUD, soft delete, bulk operations and
+ * pagination. Extend it per aggregate:
  *
- * Extend this class for each entity:
- *   export class UserRepository extends BaseRepository<typeof users> { ... }
+ *   export class CustomerRepository extends BaseRepository<typeof customers> {
+ *     constructor(@Inject(DRIZZLE_PROVIDER) db: DrizzleDB) {
+ *       super(db, customers);
+ *     }
+ *   }
  *
- * Note: Drizzle's conditional query-builder types can't fully resolve when
- * `T` is an abstract generic rather than a concrete table, so the query
- * builder boundary is intentionally widened to `any` at a few call sites
- * below. The public method signatures still return `T['$inferSelect']`, so
- * callers (e.g. UserRepository) keep full type safety.
+ * Drizzle's conditional query-builder types cannot fully resolve while `T`
+ * is an abstract generic rather than a concrete table, so the builder
+ * boundary is widened to `any` at a few call sites. Public signatures still
+ * return `T['$inferSelect']`, so subclasses keep full type safety.
  */
 export abstract class BaseRepository<T extends PgTable<TableConfig>> {
   constructor(
@@ -24,167 +45,264 @@ export abstract class BaseRepository<T extends PgTable<TableConfig>> {
     protected readonly table: T,
   ) {}
 
-  /**
-   * Find all records (excluding soft-deleted if deletedAt column exists).
-   */
-  async findAll(): Promise<T['$inferSelect'][]> {
-    return this.db.select().from(this.table as any);
+  /** The table's primary key column. */
+  protected get idColumn(): PgColumn {
+    return (this.table as unknown as Record<string, PgColumn>)['id'];
+  }
+
+  /** The soft-delete column, when the table supports soft deletes. */
+  protected get deletedAtColumn(): PgColumn | undefined {
+    return (this.table as unknown as Record<string, PgColumn | undefined>)['deletedAt'];
   }
 
   /**
-   * Find a single record by ID.
+   * Predicate excluding soft-deleted rows, or undefined when the table has
+   * no `deletedAt` column.
    */
-  async findById(id: string): Promise<T['$inferSelect'] | undefined> {
-    const idColumn = (this.table as Record<string, unknown>)['id'] as SQL;
-    const results = await this.db
+  protected notDeleted(): SQL | undefined {
+    const column = this.deletedAtColumn;
+    return column ? isNull(column) : undefined;
+  }
+
+  /** Combines predicates, dropping undefined entries. Returns undefined when empty. */
+  protected combine(...conditions: (SQL | undefined)[]): SQL | undefined {
+    const present = conditions.filter((c): c is SQL => c !== undefined);
+    return present.length > 0 ? and(...present) : undefined;
+  }
+
+  async findAll(conditions: SQL[] = [], includeDeleted = false): Promise<T['$inferSelect'][]> {
+    const where = this.combine(...conditions, includeDeleted ? undefined : this.notDeleted());
+    const query = this.db
       .select()
-      .from(this.table as any)
-      .where(eq(idColumn, id))
+      .from(this.table as never)
+      .$dynamic();
+    if (where) query.where(where);
+    return (await query) as T['$inferSelect'][];
+  }
+
+  async findById(id: string, includeDeleted = false): Promise<T['$inferSelect'] | undefined> {
+    const where = this.combine(
+      eq(this.idColumn, id),
+      includeDeleted ? undefined : this.notDeleted(),
+    );
+    const rows = await this.db
+      .select()
+      .from(this.table as never)
+      .where(where)
       .limit(1);
-    return results[0] as T['$inferSelect'] | undefined;
+    return rows[0] as T['$inferSelect'] | undefined;
+  }
+
+  async findOneBy(
+    conditions: SQL[],
+    includeDeleted = false,
+  ): Promise<T['$inferSelect'] | undefined> {
+    const where = this.combine(...conditions, includeDeleted ? undefined : this.notDeleted());
+    const rows = await this.db
+      .select()
+      .from(this.table as never)
+      .where(where)
+      .limit(1);
+    return rows[0] as T['$inferSelect'] | undefined;
   }
 
   /**
-   * Create a single record.
+   * Row count matching the predicates.
+   *
+   * Uses a COUNT(*) aggregate. The previous implementation selected every
+   * matching row and read `.length`, which transferred the whole table to
+   * the application just to produce a number.
    */
+  async count(conditions: SQL[] = [], includeDeleted = false): Promise<number> {
+    const where = this.combine(...conditions, includeDeleted ? undefined : this.notDeleted());
+    const query = this.db
+      .select({ value: count() })
+      .from(this.table as never)
+      .$dynamic();
+    if (where) query.where(where);
+    // Drizzle cannot narrow the row shape while `T` is an abstract generic,
+    // so the aggregate's type is restated here.
+    const [row] = (await query) as { value: number }[];
+    return Number(row?.value ?? 0);
+  }
+
+  async exists(conditions: SQL[], includeDeleted = false): Promise<boolean> {
+    const where = this.combine(...conditions, includeDeleted ? undefined : this.notDeleted());
+    const rows = await this.db
+      .select({ one: this.idColumn })
+      .from(this.table as never)
+      .where(where)
+      .limit(1);
+    return rows.length > 0;
+  }
+
   async create(data: T['$inferInsert']): Promise<T['$inferSelect']> {
-    const result = await this.db
+    const [row] = await this.db
       .insert(this.table)
-      .values(data as any)
+      .values(data as never)
       .returning();
-    return result[0] as T['$inferSelect'];
+    return row as T['$inferSelect'];
   }
 
-  /**
-   * Bulk insert multiple records.
-   */
   async createMany(data: T['$inferInsert'][]): Promise<T['$inferSelect'][]> {
-    const result = await this.db
+    if (data.length === 0) return [];
+    const rows = await this.db
       .insert(this.table)
-      .values(data as any[])
+      .values(data as never)
       .returning();
-    return result as T['$inferSelect'][];
+    return rows as T['$inferSelect'][];
   }
 
-  /**
-   * Update a record by ID.
-   */
   async update(
     id: string,
     data: Partial<T['$inferInsert']>,
   ): Promise<T['$inferSelect'] | undefined> {
-    const idColumn = (this.table as Record<string, unknown>)['id'] as SQL;
-    const result = (await this.db
+    const rows = (await this.db
       .update(this.table)
-      .set(data as any)
-      .where(eq(idColumn, id))
+      .set(data as never)
+      .where(eq(this.idColumn, id))
       .returning()) as T['$inferSelect'][];
-    return result[0];
+    return rows[0];
   }
 
-  /**
-   * Bulk update records by IDs.
-   */
   async updateMany(ids: string[], data: Partial<T['$inferInsert']>): Promise<T['$inferSelect'][]> {
-    const idColumn = (this.table as Record<string, unknown>)['id'] as SQL;
-    const result = await this.db
+    if (ids.length === 0) return [];
+    const rows = await this.db
       .update(this.table)
-      .set(data as any)
-      .where(inArray(idColumn, ids))
+      .set(data as never)
+      .where(inArray(this.idColumn, ids))
       .returning();
-    return result as T['$inferSelect'][];
+    return rows as T['$inferSelect'][];
   }
 
-  /**
-   * Hard delete a record by ID.
-   */
+  /** Permanently removes the row. Prefer {@link softDelete} for auditable data. */
   async delete(id: string): Promise<T['$inferSelect'] | undefined> {
-    const idColumn = (this.table as Record<string, unknown>)['id'] as SQL;
-    const result = (await this.db
+    const rows = (await this.db
       .delete(this.table)
-      .where(eq(idColumn, id))
+      .where(eq(this.idColumn, id))
       .returning()) as T['$inferSelect'][];
-    return result[0];
+    return rows[0];
   }
 
-  /**
-   * Soft delete — sets deletedAt to now.
-   */
   async softDelete(id: string): Promise<T['$inferSelect'] | undefined> {
     return this.update(id, { deletedAt: new Date() } as Partial<T['$inferInsert']>);
   }
 
+  async restore(id: string): Promise<T['$inferSelect'] | undefined> {
+    return this.update(id, { deletedAt: null } as Partial<T['$inferInsert']>);
+  }
+
+  async findDeleted(conditions: SQL[] = []): Promise<T['$inferSelect'][]> {
+    const column = this.deletedAtColumn;
+    const where = this.combine(...conditions, column ? isNotNull(column) : undefined);
+    const query = this.db
+      .select()
+      .from(this.table as never)
+      .$dynamic();
+    if (where) query.where(where);
+    return (await query) as T['$inferSelect'][];
+  }
+
   /**
-   * Paginated query with optional search, filtering, and sorting.
+   * Offset pagination with optional multi-column search and whitelisted
+   * sorting. Data and count are derived from the same WHERE clause, so the
+   * two can never disagree.
    */
   async findPaginated(
     options: IPaginationOptions,
-    conditions: SQL[] = [],
-    searchColumn?: SQL,
+    findOptions: IFindPaginatedOptions = {},
   ): Promise<IPaginatedResult<T['$inferSelect']>> {
-    const { page = 1, limit = 10, search, sortBy, sortOrder = 'asc' } = options;
+    const page = Math.max(1, options.page ?? 1);
+    const limit = Math.max(1, options.limit ?? 10);
     const offset = (page - 1) * limit;
 
-    // Build WHERE clauses
-    const whereConditions = [...conditions];
+    const {
+      conditions = [],
+      searchColumns = [],
+      sortableColumns = {},
+      defaultSort,
+      includeDeleted = false,
+    } = findOptions;
 
-    // Add soft-delete filter if table has deletedAt
-    const deletedAtColumn = (this.table as Record<string, unknown>)['deletedAt'] as SQL | undefined;
-    if (deletedAtColumn) {
-      whereConditions.push(isNull(deletedAtColumn));
+    const predicates: (SQL | undefined)[] = [
+      ...conditions,
+      includeDeleted ? undefined : this.notDeleted(),
+    ];
+
+    // Free-text search is ORed across every searchable column.
+    const term = options.search?.trim();
+    if (term && searchColumns.length > 0) {
+      const pattern = `%${this.escapeLike(term)}%`;
+      predicates.push(or(...searchColumns.map((column) => ilike(column, pattern))));
     }
 
-    // Add search
-    if (search && searchColumn) {
-      whereConditions.push(ilike(searchColumn, `%${search}%`));
-    }
+    const where = this.combine(...predicates);
 
-    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
-
-    // Build query. `.$dynamic()` opts into Drizzle's dynamic query-builder
-    // mode, which allows `query` to be conditionally reassigned across
-    // `.where()`/`.orderBy()` calls without losing type safety.
-    let query = this.db
+    const query = this.db
       .select()
-      .from(this.table as any)
+      .from(this.table as never)
       .$dynamic();
+    if (where) query.where(where);
 
-    if (whereClause) {
-      query = query.where(whereClause);
+    // Sorting is restricted to the caller-supplied whitelist so a client
+    // cannot order by an arbitrary column name.
+    const direction = options.sortOrder === SortOrder.DESC ? desc : asc;
+    const requested = options.sortBy ? sortableColumns[options.sortBy] : undefined;
+    const orderBy: SQL[] = [];
+
+    if (requested) {
+      orderBy.push(direction(requested));
+    } else if (defaultSort) {
+      orderBy.push(
+        defaultSort.order === SortOrder.DESC ? desc(defaultSort.column) : asc(defaultSort.column),
+      );
     }
 
-    // Sorting
-    if (sortBy) {
-      const sortColumn = (this.table as Record<string, unknown>)[sortBy as string] as SQL;
-      if (sortColumn) {
-        query = query.orderBy(sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn));
-      }
-    }
+    // Always tie-break on the primary key. Without a unique final sort key,
+    // rows with equal sort values can repeat or vanish between pages.
+    orderBy.push(asc(this.idColumn));
+    query.orderBy(...orderBy);
 
-    // Execute paginated query
-    const data = await query.limit(limit).offset(offset);
+    // Page and count run against the identical WHERE clause, so `meta.total`
+    // can never disagree with the rows returned.
+    const [data, total] = await Promise.all([
+      query.limit(limit).offset(offset) as Promise<T['$inferSelect'][]>,
+      this.countWhere(where),
+    ]);
 
-    // Count total
-    let countQuery = this.db
-      .select()
-      .from(this.table as any)
-      .$dynamic();
-    if (whereClause) {
-      countQuery = countQuery.where(whereClause);
-    }
-    const countResult = await countQuery;
-    const total = countResult.length;
+    const totalPages = Math.ceil(total / limit);
 
     return {
-      data: data as T['$inferSelect'][],
+      data,
       meta: {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page * limit < total,
+        totalPages,
+        hasNextPage: page < totalPages,
         hasPreviousPage: page > 1,
       },
     };
+  }
+
+  /** COUNT(*) over an already-assembled WHERE clause. */
+  protected async countWhere(where: SQL | undefined): Promise<number> {
+    const query = this.db
+      .select({ value: count() })
+      .from(this.table as never)
+      .$dynamic();
+    if (where) query.where(where);
+    // Drizzle cannot narrow the row shape while `T` is an abstract generic,
+    // so the aggregate's type is restated here.
+    const [row] = (await query) as { value: number }[];
+    return Number(row?.value ?? 0);
+  }
+
+  /**
+   * Escapes LIKE wildcards so a search for "100%" matches the literal text
+   * rather than acting as a wildcard.
+   */
+  protected escapeLike(value: string): string {
+    return value.replace(/[\\%_]/g, (char) => `\\${char}`);
   }
 }
