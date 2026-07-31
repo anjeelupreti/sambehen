@@ -2,8 +2,9 @@ import { Injectable, ExecutionContext, CanActivate } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
-import { ErrorCode } from '../constants/error-codes';
+import { Request } from 'express';
 import { AuthenticationException } from '../exceptions/business.exception';
+import { resolveAuthError } from './jwt-error.util';
 import { IS_PUBLIC_KEY } from '../decorators/auth.decorators';
 import { JWT_TEAM_STRATEGY } from '@shared/auth/strategies/jwt-team.strategy';
 import { ICurrentStaff } from '../interfaces/auth.interface';
@@ -34,28 +35,24 @@ export class TeamJwtGuard extends AuthGuard(JWT_TEAM_STRATEGY) implements CanAct
   }
 
   /**
-   * Converts passport failures into the standard error envelope, and
-   * distinguishes an expired token from an invalid one so clients know
-   * whether refreshing is worth attempting.
+   * Converts passport failures into specific, actionable errors.
+   *
+   * `handleRequest` receives the ExecutionContext, so the raw header can
+   * be inspected: passport-jwt reports a missing token as a plain
+   * `Error('No auth token')` whose name is just 'Error', which is not
+   * distinguishable by name alone.
    */
-  handleRequest<TUser = ICurrentStaff>(err: unknown, user: TUser | false, info: unknown): TUser {
+  handleRequest<TUser = ICurrentStaff>(
+    err: unknown,
+    user: TUser | false,
+    info: unknown,
+    context: ExecutionContext,
+  ): TUser {
     if (err || !user) {
-      const name = (info as Error | undefined)?.name;
-
-      if (name === 'TokenExpiredError') {
-        throw new AuthenticationException(ErrorCode.AUTH_TOKEN_EXPIRED, 'Access token has expired');
-      }
-      if (name === 'NoAuthTokenError') {
-        throw new AuthenticationException(
-          ErrorCode.AUTH_TOKEN_MISSING,
-          'Authorization header is missing',
-        );
-      }
       if (err instanceof AuthenticationException) {
         throw err;
       }
-
-      throw new AuthenticationException(ErrorCode.AUTH_TOKEN_INVALID, 'Invalid access token');
+      throw resolveAuthError(info, context.switchToHttp().getRequest<Request>());
     }
 
     return user;
