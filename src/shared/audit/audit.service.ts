@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DRIZZLE_PROVIDER, DrizzleDB } from '@database/database.provider';
 import { auditLogs, NewAuditLog } from '@database/schema/audit-logs.schema';
+import { RequestContext } from '@common/context/request-context';
 
 /** Field names scrubbed from any payload before it is persisted. */
 const REDACTED_KEYS = new Set([
@@ -30,14 +31,27 @@ export class AuditService {
   /**
    * Appends an audit entry.
    *
+   * Request context (correlation id, IP, user agent, method, path) is
+   * filled in from the ambient RequestContext when the caller has not
+   * supplied it, so a service can record a rich before/after entry without
+   * accepting an HTTP request object. Outside a request — background jobs,
+   * seeders — those fields are simply absent.
+   *
    * Never throws: an audit write failing must not roll back or fail the
    * business operation the user actually requested. Failures are logged at
    * error level so they surface in monitoring instead.
    */
   async record(entry: NewAuditLog): Promise<void> {
+    const context = RequestContext.get();
+
     try {
       await this.db.insert(auditLogs).values({
         ...entry,
+        correlationId: entry.correlationId ?? context?.correlationId,
+        ip: entry.ip ?? context?.ip,
+        userAgent: entry.userAgent ?? context?.userAgent,
+        method: entry.method ?? context?.method,
+        path: entry.path ?? context?.path,
         before: entry.before ? this.redact(entry.before) : entry.before,
         after: entry.after ? this.redact(entry.after) : entry.after,
         metadata: entry.metadata ? this.redact(entry.metadata) : entry.metadata,
