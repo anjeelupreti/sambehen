@@ -2,6 +2,9 @@ import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from '../schema';
+import { DrizzleDB } from '../database.provider';
+import { seedStaff, SEED_PASSWORD } from './staff.seed';
+import { seedCustomers } from './customer.seed';
 
 /**
  * Database seed runner — `npm run db:seed`.
@@ -30,12 +33,20 @@ async function main(): Promise<void> {
   try {
     // A single transaction wraps every seeder, so a partial failure never
     // leaves the database half-populated.
-    await db.transaction(async () => {
-      // await seedStaff(tx);
-      // await seedCustomers(tx);
-      // await seedGamesAndTransactions(tx);
+    await db.transaction(async (tx) => {
+      const staff = await seedStaff(tx as unknown as DrizzleDB);
+      logger.log(
+        `  staff: 1 master, ${staff.managers.length} managers, ${staff.runners.length} runners`,
+      );
+
+      const seededCustomers = await seedCustomers(tx as unknown as DrizzleDB, staff);
+      logger.log(`  customers: ${seededCustomers.length}`);
+      // Phase 3 onward: await seedGamesAndTransactions(tx, seededCustomers);
     });
+
     logger.log('Seed completed successfully');
+    logger.log(`All seeded accounts share the password: ${SEED_PASSWORD}`);
+    logger.log('  master@sambehen.local / manager1@sambehen.local / runner11@sambehen.local');
   } catch (error) {
     logger.error('Seed failed:', error);
     process.exitCode = 1;

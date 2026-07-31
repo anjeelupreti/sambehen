@@ -25,6 +25,7 @@ import { SharedAuthModule } from '@shared/auth/auth.module';
 import { HealthModule } from '@shared/health/health.module';
 import { AppLoggerModule } from '@shared/logger/logger.module';
 import { AuditModule } from '@shared/audit/audit.module';
+import { ScopeModule } from '@shared/scope/scope.module';
 import { AuditInterceptor } from '@shared/audit/audit.interceptor';
 
 // Cross-cutting HTTP concerns
@@ -32,6 +33,10 @@ import { GlobalExceptionFilter } from '@common/filters/global-exception.filter';
 import { ResponseTransformInterceptor } from '@common/interceptors/response-transform.interceptor';
 import { TeamJwtGuard } from '@common/guards/team-jwt.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
+// Feature modules
+import { AuthModule } from '@modules/auth/auth.module';
+import { StaffModule } from '@modules/staff/staff.module';
+
 import { CorrelationIdMiddleware } from '@common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middleware';
 
@@ -112,10 +117,13 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
     AppLoggerModule,
     SharedAuthModule,
     AuditModule,
+    ScopeModule,
     HealthModule,
 
     // ── Feature modules ────────────────────────────────────────
-    // Phase 1 onward: AuthModule, StaffModule, CustomersModule, ...
+    AuthModule,
+    StaffModule,
+    // Phase 2 onward: CustomersModule, TransactionsModule, ...
   ],
   providers: [
     // Order matters. Guards run first (authenticate, then authorize), then
