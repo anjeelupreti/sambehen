@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 import { Request } from 'express';
 import { AuthenticationException } from '../exceptions/business.exception';
 import { resolveAuthError } from './jwt-error.util';
-import { IS_PUBLIC_KEY } from '../decorators/auth.decorators';
+import { IS_PUBLIC_KEY, CUSTOMER_AUTH_KEY } from '../decorators/auth.decorators';
 import { JWT_TEAM_STRATEGY } from '@shared/auth/strategies/jwt-team.strategy';
 import { ICurrentStaff } from '../interfaces/auth.interface';
 
@@ -24,12 +24,19 @@ export class TeamJwtGuard extends AuthGuard(JWT_TEAM_STRATEGY) implements CanAct
   }
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const [isPublic, isCustomerRoute] = [IS_PUBLIC_KEY, CUSTOMER_AUTH_KEY].map((key) =>
+      this.reflector.getAllAndOverride<boolean>(key, [context.getHandler(), context.getClass()]),
+    );
 
     if (isPublic) return true;
+
+    // Stand aside on customer-realm routes. Global guards run before
+    // route-level ones, so without this the team strategy would verify a
+    // customer token against the TEAM secret, reject it as an invalid
+    // signature, and make every customer route unreachable. The route's
+    // own CustomerJwtGuard still runs, so this is not an authentication
+    // bypass — it is a handover.
+    if (isCustomerRoute) return true;
 
     return super.canActivate(context);
   }

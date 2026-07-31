@@ -4,7 +4,7 @@ import { StaffRole } from '../constants/app.constants';
 import { TeamJwtGuard } from '../guards/team-jwt.guard';
 import { CustomerJwtGuard } from '../guards/customer-jwt.guard';
 import { RolesGuard } from '../guards/roles.guard';
-import { Roles } from './auth.decorators';
+import { Roles, CustomerRealm } from './auth.decorators';
 import { TEAM_BEARER, CUSTOMER_BEARER } from '../swagger/swagger.constants';
 
 /**
@@ -38,12 +38,19 @@ export function TeamAuth(...roles: StaffRole[]): MethodDecorator & ClassDecorato
 /**
  * Protects a customer-portal route.
  *
- * Applying an explicit guard also overrides the globally registered team
- * guard for this handler, so a staff token is rejected here just as a
- * customer token is rejected on team routes.
+ * The `CustomerRealm()` marker is essential, not decorative: global guards
+ * run before route-level ones, so the globally registered TeamJwtGuard
+ * would otherwise verify a customer token against the team secret and
+ * reject it as an invalid signature, making every customer route
+ * unreachable. The marker tells the team guard to stand aside so
+ * CustomerJwtGuard can authenticate.
+ *
+ * A staff token is still rejected here, because CustomerJwtGuard verifies
+ * against the customer secret.
  */
 export function CustomerAuth(): MethodDecorator & ClassDecorator {
   return applyDecorators(
+    CustomerRealm(),
     UseGuards(CustomerJwtGuard),
     ApiBearerAuth(CUSTOMER_BEARER),
     ApiUnauthorizedResponse({ description: 'Missing, expired or invalid customer access token' }),
