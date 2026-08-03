@@ -237,7 +237,7 @@ Authorize, without the `Bearer ` prefix.
 ### Handing the API contract to the frontend
 
 ```bash
-npm run docs:openapi              # writes openapi.json (67 paths)
+npm run docs:openapi              # writes openapi.json (69 paths)
 npm run docs:openapi ./out.json   # or anywhere else
 ```
 

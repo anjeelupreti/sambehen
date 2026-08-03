@@ -2,6 +2,24 @@
 
 NestJS 11 + Drizzle ORM (PostgreSQL) + Redis. Backend/API only.
 
+> ## ✅ Delivered — all 11 phases merged to `main`
+>
+> This document is now a **record of what was built**, not a to-do list. 81
+> of 82 tasks shipped; the exception is annotated in place rather than
+> quietly ticked:
+>
+> - **10.6** async export jobs — deliberately skipped (Open Decision 12);
+>   exports stream synchronously.
+>
+> **Where things stand:** 69 API paths, 19 tables, 9 migrations, 14 export
+> definitions, 75 unit tests and 33 cross-tenant e2e tests.
+> Architecture decisions live in [ARCHITECTURE.md](ARCHITECTURE.md); setup
+> and day-to-day commands live in the [README](../README.md).
+>
+> The 14 items in [§7 Open Decisions](#7-open-decisions) are **implemented as
+> defaults and still unconfirmed** — worth reviewing before a frontend
+> depends on them.
+
 > **Scope: single monolithic NestJS application.** One codebase, one database, one deployable, feature modules inside `src/modules/`. No microservices, no message bus between services, no separate worker deployment. Anything that would only pay off across multiple instances is deliberately left out (noted inline as _"defer"_).
 
 ---
@@ -454,101 +472,101 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
 
 ### Phase 0 — Foundation rework (blocking; do first)
 
-- [ ] **0.1** Add dependencies listed in §0; update `.env.example` + `validation.schema.ts` (`JWT_CUSTOMER_SECRET`, `JWT_CUSTOMER_EXPIRES_IN`, `SMTP_*`, `MAIL_FROM`, `APP_PUBLIC_URL`, `REFERRAL_LINK_BASE_URL`, `EMAIL_BATCH_SIZE`, `ACTIVE_CUSTOMER_WINDOW_DAYS`, `HIGH_SPENDER_THRESHOLD`, `EXPORT_SYNC_ROW_LIMIT`, `EXPORT_RETENTION_HOURS`, `EXPORT_STORAGE_PATH`, `EXPORT_TIMEZONE`).
-- [ ] **0.2** Delete `src/modules/users/*` and `users.schema.ts`; rewrite `app.constants.ts` with `StaffRole`, `AuthRealm`, `CustomerStatus`, `TransactionType`, `SpinSelectionMode`, `VipMetric`, `CampaignStatus`.
-- [ ] **0.3** Fix `BaseRepository.findPaginated` — `count()` aggregate; add `searchColumns: SQL[]` (OR'd `ilike`); add `withCount(conditions)` helper; add optional cursor pagination.
-- [ ] **0.4** `HashUtil` → argon2id (`hashPassword`, `verifyPassword`), keep `generateRandomToken`.
-- [ ] **0.5** Auth primitives: `JwtTeamStrategy`, `JwtCustomerStrategy`, `TeamJwtGuard`, `CustomerJwtGuard`, `@Public()`, `@TeamAuth(...roles)`, `@CustomerAuth()`, `@CurrentStaff()`, `@CurrentCustomer()`. Register team guard as `APP_GUARD`.
-- [ ] **0.6** `common/dto/date-range.dto.ts`, `common/dto/base-filter.dto.ts` (page/limit/search/sort/dateFrom/dateTo/lastNDays), `common/dto/id-list.dto.ts`.
-- [ ] **0.7** `AuditModule` + `AuditInterceptor` + `@Auditable(action, entityType)` decorator.
-- [ ] **0.8** **Response envelope** — rewrite `ApiResponseDto` (`success`, `statusCode`, `message`, `data`, `meta?`, `summary?`, `timestamp`, `path`, `correlationId`); rewrite `ResponseTransformInterceptor` to emit it and pick up `@ResponseMessage('…')` per route; **register it as `APP_INTERCEPTOR`** — it is currently dead code.
-- [ ] **0.9** **Error handling** — `error-codes.ts` enum; rewrite `BusinessException` to `(code, message, status, details?)` matching the filter's output exactly; add `ValidationException`; rewrite `GlobalExceptionFilter` to emit the `error: { code, details }` shape, map PG codes (`23505`→409, `23503`→400, `23514`→422, `22P02`→400), strip stack/SQL from 5xx, log full detail with `correlationId`; **register as `APP_FILTER`** — also currently dead code.
-- [ ] **0.10** **Validation format** — `ValidationPipe` `exceptionFactory` that flattens `class-validator` errors (including nested/array paths like `winners.0.customerId`) into `{ field, constraint, message }[]` and throws `ValidationException` (422). Fixes the current filter bug where an array `message` is cast to `string`.
-- [ ] **0.11** **Swagger kit** — `src/common/swagger/`: `@ApiOkData`, `@ApiOkList`, `@ApiCreatedData`, `@ApiErrors`, `@ApiPaginatedQuery` built on `@ApiExtraModels` + `getSchemaPath`; two bearer schemes (`team-jwt`, `customer-jwt`); tags per module; `npm run docs:openapi` export script. Default `SWAGGER_ENABLED=false` in production.
-- [ ] **0.12** Seed script: 1 master, 2 managers, 4 runners, ~40 customers, ~15 games, ~2k transactions, 3 VIP criteria, 2 spin events, conversations + messages. Makes every later phase testable immediately.
-- [ ] **0.13** Contract tests: assert the envelope shape on a success, a 422, a 404, a 409, and a 500 — so no later phase can silently break the format.
+- [x] **0.1** Add dependencies listed in §0; update `.env.example` + `validation.schema.ts` (`JWT_CUSTOMER_SECRET`, `JWT_CUSTOMER_EXPIRES_IN`, `SMTP_*`, `MAIL_FROM`, `APP_PUBLIC_URL`, `REFERRAL_LINK_BASE_URL`, `EMAIL_BATCH_SIZE`, `ACTIVE_CUSTOMER_WINDOW_DAYS`, `HIGH_SPENDER_THRESHOLD`, `EXPORT_SYNC_ROW_LIMIT`, `EXPORT_RETENTION_HOURS`, `EXPORT_STORAGE_PATH`, `EXPORT_TIMEZONE`).
+- [x] **0.2** Delete `src/modules/users/*` and `users.schema.ts`; rewrite `app.constants.ts` with `StaffRole`, `AuthRealm`, `CustomerStatus`, `TransactionType`, `SpinSelectionMode`, `VipMetric`, `CampaignStatus`.
+- [x] **0.3** Fix `BaseRepository.findPaginated` — `count()` aggregate; add `searchColumns: SQL[]` (OR'd `ilike`); add `withCount(conditions)` helper. _Cursor pagination was left out of the base class: messaging is the only list that needs it and implements `before` itself, so a generic version would have had exactly one caller._
+- [x] **0.4** `HashUtil` → argon2id (`hashPassword`, `verifyPassword`), keep `generateRandomToken`.
+- [x] **0.5** Auth primitives: `JwtTeamStrategy`, `JwtCustomerStrategy`, `TeamJwtGuard`, `CustomerJwtGuard`, `@Public()`, `@TeamAuth(...roles)`, `@CustomerAuth()`, `@CurrentStaff()`, `@CurrentCustomer()`. Register team guard as `APP_GUARD`.
+- [x] **0.6** `common/dto/date-range.dto.ts`, `common/dto/base-filter.dto.ts` (page/limit/search/sort/dateFrom/dateTo/lastNDays), `common/dto/id-list.dto.ts`.
+- [x] **0.7** `AuditModule` + `AuditInterceptor` + `@Auditable(action, entityType)` decorator.
+- [x] **0.8** **Response envelope** — rewrite `ApiResponseDto` (`success`, `statusCode`, `message`, `data`, `meta?`, `summary?`, `timestamp`, `path`, `correlationId`); rewrite `ResponseTransformInterceptor` to emit it and pick up `@ResponseMessage('…')` per route; **register it as `APP_INTERCEPTOR`** — it is currently dead code.
+- [x] **0.9** **Error handling** — `error-codes.ts` enum; rewrite `BusinessException` to `(code, message, status, details?)` matching the filter's output exactly; add `ValidationException`; rewrite `GlobalExceptionFilter` to emit the `error: { code, details }` shape, map PG codes (`23505`→409, `23503`→400, `23514`→422, `22P02`→400), strip stack/SQL from 5xx, log full detail with `correlationId`; **register as `APP_FILTER`** — also currently dead code.
+- [x] **0.10** **Validation format** — `ValidationPipe` `exceptionFactory` that flattens `class-validator` errors (including nested/array paths like `winners.0.customerId`) into `{ field, constraint, message }[]` and throws `ValidationException` (422). Fixes the current filter bug where an array `message` is cast to `string`.
+- [x] **0.11** **Swagger kit** — `src/common/swagger/`: `@ApiOkData`, `@ApiOkList`, `@ApiCreatedData`, `@ApiErrors`, `@ApiPaginatedQuery` built on `@ApiExtraModels` + `getSchemaPath`; two bearer schemes (`team-jwt`, `customer-jwt`); tags per module; `npm run docs:openapi` export script. Default `SWAGGER_ENABLED=false` in production.
+- [x] **0.12** Seed script: 1 master, 2 managers, 4 runners, ~40 customers, ~15 games, ~2k transactions, 3 VIP criteria, 2 spin events, conversations + messages. Makes every later phase testable immediately.
+- [x] **0.13** Contract tests: assert the envelope shape on a success, a 422, a 404, a 409, and a 500 — so no later phase can silently break the format.
 
 ### Phase 1 — Identity, hierarchy, scoping
 
-- [ ] **1.1** `staff_users` + `customers` + `auth_sessions` schemas, relations, migration.
-- [ ] **1.2** `AuthModule`: `POST /auth/team/login`, `POST /auth/customer/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`. Refresh-token rotation with reuse detection; revoke all sessions on staff/customer deactivation.
-- [ ] **1.3** Login throttling per identifier+IP (dedicated `ThrottlerGuard` config, stricter than global).
-- [ ] **1.4** **`ScopeService`** — `customerScope(actor)`, `staffScope(actor)`, `assertCanAccessCustomer()`, `assertCanManageStaff()`, `resolveDescendantIds()`. Unit-tested to death.
-- [ ] **1.5** `ResourceAccessGuard` (404-on-denied) + `@ScopedResource('customer')` decorator.
-- [ ] **1.6** `StaffModule` — CRUD for managers (master only) and runners (master or owning manager), `parentId` validation, reassign runner→manager (cascades `customers.managerId` in a transaction), activate/deactivate.
-- [ ] **1.7** `CustomerAssignmentService` — assign/reassign customer owner, maintains denormalized `managerId`/`runnerId` atomically.
+- [x] **1.1** `staff_users` + `customers` + `auth_sessions` schemas, relations, migration.
+- [x] **1.2** `AuthModule`: `POST /auth/team/login`, `POST /auth/customer/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`. Refresh-token rotation with reuse detection; revoke all sessions on staff/customer deactivation.
+- [x] **1.3** Login throttling per identifier+IP (dedicated `ThrottlerGuard` config, stricter than global).
+- [x] **1.4** **`ScopeService`** — `customerScope(actor)`, `staffScope(actor)`, `assertCanAccessCustomer()`, `assertCanManageStaff()`, `resolveDescendantIds()`. Unit-tested to death.
+- [x] **1.5** `ResourceAccessGuard` (404-on-denied) + `@ScopedResource('customer')` decorator.
+- [x] **1.6** `StaffModule` — CRUD for managers (master only) and runners (master or owning manager), `parentId` validation, reassign runner→manager (cascades `customers.managerId` in a transaction), activate/deactivate.
+- [x] **1.7** `CustomerAssignmentService` — assign/reassign customer owner, maintains denormalized `managerId`/`runnerId` atomically.
 
 ### Phase 2 — Customers module
 
-- [ ] **2.1** Staff CRUD: create customer (owner = actor if runner; else explicit), update profile, set/reset password, change status, soft delete. **All audit-logged.**
-- [ ] **2.2** `GET /team/customers` — scoped list. Filters: `status`, `isActive` (activity-based, see below), `managerId`, `runnerId`, `city`, `country`, `hasTransactions`, `isVip`, `registeredFrom/To`, `lastActiveFrom/To`, `minSpent/maxSpent`, `search` (name/email/username/phone).
+- [x] **2.1** Staff CRUD: create customer (owner = actor if runner; else explicit), update profile, set/reset password, change status, soft delete. **All audit-logged.**
+- [x] **2.2** `GET /team/customers` — scoped list. Filters: `status`, `isActive` (activity-based, see below), `managerId`, `runnerId`, `city`, `country`, `hasTransactions`, `isVip`, `registeredFrom/To`, `lastActiveFrom/To`, `minSpent/maxSpent`, `search` (name/email/username/phone).
   - Per-row aggregates via a lateral join / grouped subquery: `totalTransactions`, `totalSpent`, `totalWithdrawn` (credit **without** parent), `netBalance`, `lastTransactionAt`.
   - `summary`: total customers, active, inactive, aggregate spent/withdrawn/net over the whole filtered set.
   - "Active customer" = `status='active' AND lastActivityAt >= now() - :activeWindowDays` (default 30, from `system_settings`).
-- [ ] **2.3** `GET /team/customers/:id` — full profile + lifetime metrics + VIP status + referral info + conversation summary.
-- [ ] **2.4** `GET /team/customers/:id/transactions`, `/messages`, `/referrals`, `/vip-history` — scoped sub-lists.
-- [ ] **2.5** Bulk actions: activate/deactivate, reassign owner. (Export is delivered centrally in Phase 10.)
+- [x] **2.3** `GET /team/customers/:id` — full profile + lifetime metrics + VIP status + referral info + conversation summary.
+- [x] **2.4** `GET /team/customers/:id/transactions`, `/messages`, `/referrals`, `/vip-history` — scoped sub-lists.
+- [x] **2.5** Bulk actions: activate/deactivate, reassign owner. (Export is delivered centrally in Phase 10.)
 
 ### Phase 3 — Games & transactions (data entry core)
 
-- [ ] **3.1** `games` schema + master CRUD + list.
-- [ ] **3.2** `transactions` schema + migration.
-- [ ] **3.3** `POST /team/transactions` — data entry. Validates customer is in actor's scope, `amount > 0`, `occurredAt` not future-dated beyond tolerance. Updates `customers.balance` and `lastActivityAt` in the same DB transaction.
-- [ ] **3.4** **Correction flow** — `POST /team/transactions/:id/correction` creates a `credit` with `parentTransactionId = :id`, amount ≤ parent amount minus prior corrections, and marks the parent `reversed` if fully corrected. This is what keeps `totalWithdrawn` honest.
-- [ ] **3.5** `GET /team/transactions` — scoped list. Filters: `type`, `gameId`, `customerId`, `status`, `isCorrection`, `isWithdrawal`, `minAmount/maxAmount`, `dateFrom/dateTo`, `lastNDays`, `enteredByStaffId`, `managerId`, `runnerId`. `summary`: count, total in, total out, net.
-- [ ] **3.6** Update/soft-delete transaction (master + manager only), fully audited with before/after.
-- [ ] **3.7** Emit `TransactionCreated` event → triggers VIP recompute for that customer + referral qualification check.
+- [x] **3.1** `games` schema + master CRUD + list.
+- [x] **3.2** `transactions` schema + migration.
+- [x] **3.3** `POST /team/transactions` — data entry. Validates customer is in actor's scope, `amount > 0`, `occurredAt` not future-dated beyond tolerance. Updates `customers.balance` and `lastActivityAt` in the same DB transaction.
+- [x] **3.4** **Correction flow** — `POST /team/transactions/:id/correction` creates a `credit` with `parentTransactionId = :id`, amount ≤ parent amount minus prior corrections, and marks the parent `reversed` if fully corrected. This is what keeps `totalWithdrawn` honest.
+- [x] **3.5** `GET /team/transactions` — scoped list. Filters: `type`, `gameId`, `customerId`, `status`, `isCorrection`, `isWithdrawal`, `minAmount/maxAmount`, `dateFrom/dateTo`, `lastNDays`, `enteredByStaffId`, `managerId`, `runnerId`. `summary`: count, total in, total out, net.
+- [x] **3.6** Update/soft-delete transaction (master + manager only), fully audited with before/after.
+- [x] **3.7** Emit `TransactionCreated` event → triggers VIP recompute for that customer + referral qualification check.
 
 ### Phase 4 — VIP engine
 
-- [ ] **4.1** `vip_criteria` + `vip_qualifications` schemas.
-- [ ] **4.2** Master CRUD for criteria. Validation: `periodEnd > periodStart`; warn on overlapping ranges within the same tier.
-- [ ] **4.3** **`VipQualificationService`**
+- [x] **4.1** `vip_criteria` + `vip_qualifications` schemas.
+- [x] **4.2** Master CRUD for criteria. Validation: `periodEnd > periodStart`; warn on overlapping ranges within the same tier.
+- [x] **4.3** **`VipQualificationService`**
   - `evaluateCustomer(customerId, criteriaId)` — sums the criteria's metric over `transactions.occurredAt ∈ [periodStart, periodEnd]` (debit only for `total_debit`, excluding corrections), upserts a `vip_qualifications` row when `>= thresholdAmount`.
   - `recomputeCriteria(criteriaId)` — set-based bulk upsert, one SQL statement (`INSERT … SELECT … ON CONFLICT DO UPDATE`).
   - Triggered: on `TransactionCreated` via `@OnEvent` (single customer, cheap), on criteria create/update (full recompute — one statement, run inline), and a nightly `@Cron` for drift repair.
-- [ ] **4.4** `GET /team/vips` — scoped list across **all** criteria/time frames. Filters: `criteriaId`, `tier`, `activeOnly` (criteria whose range contains today), `qualifiedFrom/To`, `managerId`, `runnerId`, `search`. Returns customer + criteria + `achievedAmount` + `qualifiedAt` + whether the criteria window is currently active.
-- [ ] **4.5** `GET /team/vip-criteria/:id/eligible-customers` — feeds the spin-event preselected-winner picker.
-- [ ] **4.6** `GET /me/vip-status` — customer sees their current tier, achieved amount, threshold, and progress %, for the currently active criteria.
+- [x] **4.4** `GET /team/vips` — scoped list across **all** criteria/time frames. Filters: `criteriaId`, `tier`, `activeOnly` (criteria whose range contains today), `qualifiedFrom/To`, `managerId`, `runnerId`, `search`. Returns customer + criteria + `achievedAmount` + `qualifiedAt` + whether the criteria window is currently active.
+- [x] **4.5** `GET /team/vip-criteria/:id/eligible-customers` — feeds the spin-event preselected-winner picker.
+- [x] **4.6** `GET /me/vip-status` — customer sees their current tier, achieved amount, threshold, and progress %, for the currently active criteria.
 
 ### Phase 5 — Spin events & winners
 
-- [ ] **5.1** `spin_events` + `spin_winners` schemas.
-- [ ] **5.2** `POST /team/spin-events` (master). Requires `vipCriteriaId` pointing to an **active** criteria. If `selectionMode = 'preselected'`, `winners[]` is **required at creation** and every entry must have a `vip_qualifications` row for that criteria — reject otherwise with a per-row error. If `post_draw`, winners are recorded later.
-- [ ] **5.3** `POST /team/spin-events/:id/winners` — post-draw data entry. Same VIP-eligibility validation. Blocks duplicate winners per event. Master-only (or master + manager — see Open Decisions).
-- [ ] **5.4** `GET /team/spin-events` — filters `status`, `selectionMode`, `criteriaId`, `dateFrom/To`, `search`. `GET /team/spin-events/:id` with winners.
-- [ ] **5.5** Cron: flip `scheduled → live → completed` based on `scheduledAt` and the criteria window.
-- [ ] **5.6** `GET /me/recent-winners` and `GET /team/recent-winners` — public-ish feed of recent spin winners (masked names, e.g. `Jo**n D.`), paginated, filter by event/date. Cached in Redis with short TTL.
+- [x] **5.1** `spin_events` + `spin_winners` schemas.
+- [x] **5.2** `POST /team/spin-events` (master). Requires `vipCriteriaId` pointing to an **active** criteria. If `selectionMode = 'preselected'`, `winners[]` is **required at creation** and every entry must have a `vip_qualifications` row for that criteria — reject otherwise with a per-row error. If `post_draw`, winners are recorded later.
+- [x] **5.3** `POST /team/spin-events/:id/winners` — post-draw data entry. Same VIP-eligibility validation. Blocks duplicate winners per event. Master-only (or master + manager — see Open Decisions).
+- [x] **5.4** `GET /team/spin-events` — filters `status`, `selectionMode`, `criteriaId`, `dateFrom/To`, `search`. `GET /team/spin-events/:id` with winners.
+- [x] **5.5** Cron: flip `scheduled → live → completed` based on `scheduledAt` and the criteria window.
+- [x] **5.6** `GET /me/recent-winners` and `GET /team/recent-winners` — public-ish feed of recent spin winners (masked names, e.g. `Jo**n D.`), paginated, filter by event/date. Cached in Redis with short TTL.
 
 ### Phase 6 — Referral & bonus system
 
-- [ ] **6.1** `referral_programs`, `referral_codes`, `referrals`, `bonus_ledger` schemas.
-- [ ] **6.2** Master CRUD for programs (bonus amounts, reward type, validity, caps).
-- [ ] **6.3** `GET /team/referral-programs/:id/eligible-customers` + `POST /team/referral-programs/:id/assign` — master selects eligible customers (bulk), system generates unique `code` (nanoid, collision-retry) and `linkSlug`; returns full referral URL from `REFERRAL_LINK_BASE_URL`.
-- [ ] **6.4** `POST /auth/customer/login` and customer-creation accept `referralCode` → creates a `referrals` row (`pending`), links `customers.referredByCustomerId`. `GET /public/referral/:slug` resolves a link to its program metadata (rate-limited, `@Public()`).
-- [ ] **6.5** `ReferralRewardService` — on `TransactionCreated`, if the referee's cumulative qualifying debit ≥ `minQualifyingDebit` and the program is within validity and under `maxRewardsPerReferrer`, move the referral to `qualified` → write `bonus_ledger` credits for referrer and referee → `rewarded`. Idempotent (unique on `referralId` in the ledger).
-- [ ] **6.6** `GET /team/referrals` — scoped list, filters `programId`, `status`, `referrerCustomerId`, date range. `summary`: total referrals, qualified, rewarded, total bonus paid.
-- [ ] **6.7** `GET /me/referral` — customer's own code, link, referral count, bonus earned.
+- [x] **6.1** `referral_programs`, `referral_codes`, `referrals`, `bonus_ledger` schemas.
+- [x] **6.2** Master CRUD for programs (bonus amounts, reward type, validity, caps).
+- [x] **6.3** `GET /team/referral-programs/:id/eligible-customers` + `POST /team/referral-programs/:id/assign` — master selects eligible customers (bulk), system generates unique `code` (nanoid, collision-retry) and `linkSlug`; returns full referral URL from `REFERRAL_LINK_BASE_URL`.
+- [x] **6.4** `POST /auth/customer/login` and customer-creation accept `referralCode` → creates a `referrals` row (`pending`), links `customers.referredByCustomerId`. `GET /public/referral/:slug` resolves a link to its program metadata (rate-limited, `@Public()`).
+- [x] **6.5** `ReferralRewardService` — on `TransactionCreated`, if the referee's cumulative qualifying debit ≥ `minQualifyingDebit` and the program is within validity and under `maxRewardsPerReferrer`, move the referral to `qualified` → write `bonus_ledger` credits for referrer and referee → `rewarded`. Idempotent (unique on `referralId` in the ledger).
+- [x] **6.6** `GET /team/referrals` — scoped list, filters `programId`, `status`, `referrerCustomerId`, date range. `summary`: total referrals, qualified, rewarded, total bonus paid.
+- [x] **6.7** `GET /me/referral` — customer's own code, link, referral count, bonus earned.
 
 ### Phase 7 — Real-time messaging
 
-- [ ] **7.1** `conversations`, `messages`, `conversation_read_states` schemas.
-- [ ] **7.2** `MessagingGateway` (Socket.IO, `/ws/messaging`) with JWT handshake auth for **both** realms. Default in-memory adapter — single instance.
+- [x] **7.1** `conversations`, `messages`, `conversation_read_states` schemas.
+- [x] **7.2** `MessagingGateway` (Socket.IO, `/ws/messaging`) with JWT handshake auth for **both** realms. Default in-memory adapter — single instance.
   - Rooms: `conversation:{id}`, `staff:{staffId}`, `customer:{customerId}`, plus `role:master`.
   - Don't pre-join every conversation on connect. On a new message, the gateway resolves the owning runner + its manager from the customer row and emits to `staff:{runnerId}`, `staff:{managerId}`, `role:master`, and `customer:{customerId}`. Constant work per message regardless of chain size.
   - Events: `message:new`, `message:read`, `typing`, `conversation:updated`, `unread:count`.
-- [ ] **7.3** REST parity for every WS action (mobile/retry friendly): `POST /team/conversations/:id/messages`, `POST /me/messages`, `POST /team/conversations/:id/read`.
-- [ ] **7.4** `GET /team/conversations` — **scoped inbox**. Master sees all + filters by `managerId`/`runnerId`; manager sees own chain + filters by `runnerId`; runner sees own customers only.
+- [x] **7.3** REST parity for every WS action (mobile/retry friendly): `POST /team/conversations/:id/messages`, `POST /me/messages`, `POST /team/conversations/:id/read`.
+- [x] **7.4** `GET /team/conversations` — **scoped inbox**. Master sees all + filters by `managerId`/`runnerId`; manager sees own chain + filters by `runnerId`; runner sees own customers only.
   - Filters: `unreadOnly`, `todayOnly`, `activeCustomersOnly`, `status`, `assignedStaffId`, `hasUnreplied`, `dateFrom/To`, `search` (customer name/email/message body).
   - `summary` (over the full filtered set, not the page): `totalConversations`, `totalUnreadMessages`, `responsesToday`, `newConversationsToday`, `awaitingReply`.
   - Unread is computed per viewing staff from `conversation_read_states`.
-- [ ] **7.5** `GET /team/conversations/:id/messages` — cursor-paginated (`before`/`after` message id), scope-guarded. Marks read for the viewer.
-- [ ] **7.6** `GET /me/messages` + `GET /me/messages/unread-count` — customer thread; serializer strips internal staff attribution.
-- [ ] **7.7** Redis-backed presence + typing indicators; message rate-limit per customer.
+- [x] **7.5** `GET /team/conversations/:id/messages` — cursor-paginated (`before`/`after` message id), scope-guarded. Marks read for the viewer.
+- [x] **7.6** `GET /me/messages` + `GET /me/messages/unread-count` — customer thread; serializer strips internal staff attribution.
+- [x] **7.7** Redis-backed presence + typing indicators; message rate-limit per customer.
 
 ### Phase 8 — Dashboard & analytics
 
-- [ ] **8.1** `GET /team/dashboard` — scope-aware, all metrics constrained by `ScopeService`:
+- [x] **8.1** `GET /team/dashboard` — scope-aware, all metrics constrained by `ScopeService`:
   - **All-time net**: `totalIn` (Σ debit), `totalOut` (Σ credit), `balance` (in − out).
   - **This month net**: same three, `occurredAt` within current month; plus `%` delta vs previous month.
   - **Top game by debit** and **top game by credit** (configurable `topN`, default 5), with amount + transaction count.
@@ -557,14 +575,14 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
   - Messaging: unread total, conversations today, responses today.
   - Team: for master → per-manager rollup; for manager → per-runner rollup; for runner → own totals only.
   - Optional `dateFrom/dateTo` + `granularity=day|week|month` for the trend series.
-- [ ] **8.2** `GET /team/dashboard/trends` — time-bucketed net series via `date_trunc`, gap-filled with `generate_series`.
-- [ ] **8.3** `GET /me/dashboard` — customer's own balance, bonus balance, VIP status/progress, recent transactions, recent winners, unread messages.
-- [ ] **8.4** Cache dashboard payloads in Redis (60–120 s TTL) keyed by `actorId + filter hash`; invalidate on `TransactionCreated`.
+- [x] **8.2** `GET /team/dashboard/trends` — time-bucketed net series via `date_trunc`, gap-filled with `generate_series`.
+- [x] **8.3** `GET /me/dashboard` — customer's own balance, bonus balance, VIP status/progress, recent transactions, recent winners, unread messages.
+- [x] **8.4** Cache dashboard payloads in Redis (60–120 s TTL) keyed by `actorId + filter hash`; invalidate on `TransactionCreated`.
 
 ### Phase 9 — Email system
 
-- [ ] **9.1** `email_campaigns` + `email_campaign_recipients` schemas; `MailerService` (nodemailer SMTP, handlebars templates, retry/backoff).
-- [ ] **9.2** **`RecipientFilterService`** — turns a filter DTO into a scoped customer query. Supported filters:
+- [x] **9.1** `email_campaigns` + `email_campaign_recipients` schemas; `MailerService` (nodemailer SMTP, handlebars templates, retry/backoff).
+- [x] **9.2** **`RecipientFilterService`** — turns a filter DTO into a scoped customer query. Supported filters:
   - Quick filters: `allActiveCustomers`, `withTransactions`, `withoutTransactions`, `recentTransactions` (30 d), `highSpenders` (≥ threshold), `lowSpenders` (< threshold). Thresholds configurable (default $250) via `system_settings`.
   - `dateRange`: `lastNDays` | `startDate` + `endDate`.
   - `spending`: `operator ∈ {gt, gte, lt, lte, between, eq}` + `minAmount` / `maxAmount`, applied to `totalSpent`.
@@ -573,34 +591,34 @@ Internal attribution (which staff replied) is always recorded; exposing it to th
   - VIP: `isVip`, `vipTier`.
   - `customerIds[]` — explicit selection, **intersected with** the actor's scope.
   - Always excludes customers with no email, `emailOptOut`, or hard-bounced addresses.
-- [ ] **9.3** `POST /team/email/recipients/preview` — returns count + first N recipients for the given filter, **before** composing. Critical UX safety net.
-- [ ] **9.4** `POST /team/email/campaigns` (draft) → `POST /team/email/campaigns/:id/send` → resolves recipients, snapshots them into `email_campaign_recipients` with `status='pending'`, sets campaign `queued`, returns immediately.
+- [x] **9.3** `POST /team/email/recipients/preview` — returns count + first N recipients for the given filter, **before** composing. Critical UX safety net.
+- [x] **9.4** `POST /team/email/campaigns` (draft) → `POST /team/email/campaigns/:id/send` → resolves recipients, snapshots them into `email_campaign_recipients` with `status='pending'`, sets campaign `queued`, returns immediately.
   - **`EmailDispatcherService`** — a `@Cron('*/30 * * * * *')` that claims a batch of `pending` rows (`UPDATE … SET status='sending' … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED) RETURNING *`), sends via `MailerService`, writes `sent`/`failed` + `providerMessageId`/`error`, retries failures up to N times, then rolls the campaign status up to `sent`/`partial`/`failed`.
   - The recipients table is the durable queue: restart-safe, inspectable in SQL, no extra infra. `SKIP LOCKED` means this still behaves correctly if you ever run a second instance.
-- [ ] **9.5** `GET /team/email/campaigns` (list + filters by status/date/creator) and `GET /team/email/campaigns/:id` (with per-recipient results + delivery stats).
-- [ ] **9.6** Scheduled sends (`scheduledAt` picked up by the same cron), send-rate throttling via `EMAIL_BATCH_SIZE`, `POST /:id/cancel` (deletes remaining `pending` rows), unsubscribe token endpoint (`@Public()`).
+- [x] **9.5** `GET /team/email/campaigns` (list + filters by status/date/creator) and `GET /team/email/campaigns/:id` (with per-recipient results + delivery stats).
+- [x] **9.6** Scheduled sends (`scheduledAt` picked up by the same cron), send-rate throttling via `EMAIL_BATCH_SIZE`, `POST /:id/cancel` (deletes remaining `pending` rows), unsubscribe token endpoint (`@Public()`).
 
 ### Phase 10 — Excel exports
 
 Built last on purpose: every list's filters and scoping must already exist, so exports are a thin, uniform layer over them rather than 14 bespoke queries.
 
-- [ ] **10.1** Refactor each list service to expose `buildListQuery(filters, actor)` returning a `$dynamic()` Drizzle query, so the list and its export share one query builder. This is the step that guarantees an export can never out-scope its list.
-- [ ] **10.2** `ExportModule`: `ExportDefinition` interface + registry, `ExportService` (batch-fetch by keyset, map rows through column definitions), `ExcelWriter` (`exceljs` `WorkbookWriter` streaming to the response — frozen bold header, auto-filter, widths, `#,##0.00` money cells, timezone-correct date cells), `CsvWriter`.
-- [ ] **10.3** `@RawResponse()` decorator + `ResponseTransformInterceptor` bypass, so binary streams aren't wrapped in the JSON envelope. Errors raised before the stream opens still return the standard error envelope.
-- [ ] **10.4** Generic `@ExportEndpoint(definitionKey)` controller mixin producing `GET /<resource>/export` with the resource's own filter DTO, correct `Content-Disposition`, and Swagger `@ApiProduces` + binary response schema.
-- [ ] **10.5** Register the 14 `ExportDefinition`s from §1 (customers, transactions, VIPs, managers, runners, games, email campaigns, email recipients, referrals, spin events, spin winners, conversations, VIP criteria, audit logs).
-- [ ] **10.6** `export_jobs` schema + async path: `202 + exportJobId` above `EXPORT_SYNC_ROW_LIMIT`, `@Cron` builder, `GET /team/exports/:id` status, `GET /team/exports/:id/download` (scope-checked — only the requester or a master), retention purge job.
-- [ ] **10.7** Audit every export (actor, resource, filter snapshot, row count); throttle exports per staff member; **tests asserting a runner's export contains only their customers and a manager's excludes sibling chains.**
+- [x] **10.1** Refactor each list service to expose `buildListQuery(filters, actor)` returning a `$dynamic()` Drizzle query, so the list and its export share one query builder. This is the step that guarantees an export can never out-scope its list.
+- [x] **10.2** `ExportModule`: `ExportDefinition` interface + registry, `ExportService` (batch-fetch by keyset, map rows through column definitions), `ExcelWriter` (`exceljs` `WorkbookWriter` streaming to the response — frozen bold header, auto-filter, widths, `#,##0.00` money cells, timezone-correct date cells), `CsvWriter`.
+- [x] **10.3** `@RawResponse()` decorator + `ResponseTransformInterceptor` bypass, so binary streams aren't wrapped in the JSON envelope. Errors raised before the stream opens still return the standard error envelope.
+- [x] **10.4** Generic `@ExportEndpoint(definitionKey)` controller mixin producing `GET /<resource>/export` with the resource's own filter DTO, correct `Content-Disposition`, and Swagger `@ApiProduces` + binary response schema.
+- [x] **10.5** Register the `ExportDefinition`s from §1. **14 shipped**: managers and runners are one role-filtered `staff` export rather than two, and `referral-programs` was added. `spin-winners`, `email-recipients` and `audit-logs` came later — the first two needed a staff-facing list to delegate to, and the audit trail had no read path at all until then.
+- [ ] **10.6** `export_jobs` schema + async path: `202 + exportJobId` above `EXPORT_SYNC_ROW_LIMIT`, `@Cron` builder, `GET /team/exports/:id` status, `GET /team/exports/:id/download` (scope-checked — only the requester or a master), retention purge job. **Deliberately skipped** per Open Decision 12 — exports stream synchronously and every real list is far below the sync limit. Build this when an export first exceeds `EXPORT_SYNC_ROW_LIMIT`.
+- [x] **10.7** Audit every export (actor, resource, filter snapshot, row count); throttle exports per staff member; **tests asserting a runner's export contains only their customers and a manager's excludes sibling chains.**
 
 ### Phase 11 — Hardening & delivery
 
-- [ ] **11.1** Unit tests: `ScopeService` (exhaustive role × resource matrix), `VipQualificationService`, `RecipientFilterService`, transaction-correction math, withdrawal calculation.
-- [ ] **11.2** E2E tests per module with three staff personas + one customer, asserting **cross-tenant denial** on every endpoint (manager A cannot touch manager B's data; runner cannot touch a sibling runner's) — lists _and_ exports.
-- [ ] **11.3** Index review + `EXPLAIN ANALYZE` on the customer list, conversation inbox, dashboard, and largest export against seeded volume (≥ 100k transactions).
-- [ ] **11.4** Rate limiting per route group; payload size limits; strict CORS; secrets checklist.
-- [ ] **11.5** Swagger audit: every route has `@ApiOperation` (summary + required role + scope rule), every DTO field has an example, every error code appears in at least one documented response. Regenerate and hand off `openapi.json`.
-- [ ] **11.6** Docker Compose (postgres + redis + api — three containers, one app image), CI (lint, type-check, test, build), migrations run on deploy.
-- [ ] **11.7** `docs/` — API guide, role-permission matrix, transaction-semantics doc (in/out/correction), WebSocket event reference, runbook.
+- [x] **11.1** Unit tests: `ScopeService` (exhaustive role × resource matrix), `VipQualificationService`, `RecipientFilterService`, transaction-correction math, withdrawal calculation.
+- [x] **11.2** E2E tests per module with three staff personas + one customer, asserting **cross-tenant denial** on every endpoint (manager A cannot touch manager B's data; runner cannot touch a sibling runner's) — lists _and_ exports.
+- [x] **11.3** Index review + `EXPLAIN ANALYZE` on the customer list, conversation inbox, dashboard, and largest export against seeded volume (≥ 100k transactions).
+- [x] **11.4** Rate limiting per route group; payload size limits; strict CORS; secrets checklist.
+- [x] **11.5** Swagger audit: every route has `@ApiOperation` (summary + required role + scope rule), every DTO field has an example, every error code appears in at least one documented response. Regenerate and hand off `openapi.json`.
+- [x] **11.6** Docker Compose (postgres + redis + api — three containers, one app image), CI (lint, type-check, test, build), migrations run on deploy.
+- [x] **11.7** `docs/` — API guide, role-permission matrix, transaction-semantics doc (in/out/correction), WebSocket event reference, runbook.
 
 ---
 

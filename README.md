@@ -1,382 +1,274 @@
-# DPay Enterprise NestJS Boilerplate
+# Sambehen — Data Entry Management System API
 
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-20_LTS-339933?logo=nodedotjs&logoColor=white)
 ![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.39-C5F74F?logo=drizzle&logoColor=black)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?logo=docker&logoColor=white)
-![Jest](https://img.shields.io/badge/Jest-29-C21325?logo=jest&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-green)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-010101?logo=socketdotio&logoColor=white)
+![Jest](https://img.shields.io/badge/tests-108-success?logo=jest&logoColor=white)
 
-A production-ready, highly-scalable, modular, and cloud-native NestJS boilerplate built with TypeScript, PostgreSQL, and Drizzle ORM.
+Backend for a staffed data entry operation: a team records customer
+activity, and the system derives everything else from it — spending totals,
+VIP standing, referral bonuses, spin winners, campaign audiences and
+dashboards.
 
-This repository serves as a baseline foundation for enterprise microservices, incorporating best practices around clean architecture, containerization, and AWS deployment.
+**API only.** No frontend lives here. The contract is published as OpenAPI
+(`npm run docs:openapi`, 69 paths / 91 operations) and browsable at
+`/api/docs`.
 
----
-
-## Tech Stack
-
-```mermaid
-flowchart LR
-    subgraph DEV["🛠️ Developer Tooling"]
-        direction TB
-        A1["TypeScript 5.6<br/>strict mode"]
-        A2["ESLint 8 + Prettier 3"]
-        A3["Husky 9 + lint-staged<br/>Commitlint"]
-        A4["Jest 29 + ts-jest"]
-    end
-
-    subgraph APP["⚙️ Application Runtime"]
-        direction TB
-        B1["Node.js 20 LTS"]
-        B2["NestJS 11<br/>Express platform"]
-        B3["Pino structured logs"]
-        B4["Passport JWT · Helmet<br/>Throttler · Compression"]
-    end
-
-    subgraph DATA["🗄️ Data Layer"]
-        direction TB
-        C1["Drizzle ORM 0.39"]
-        C2["PostgreSQL 15"]
-        C3["Redis 7 via ioredis"]
-    end
-
-    subgraph OPS["🚀 Build & Delivery"]
-        direction TB
-        D1["Docker multi-stage<br/>Alpine · non-root"]
-        D2["GitHub Actions CI/CD"]
-        D3["AWS ECR → ECS Fargate"]
-    end
-
-    DEV --> APP
-    APP --> DATA
-    APP --> OPS
-```
-
-### Core Framework & Runtime
-
-| Technology                   | Version  | What it is & why it's here                                                                                                     | Where it's used                                                                     |
-| ---------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| **NestJS**                   | `11.x`   | Progressive Node.js framework. Chosen for its DI container and module system, which keep features self-contained and testable. | [`src/app.module.ts`](src/app.module.ts), every `*.module.ts`                       |
-| **@nestjs/platform-express** | `11.x`   | Express HTTP adapter. Provides the underlying server so Helmet/compression middleware work unchanged.                          | [`src/main.ts`](src/main.ts) via `NestFactory.create`                               |
-| **TypeScript**               | `5.6`    | Typed superset of JS. `strict` mode catches null/undefined bugs at compile time instead of in production.                      | [`tsconfig.json`](tsconfig.json), all of [`src/`](src/)                             |
-| **Node.js**                  | `20 LTS` | JavaScript runtime. LTS chosen for long-term security patches.                                                                 | [`Dockerfile`](Dockerfile) (`node:20-alpine`), [`ci.yml`](.github/workflows/ci.yml) |
-| **RxJS**                     | `7.8`    | Reactive streams. Nest interceptors operate on observables, so it's required to transform responses.                           | [`src/common/interceptors/`](src/common/interceptors/)                              |
-| **reflect-metadata**         | `0.2`    | Emits decorator metadata at runtime. Without it Nest's DI cannot resolve constructor types.                                    | Imported once at bootstrap; enabled by `emitDecoratorMetadata`                      |
-
-### Database & Persistence
-
-| Technology               | Version     | What it is & why it's here                                                                                                      | Where it's used                                                                                                         |
-| ------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Drizzle ORM**          | `0.39`      | Type-safe, SQL-first ORM. Picked over heavier ORMs for zero runtime overhead and fully inferred types straight from the schema. | [`src/database/database.provider.ts`](src/database/database.provider.ts), [`repositories/`](src/database/repositories/) |
-| **drizzle-kit**          | `0.30`      | Migration toolkit. Generates SQL from schema diffs so migrations are reviewable in PRs.                                         | [`drizzle.config.ts`](drizzle.config.ts), `npm run db:generate`/`db:migrate`/`db:studio`                                |
-| **PostgreSQL**           | `15-alpine` | Relational datastore. Alpine image keeps the local stack small.                                                                 | [`docker-compose.yml`](docker-compose.yml) → `db` service                                                               |
-| **node-postgres (`pg`)** | `8.13`      | Postgres driver. Supplies the connection `Pool` that Drizzle wraps, with min/max sizing from config.                            | [`src/database/database.provider.ts`](src/database/database.provider.ts)                                                |
-
-### Caching
-
-| Technology  | Version    | What it is & why it's here                                                       | Where it's used                                                                                                                             |
-| ----------- | ---------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Redis**   | `7-alpine` | In-memory store for caching and ephemeral state, keeping hot reads off Postgres. | [`docker-compose.yml`](docker-compose.yml) → `redis` service                                                                                |
-| **ioredis** | `5.4`      | Redis client. Chosen for its reconnection handling and full command coverage.    | [`src/shared/cache/cache.service.ts`](src/shared/cache/cache.service.ts), [`redis.health.ts`](src/shared/health/indicators/redis.health.ts) |
-
-### Security & Authentication
-
-| Technology                  | Version       | What it is & why it's here                                                                         | Where it's used                                                                                                                  |
-| --------------------------- | ------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **@nestjs/jwt**             | `11.x`        | Signs and verifies JWTs. Registered async so secrets come from validated config, never hardcoded.  | [`src/shared/auth/auth.module.ts`](src/shared/auth/auth.module.ts)                                                               |
-| **Passport + passport-jwt** | `0.7` / `4.0` | Bearer-token auth strategy. Standard, well-audited approach rather than hand-rolled token parsing. | [`src/shared/auth/jwt.strategy.ts`](src/shared/auth/jwt.strategy.ts), [`jwt-auth.guard.ts`](src/common/guards/jwt-auth.guard.ts) |
-| **Helmet**                  | `8.x`         | Sets secure HTTP headers (HSTS, CSP, no-sniff) to close off common browser attack vectors.         | [`src/main.ts`](src/main.ts)                                                                                                     |
-| **@nestjs/throttler**       | `6.x`         | Rate limiting. Bound globally as `APP_GUARD` so every route is protected by default.               | [`src/app.module.ts`](src/app.module.ts)                                                                                         |
-| **compression**             | `1.7`         | gzip response compression, reducing payload size over the wire.                                    | [`src/main.ts`](src/main.ts)                                                                                                     |
-
-### Observability & Health
-
-| Technology           | Version | What it is & why it's here                                                                      | Where it's used                                                                      |
-| -------------------- | ------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| **nestjs-pino**      | `4.1`   | Structured JSON logging. ~5x faster than Winston and parses natively in CloudWatch.             | [`src/app.module.ts`](src/app.module.ts), [`src/main.ts`](src/main.ts)               |
-| **pino-http**        | `10.3`  | Serializes request/response pairs, with custom serializers trimming logs to useful fields only. | `LoggerModule.forRoot` in [`src/app.module.ts`](src/app.module.ts)                   |
-| **pino-pretty**      | `13.x`  | Colorized human-readable logs. Deliberately **non-production only** — prod stays raw JSON.      | [`src/app.module.ts`](src/app.module.ts) transport branch                            |
-| **uuid**             | `10.x`  | Generates correlation IDs so a single request can be traced across services.                    | [`correlation-id.middleware.ts`](src/common/middleware/correlation-id.middleware.ts) |
-| **@nestjs/terminus** | `11.x`  | Health-check framework. Powers container orchestration liveness/readiness probes.               | [`src/shared/health/`](src/shared/health/)                                           |
-
-### Validation & Configuration
-
-| Technology            | Version | What it is & why it's here                                                                            | Where it's used                                                                                              |
-| --------------------- | ------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **@nestjs/config**    | `4.x`   | Namespaced, injectable config. Keeps `process.env` out of business logic.                             | [`src/config/`](src/config/)                                                                                 |
-| **Joi**               | `17.x`  | Env schema validation. Fails fast at boot on a missing/invalid variable rather than at first request. | [`src/config/validation.schema.ts`](src/config/validation.schema.ts)                                         |
-| **class-validator**   | `0.14`  | Declarative DTO validation, enforced globally with `whitelist` + `forbidNonWhitelisted`.              | [`users/dto/`](src/modules/users/dto/), [`custom-validators.ts`](src/common/validation/custom-validators.ts) |
-| **class-transformer** | `0.5`   | Converts plain payloads into typed class instances for the validation pipe.                           | `ValidationPipe` in [`src/main.ts`](src/main.ts)                                                             |
-| **dotenv**            | `16.x`  | Loads `.env` for standalone scripts that boot outside the Nest context.                               | [`drizzle.config.ts`](drizzle.config.ts), [`seed/index.ts`](src/database/seed/index.ts)                      |
-
-### API Documentation
-
-| Technology          | Version | What it is & why it's here                                                                                       | Where it's used                                                                             |
-| ------------------- | ------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **@nestjs/swagger** | `11.x`  | Generates OpenAPI docs from decorators, so docs cannot drift from the code. Bearer auth persists across reloads. | [`src/main.ts`](src/main.ts); `@Api*` decorators in controllers/DTOs. Served at `/api/docs` |
-
-### Testing
-
-| Technology          | Version | What it is & why it's here                                                              | Where it's used                                                |
-| ------------------- | ------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **Jest**            | `29.x`  | Test runner. Config lives inline in `package.json` rather than a separate file.         | [`src/modules/users/__tests__/`](src/modules/users/__tests__/) |
-| **ts-jest**         | `29.x`  | Runs TS tests without a prebuild, and mirrors the `@/*` aliases via `moduleNameMapper`. | `jest.transform` in [`package.json`](package.json)             |
-| **@nestjs/testing** | `11.x`  | Builds a real DI container in tests so providers can be swapped for mocks.              | `*.spec.ts` files                                              |
-
-### Code Quality & Git Hooks
-
-| Technology            | Version | What it is & why it's here                                                                           | Where it's used                                  |
-| --------------------- | ------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| **ESLint**            | `8.57`  | Linter. Uses **type-aware** rules (`parserOptions.project`) to catch issues plain syntax rules miss. | [`.eslintrc.js`](.eslintrc.js) · `npm run lint`  |
-| **typescript-eslint** | `8.x`   | TS parser + rules. Version-pinned via `overrides` so parser and plugin never drift apart.            | [`.eslintrc.js`](.eslintrc.js)                   |
-| **Prettier**          | `3.3`   | Formatter. Runs through `eslint-plugin-prettier` so formatting shows up as lint errors.              | [`.prettierrc`](.prettierrc) · `npm run format`  |
-| **Husky**             | `9.1`   | Git hook manager. Enforces quality gates locally instead of relying on CI alone.                     | [`.husky/`](.husky/)                             |
-| **lint-staged**       | `15.2`  | Restricts lint/format to staged files to keep commits quick.                                         | [`lint-staged.config.js`](lint-staged.config.js) |
-| **commitlint**        | `19.5`  | Validates Conventional Commits, keeping history machine-readable for changelogs.                     | [`commitlint.config.js`](commitlint.config.js)   |
-
-### Build Tooling
-
-| Technology         | Version | What it is & why it's here                                                                                                                           | Where it's used                                  |
-| ------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| **@nestjs/cli**    | `11.x`  | Wraps `tsc` for builds and watch-mode dev.                                                                                                           | `nest build` / `nest start`                      |
-| **tsc-alias**      | `1.8`   | **Required**: `tsc` does _not_ rewrite `paths` aliases in emitted JS, so without this the built app crashes with `Cannot find module '@config/...'`. | `build` script in [`package.json`](package.json) |
-| **tsconfig-paths** | `4.2`   | Resolves aliases at runtime for dev/watch mode and the seed runner.                                                                                  | `start:*` and `db:seed` scripts                  |
-| **cross-env**      | `7.x`   | Sets env vars portably — bare `VAR=x` syntax fails on Windows shells.                                                                                | `start:*` scripts                                |
-| **ts-node**        | `10.9`  | Executes TS directly, avoiding a build step for the seed script.                                                                                     | `db:seed` script                                 |
-
-### Containerization & CI/CD
-
-| Technology                | What it is & why it's here                                                                                                                      | Where it's used                            |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| **Docker**                | Multi-stage build. Compiles in a builder stage, then ships only prod deps on Alpine as a non-root user — smaller image, smaller attack surface. | [`Dockerfile`](Dockerfile)                 |
-| **Docker Compose**        | One-command local stack. The app waits on `service_healthy` so it never boots before Postgres/Redis are ready.                                  | [`docker-compose.yml`](docker-compose.yml) |
-| **GitHub Actions**        | CI: lint → type-check → test → build → Docker → ECR. CD: render ECS task definition → deploy → wait for stability.                              | [`.github/workflows/`](.github/workflows/) |
-| **AWS ECR / ECS Fargate** | Image registry and serverless container hosting — no EC2 instances to patch.                                                                    | [`cd.yml`](.github/workflows/cd.yml)       |
+> **Status:** all 11 build phases complete and merged. 75 unit tests and 33
+> cross-tenant e2e tests, the latter against a real database. See
+> [§ Project status](#project-status) for what is deliberately not done yet.
 
 ---
 
-## Project Configuration Files
+## What it does
 
-Every configuration file in the repository, what it does, and why it exists:
+Two separate login gateways:
 
-### Build & Language
+- **Team** — `master`, `manager`, `runner`. Staff do the data entry.
+- **Customer** — customers can sign in and read their own record, but
+  cannot change anything about themselves. Every edit, including their
+  password, is made by the staff above them.
 
-| File                                         | What it does                                                                    | Why it's needed                                                                                                                                           |
-| -------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`package.json`](package.json)               | Dependencies, npm scripts, and inline Jest config.                              | Also carries an `overrides` pin keeping `@typescript-eslint/parser` locked to the plugin version — without it `npm ci` fails with an `ERESOLVE` conflict. |
-| [`tsconfig.json`](tsconfig.json)             | Compiler options: `strict`, `ES2021`, decorators, and the `@/*` path-alias map. | Aliases keep imports readable (`@common/...` instead of `../../../common/...`).                                                                           |
-| [`tsconfig.build.json`](tsconfig.build.json) | Extends the base config and excludes tests.                                     | Keeps `*.spec.ts` out of the shipped `dist/` output.                                                                                                      |
-| [`nest-cli.json`](nest-cli.json)             | Nest CLI settings (`sourceRoot`, `deleteOutDir`).                               | Ensures each build starts from a clean `dist/`.                                                                                                           |
-| [`drizzle.config.ts`](drizzle.config.ts)     | Schema path, migration output dir, and Postgres credentials.                    | Drives all `db:*` scripts; reads env via `dotenv` so it works outside Nest.                                                                               |
+The team is a two-level chain. Master sees everything. A manager sees their
+own customers and their runners'. A runner sees only their own. **One
+manager can neither see nor touch another manager's chain**, and the same
+holds between runners.
 
-### Code Style & Git Hygiene (dotfiles)
+| Capability                                          | master |   manager    |  runner   |
+| --------------------------------------------------- | :----: | :----------: | :-------: |
+| Customers, transactions, messaging                  |  all   |  own chain   | own only  |
+| Create/manage staff                                 |   ✅   | runners only |    ❌     |
+| Games, VIP criteria, spin events, referral programs |   ✅   |     read     |   read    |
+| Email campaigns                                     |   ✅   |      ✅      |    ❌     |
+| Audit trail                                         |   ✅   |      ❌      |    ❌     |
+| Exports                                             |  all   |  own chain   | own chain |
 
-| File                                             | What it does                                                                      | Why it's needed                                                                                                |
-| ------------------------------------------------ | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| [`.eslintrc.js`](.eslintrc.js)                   | Type-aware lint rules, naming conventions, `no-console` warnings.                 | Includes a `*.d.ts` override, since Express's `Request` augmentation can't obey the `I`-prefix interface rule. |
-| [`.prettierrc`](.prettierrc)                     | Single quotes, trailing commas, 100-char width, 2-space indent, LF endings.       | One formatting source of truth, ending style debates in review.                                                |
-| [`.editorconfig`](.editorconfig)                 | UTF-8, LF, 2-space indent, trim trailing whitespace, final newline.               | Applies to _any_ editor, including ones without Prettier installed.                                            |
-| [`.gitignore`](.gitignore)                       | Excludes `node_modules/`, `dist/`, `.env`, `coverage/`, and AI-assistant dirs.    | Keeps secrets and build artifacts out of version control.                                                      |
-| [`commitlint.config.js`](commitlint.config.js)   | Allowed commit types, subject casing, 100-char subject cap.                       | Enforces Conventional Commits for readable history and automated changelogs.                                   |
-| [`lint-staged.config.js`](lint-staged.config.js) | `eslint --fix` + `prettier --write` on staged `.ts`; `prettier` on `.json`/`.md`. | Scopes work to staged files only, so commits stay fast.                                                        |
-| [`.husky/pre-commit`](.husky/pre-commit)         | Runs `lint-staged`.                                                               | Blocks unformatted or lint-failing code from being committed.                                                  |
-| [`.husky/commit-msg`](.husky/commit-msg)         | Runs `commitlint --edit`.                                                         | Rejects commit messages that break the convention.                                                             |
-| `.husky/_/`                                      | Husky's generated hook shims.                                                     | Auto-created by `npm run prepare`; self-ignored via its own `.gitignore`.                                      |
+### Feature map
 
-### Containers & Deployment (dotfiles included)
-
-| File                                                   | What it does                                                                                                                 | Why it's needed                                                        |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [`Dockerfile`](Dockerfile)                             | Two stages: builder compiles TS; runner installs prod deps only and switches to the non-root `node` user.                    | Smaller final image and no root process in production.                 |
-| [`docker-compose.yml`](docker-compose.yml)             | Local `app` + `postgres:15-alpine` + `redis:7-alpine`, with `pg_isready` / `redis-cli ping` health checks and named volumes. | Reproducible local environment; volumes persist data between restarts. |
-| [`.dockerignore`](.dockerignore)                       | Excludes `node_modules`, `dist`, `.git`, tests, docs, and env files (keeping `.env.example`).                                | Shrinks build context and prevents secrets leaking into image layers.  |
-| [`.env.example`](.env.example)                         | Template for every variable the Joi schema expects.                                                                          | Committed as documentation — the real `.env` is gitignored.            |
-| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Lint → type-check → test → build, then Docker build/push to ECR on `main`.                                                   | Catches regressions before merge.                                      |
-| [`.github/workflows/cd.yml`](.github/workflows/cd.yml) | Renders the ECS task definition with the new image and deploys, waiting for service stability.                               | Automated, rollback-aware production deploys.                          |
-
-### Local-only directories (present but gitignored)
-
-| Path                                   | What it is                                                                                                    |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `.vscode/`                             | Workspace settings — format-on-save, ESLint auto-fix, workspace TypeScript SDK.                               |
-| `.claude/` · `.agents/` · `.windsurf/` | AI-assistant configuration and cached skill docs. Ignored so tooling preferences never reach the shared repo. |
+| Area             | What it covers                                                                                                 |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Customers**    | CRUD, assignment, activation, bulk status, per-customer totals                                                 |
+| **Transactions** | Debit/credit entry against a game, with corrections                                                            |
+| **VIP**          | Master-defined criteria (metric, threshold, date range); qualification is computed, not typed                  |
+| **Spin events**  | Scheduled against an active VIP criteria; preselected or post-draw winners                                     |
+| **Referrals**    | Programs, generated codes and links, and a bonus ledger kept separate from real money                          |
+| **Messaging**    | Socket.IO real-time threads, visible up the chain, recording which staff member replied                        |
+| **Dashboard**    | Scoped metrics: all-time and this-month net, top games by debit and by credit                                  |
+| **Email**        | Audience filters (spend, recency, city, activity) or hand-picked recipients, themed templates, queued delivery |
+| **Audit**        | Append-only trail of every state-changing action; master-only, unscoped by design                              |
+| **Exports**      | 14 lists to `.xlsx`, each reusing the same scoped query as its endpoint                                        |
 
 ---
 
-## Architecture Overview
+## The four things to understand before changing code
 
-This boilerplate follows **Clean Architecture** and **Domain-Driven Design (DDD)** principles:
+Full detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). These four
+cause real damage if missed.
 
-- **Modular Design**: Code is grouped into self-contained feature modules (e.g. `src/modules/users`).
-- **Data Access Layer**: Abstracted via Drizzle ORM & generic repositories (`BaseRepository`), completely separating DB queries from the service domain logic.
-- **Observability**: Structured JSON logging using Pino, tracing request flow using Correlation IDs.
-- **Twelve-Factor App Compliance**: Configurations are injected at runtime via environment variables verified by Joi schemas.
+**1. Scoping is the security boundary.** `ScopeService` returns a SQL
+predicate that every list, detail, mutation, metric and export composes —
+in the data layer, not in a controller check a new endpoint could forget.
+Row denial is **404, never 403**: a 403 confirms the record exists, which
+is exactly what scoping hides. 403 is reserved for capability denials.
+
+**2. A credit with a parent is a correction, not a withdrawal.**
 
 ```
-                  ┌─────────────────────────────────────┐
-                  │          HTTP Request/Client        │
-                  └──────────────────┬──────────────────┘
-                                     │ (Correlation ID / Pino Logger Middleware)
-                                     ▼
-                  ┌─────────────────────────────────────┐
-                  │             Controllers             │ (Routes, Swagger, DTOs)
-                  └──────────────────┬──────────────────┘
-                                     │ (Service Layer DI)
-                                     ▼
-                  ┌─────────────────────────────────────┐
-                  │              Services               │ (Business Logic, Auth, Cache)
-                  └──────────────────┬──────────────────┘
-                                     │ (Repository Pattern)
-                                     ▼
-                  ┌─────────────────────────────────────┐
-                  │            Repositories             │ (BaseRepository, Drizzle Schema)
-                  └──────────────────┬──────────────────┘
-                                     │ (Type-safe SQL query)
-                                     ▼
-                  ┌─────────────────────────────────────┐
-                  │             PostgreSQL              │ (Drizzle ORM Engine)
-                  └─────────────────────────────────────┘
+debit  = money IN        credit = money OUT
+credit + parentTransactionId = CORRECTION of an earlier entry
+
+total_spent     = SUM(amount) WHERE type='debit'
+total_withdrawn = SUM(amount) WHERE type='credit' AND parent_transaction_id IS NULL
 ```
+
+Counting corrections as withdrawals is the easiest way to misreport what a
+customer actually took out. Amount, type and customer are immutable after
+entry — a wrong figure is fixed with a correction, which leaves a trail.
+
+**3. Money is `numeric(18,2)`, serialised as strings.** Never float, never
+parsed into a JS number in transit. Aggregation happens in SQL.
+
+**4. The two realms have different signing secrets.** Cross-realm replay
+fails at signature verification rather than at a claim check a forged
+payload could satisfy. Four secrets total: team access/refresh, customer
+access/refresh.
 
 ---
 
-## Folder Structure
+## Response contract
 
+One envelope on every route:
+
+```jsonc
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Customers retrieved",
+  "data": [],
+  "meta": { "page": 1, "limit": 20, "total": 143, "totalPages": 8 },
+  "summary": { "totalSpent": "48210.00" },
+  "timestamp": "2026-08-03T10:12:00.000Z",
+  "path": "/api/v1/team/customers",
+  "correlationId": "b1f2…",
+}
 ```
-src/
-├── main.ts                        # Express bootstrapping & global configurations
-├── app.module.ts                  # Application root configuration and middleware bindings
-│
-├── config/                        # Strongly typed configuration namespaces
-│   ├── app.config.ts              # General app parameters (Port, prefix, etc.)
-│   ├── database.config.ts         # Database connections pool metrics
-│   ├── redis.config.ts            # Redis Cache parameters
-│   └── validation.schema.ts       # Joi environment validation structure
-│
-├── database/                      # Connection layers & schemas
-│   ├── schema/                    # Drizzle table schemas
-│   │   └── users.schema.ts        # Users table schema
-│   ├── repositories/              # Repository patterns wrapping queries
-│   │   ├── base.repository.ts     # Generic abstract base repository
-│   │   └── user.repository.ts     # Concrete user data accesses
-│   ├── database.provider.ts       # Drizzle/pg connection pool factory
-│   └── seed/                      # Mock data seeding
-│
-├── common/                        # Domain-agnostic cross-cutting concerns
-│   ├── constants/                 # Roles, Permissions, Headers
-│   ├── decorators/                # Custom Param decorators (CurrentUser, Roles)
-│   ├── dto/                       # Generic/Common objects (PaginationQueryDto)
-│   ├── exceptions/                # Domain validation errors (BusinessException)
-│   ├── filters/                   # Unified exceptions catcher (GlobalExceptionFilter)
-│   ├── guards/                    # Security guards (JWT, RBAC Roles, Permissions)
-│   ├── interceptors/              # Response transform & execution logging
-│   └── middleware/                # Correlation ID & raw logger middleware
-│
-├── modules/                       # Domain feature modules (containing controllers/services)
-│   └── users/                     # Users domain module
-│       ├── users.controller.ts    # Secured endpoints
-│       └── users.service.ts       # Password hashing & business logic validations
-│
-└── shared/                        # Shared utility layers
-    ├── auth/                      # JWT token validation strategies
-    ├── cache/                     # Global Redis client adapter service
-    ├── logger/                    # CloudWatch-compliant Pino logger wrapper
-    └── health/                    # Readiness & Liveness Terminus health probes
-```
+
+Failures carry `error: { code, message, details }` instead of `data`.
+**`error.code` is contractual** — clients switch on it, so a code is never
+reworded once shipped. Validation failures return **422** with a
+`{ field, constraint, message }` list; 400 is reserved for malformed
+requests.
+
+`summary` is always a second aggregate over the same `WHERE` clause, never
+a reduction over the current page — "43 unread" only helps if it describes
+the whole inbox.
+
+Exports are the one exception: they stream binary. Errors raised before the
+stream opens still return the normal envelope.
 
 ---
 
-## AWS Deployment Architecture
+## Getting started
 
-This application is designed to run in a containerized AWS environment using ECS Fargate:
-
-1. **GitHub Actions CI/CD**: Automatic testing and compilation pipeline pushing standard Docker images to **Amazon ECR**.
-2. **Application Load Balancer (ALB)**: Directs SSL traffic to dynamic **ECS Fargate** tasks.
-3. **AWS ECS Fargate**: Serverless containers running NestJS instances.
-4. **AWS Secrets Manager**: Key-values containing runtime credentials dynamically mounted to ECS task variables.
-5. **IAM Roles**: Hardened Task Execution Roles managing ECR access and CloudWatch log outputs.
-6. **CloudWatch**: Centralized log collection point streaming Pino JSON format logs.
-
----
-
-## Local Development Setup
-
-### Prerequisite Checklist
-
-- **Node.js**: v20 or newer
-- **Docker & Docker Compose**
-
-### Installation
-
-1. Clone the repository and navigate to its root:
-   ```bash
-   git clone <repository_url>
-   cd dpay
-   ```
-2. Install npm packages:
-   ```bash
-   npm install
-   ```
-3. Copy env variables template:
-   ```bash
-   cp .env.example .env
-   ```
-
-### Start Infrastructure (Docker)
-
-To run local PostgreSQL and Redis databases:
+**Requires** Node.js 20+ and Docker.
 
 ```bash
+git clone https://github.com/anjeelupreti/sambehen.git
+cd sambehen
+npm ci
+
+cp .env.example .env          # then set four DISTINCT JWT secrets
 docker compose up -d db redis
-```
 
-### Database Migrations & Seeding
-
-```bash
-# Generate SQL migrations based on changes in src/database/schema/
-npm run db:generate
-
-# Execute migrations on the active database
 npm run db:migrate
-
-# Seed active database with initial mock users
 npm run db:seed
-```
-
-### Start App
-
-```bash
-# Development mode
 npm run start:dev
-
-# Production mode
-npm run build
-npm run start:prod
 ```
 
-Swagger API documentation will be available at `http://localhost:3000/api/docs`.
+Swagger: <http://localhost:3000/api/docs> — paste the **raw** token into
+Authorize, with no `Bearer ` prefix.
+
+Seeded accounts all use `Password123!`:
+
+| Account                                               | Role    |
+| ----------------------------------------------------- | ------- |
+| `master@sambehen.local`                               | master  |
+| `manager1@sambehen.local`, `manager2@sambehen.local`  | manager |
+| `runner11@sambehen.local` … `runner22@sambehen.local` | runner  |
+
+The seed deliberately builds **two** managers with two runners each. With a
+single manager, a broken scope predicate that returns everything looks
+identical to one that returns the right rows.
+
+### Scripts
+
+| Command                                            | What it does                                 |
+| -------------------------------------------------- | -------------------------------------------- |
+| `npm run start:dev`                                | Watch mode                                   |
+| `npm run build` / `start:prod`                     | Compile / run compiled output                |
+| `npm run db:generate` / `db:migrate` / `db:studio` | Drizzle migration workflow                   |
+| `npm run db:seed`                                  | Seed the staff hierarchy and sample data     |
+| `npm test` / `test:cov`                            | Unit tests                                   |
+| `npm run test:e2e`                                 | Cross-tenant suite (needs a seeded database) |
+| `npm run docs:openapi`                             | Write `openapi.json` for the frontend        |
+| `npm run lint` / `type-check`                      | Quality gates, also enforced pre-commit      |
 
 ---
 
 ## Testing
 
 ```bash
-# Run unit tests
-npm run test
-
-# Run tests with code coverage report
-npm run test:cov
+npm test          # 75 unit tests
+npm run test:e2e  # 33 cross-tenant tests over real HTTP
 ```
+
+The e2e suite is the important one. Unit tests prove `ScopeService` is
+correct in isolation; the e2e suite proves every endpoint actually composes
+it. A scoping bug fails silently — a leaking endpoint returns `200` with
+somebody else's rows and nothing looks wrong.
+
+**When adding an endpoint that touches customer-derived data, add a
+cross-tenant case for it.**
 
 ---
 
-## Developer Quality Tools
+## Layout
 
-We enforce styling and formatting using ESLint, Prettier, Husky, and Commitlint.
+```
+src/
+├── main.ts, app.module.ts, swagger.ts
+├── config/            # namespaced config + Joi env validation (fails fast at boot)
+├── common/            # response envelope, error codes, guards, filters, decorators
+├── database/
+│   ├── schema/        # 19 Drizzle tables
+│   ├── migrations/    # 9 generated SQL migrations — tracked, incl. meta/
+│   └── repositories/  # BaseRepository: pagination, search, whitelisted sorting
+├── modules/           # auth · customers · staff · games · transactions · vip
+│                      # spins · referrals · messaging · dashboard · emailing · exports
+└── shared/
+    ├── scope/         # ScopeService — the security boundary
+    ├── auth/  audit/  mailer/  cache/  logger/  health/
+docs/                  # IMPLEMENTATION_PLAN.md · ARCHITECTURE.md
+test/                  # cross-tenant e2e suite
+```
 
-- **Check Styles**: `npm run lint`
-- **TypeScript compiles verification**: `npm run type-check`
-- **Conventional Commits**: Commit messages must adhere to conventional syntax: `<type>(<scope>): <subject>`. Run `npm run prepare` to wire Git hooks.
+Background work needs no broker: `@Cron` handles VIP recompute, spin status
+transitions and email dispatch, while `@OnEvent` drives VIP re-evaluation
+and referral settlement off transaction entry. The email queue is a
+database table claimed with `FOR UPDATE SKIP LOCKED`.
+
+---
+
+## Deployment
+
+`Dockerfile` is a multi-stage Alpine build running as non-root.
+`docker compose up` brings up app + Postgres 16 + Redis 7 with health gates.
+
+CI ([ci.yml](.github/workflows/ci.yml)) runs lint → type-check → build →
+migrate → unit tests → seed → e2e → OpenAPI generation against real
+Postgres and Redis services.
+
+Image publishing and the ECS deploy ([cd.yml](.github/workflows/cd.yml))
+are **off by default**, gated behind the `PUBLISH_IMAGE` and
+`DEPLOY_ENABLED` repository variables — otherwise every build would fail on
+AWS secrets that a fork or a fresh clone does not have.
+
+`main.ts` calls `enableShutdownHooks()`, and every long-lived handle (pg
+pool, Redis) is closed by a lifecycle hook, so SIGTERM actually ends the
+process instead of waiting for SIGKILL.
+
+---
+
+## Project status
+
+Built in 11 phases, each on its own branch and merged to `main`. History is
+Conventional Commits, enforced by commitlint.
+
+Deliberately **not** done:
+
+1. **CI has never been observed running green on GitHub.** The workflow was
+   only recently made runnable; every verification so far is from a local
+   machine.
+2. **Email is untested against a real SMTP provider.** The queue, retries
+   and templates work end to end against a local catcher, but not against
+   something enforcing SPF/DKIM with its own bounce behaviour.
+3. **14 assumptions are implemented as defaults, not confirmed** — see
+   [§7 Open Decisions](docs/IMPLEMENTATION_PLAN.md). Most are cheap to
+   flip; validation-returns-422, separate bonus/real ledgers, and
+   managers-may-own-customers-directly are the disruptive ones once a
+   frontend depends on them.
+
+---
+
+## Documentation
+
+| Document                                                   | What it's for                                                           |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)               | Decisions and the reasoning behind them — read before changing anything |
+| [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md) | Phase plan, domain model, role matrix, formulas, open decisions         |
+| `/api/docs`                                                | Live Swagger, including every allowed enum value                        |
+| `npm run docs:openapi`                                     | `openapi.json` for frontend codegen (untracked — always regenerate)     |
