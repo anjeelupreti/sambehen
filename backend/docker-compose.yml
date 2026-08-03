@@ -1,3 +1,8 @@
+# Pinned so the project name does not follow the directory name. Compose
+# defaults it to the containing folder — which is `backend` here — and that
+# would create a second set of empty volumes while orphaning the real ones.
+name: sambehen
+
 services:
   # ── NestJS application ──────────────────────────────────────────────
   # For local development prefer `docker compose up -d db redis` and run
