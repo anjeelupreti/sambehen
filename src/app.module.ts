@@ -25,6 +25,7 @@ import { SharedAuthModule } from '@shared/auth/auth.module';
 import { HealthModule } from '@shared/health/health.module';
 import { AppLoggerModule } from '@shared/logger/logger.module';
 import { AuditModule } from '@shared/audit/audit.module';
+import { MailerModule } from '@shared/mailer/mailer.module';
 import { ScopeModule } from '@shared/scope/scope.module';
 import { AuditInterceptor } from '@shared/audit/audit.interceptor';
 
@@ -44,6 +45,7 @@ import { SpinsModule } from '@modules/spins/spins.module';
 import { ReferralsModule } from '@modules/referrals/referrals.module';
 import { MessagingModule } from '@modules/messaging/messaging.module';
 import { DashboardModule } from '@modules/dashboard/dashboard.module';
+import { EmailingModule } from '@modules/emailing/emailing.module';
 
 import { CorrelationIdMiddleware } from '@common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middleware';
@@ -125,6 +127,7 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
     AppLoggerModule,
     SharedAuthModule,
     AuditModule,
+    MailerModule,
     ScopeModule,
     HealthModule,
 
@@ -139,7 +142,8 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
     ReferralsModule,
     MessagingModule,
     DashboardModule,
-    // Phase 9 onward: EmailingModule, ExportsModule, ...
+    EmailingModule,
+    // Phase 10: ExportsModule
   ],
   providers: [
     // Order matters. Guards run first (authenticate, then authorize), then

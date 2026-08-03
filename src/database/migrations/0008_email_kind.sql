@@ -1,0 +1,2 @@
+ALTER TABLE "email_campaigns" ADD COLUMN "email_kind" varchar(16) DEFAULT 'promotional' NOT NULL;--> statement-breakpoint
+ALTER TABLE "email_campaigns" ADD CONSTRAINT "chk_email_campaigns_kind" CHECK ("email_campaigns"."email_kind" IN ('promotional', 'informational', 'notification', 'transactional', 'alert'));
