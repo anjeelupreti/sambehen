@@ -38,8 +38,28 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  /**
+   * Shutdown must tolerate a client that was never built.
+   *
+   * `NestFactory.create()` instantiates the graph but does NOT fire
+   * `onModuleInit` — only `init()` or `listen()` does — while `close()`
+   * fires `onModuleDestroy` regardless. Anything that builds the app
+   * without serving it (the openapi.json script) therefore reaches this
+   * hook with no client, and an unguarded `.quit()` turned a clean exit
+   * into a crash.
+   */
   async onModuleDestroy(): Promise<void> {
-    await this.redisClient.quit();
+    const client: Redis | undefined = this.redisClient;
+    if (!client) return;
+
+    try {
+      await client.quit();
+    } catch {
+      // `quit()` rejects when the socket never opened or has already gone
+      // away. Shutting down is not a good moment to fail over a connection
+      // that is already closed, so drop it and move on.
+      client.disconnect();
+    }
   }
 
   /**
