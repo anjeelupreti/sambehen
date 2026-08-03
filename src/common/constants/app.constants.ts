@@ -126,6 +126,32 @@ export enum RecipientStatus {
   BOUNCED = 'bounced',
 }
 
+/**
+ * What kind of email a message is.
+ *
+ * Decides the layout accent, the header badge and — importantly — whether
+ * an unsubscribe footer appears. Marketing mail must offer an opt-out and
+ * transactional mail must not, so this is a content rule rather than a
+ * styling choice.
+ *
+ * Lives here rather than beside the template service because the email
+ * schema references it, and a schema file must stay free of decorated
+ * NestJS classes: drizzle-kit compiles schemas with esbuild, which cannot
+ * transform decorators.
+ */
+export enum EmailKind {
+  /** Marketing: campaigns, offers, announcements. Unsubscribable. */
+  PROMOTIONAL = 'promotional',
+  /** Neutral updates: statements, summaries, general notices. Unsubscribable. */
+  INFORMATIONAL = 'informational',
+  /** Something happened on the account: a win, a bonus, a VIP tier. */
+  NOTIFICATION = 'notification',
+  /** Account and security mail. Never unsubscribable. */
+  TRANSACTIONAL = 'transactional',
+  /** Needs attention: a failure, a suspension, a problem. */
+  ALERT = 'alert',
+}
+
 export enum ExportFormat {
   XLSX = 'xlsx',
   CSV = 'csv',

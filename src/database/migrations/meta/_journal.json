@@ -50,6 +50,20 @@
       "when": 1785493541313,
       "tag": "0006_messaging",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785729998187,
+      "tag": "0007_email_campaigns",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785731669115,
+      "tag": "0008_email_kind",
+      "breakpoints": true
     }
   ]
 }
