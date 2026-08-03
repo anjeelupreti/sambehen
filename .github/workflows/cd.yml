@@ -10,7 +10,14 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Requires the image the CI docker job publishes, which is itself gated
+    # behind PUBLISH_IMAGE. Without both variables set this job would run on
+    # every green build and fail on missing AWS secrets, so it stays off
+    # until someone deliberately configures the target environment.
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success'
+      && vars.PUBLISH_IMAGE == 'true'
+      && vars.DEPLOY_ENABLED == 'true' }}
 
     steps:
       - name: Checkout repository
@@ -34,7 +41,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
-          container-name: dpay-app
+          container-name: sambehen-app
           image: ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
 
       - name: Deploy Amazon ECS task definition

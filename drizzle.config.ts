@@ -10,7 +10,7 @@ export default defineConfig({
     port: Number(process.env.DB_PORT) || 5432,
     user: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'dpay',
+    database: process.env.DB_NAME || 'sambehen',
     ssl: process.env.DB_SSL === 'true',
   },
   verbose: true,
