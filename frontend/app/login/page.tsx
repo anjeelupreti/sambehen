@@ -17,8 +17,8 @@ export default async function LoginPage() {
         <CardHeader>
           <CardTitle className="text-xl">Sign in</CardTitle>
           <CardDescription>
-            Staff access. Customers sign in through the customer portal, which is a separate
-            gateway with its own credentials.
+            Staff access. Customers sign in through the customer portal, which is a separate gateway
+            with its own credentials.
           </CardDescription>
         </CardHeader>
         <CardContent>

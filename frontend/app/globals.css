@@ -60,8 +60,14 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.552 0.016 285.938);
 
-  --debit: oklch(0.7 0.13 250);
-  --credit: oklch(0.75 0.12 65);
+  /*
+   * Re-stepped for dark rather than lightened from the light values: at
+   * L 0.70/0.75 the pair sat above the readable band for chart marks on a
+   * dark surface. These land inside it and still clear 5.4:1 against the
+   * card, so the same tokens stay usable for money text.
+   */
+  --debit: oklch(0.66 0.14 250);
+  --credit: oklch(0.67 0.13 65);
 }
 
 @theme inline {

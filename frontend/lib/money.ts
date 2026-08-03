@@ -52,6 +52,25 @@ export function formatMoneyCompact(value: string | null | undefined): string {
   }).format(parsed);
 }
 
+/**
+ * A money string as a plot coordinate.
+ *
+ * Charts are the one place a number is unavoidable: a scale has to turn an
+ * amount into a pixel offset. The rule this bends is narrower than it looks
+ * — the danger is a parsed float being *summed* or *shown*, and neither
+ * happens here. Totals still come from the API's SQL aggregates, and every
+ * figure a chart displays (axis ticks, tooltips, labels) is formatted from
+ * the original string, never from this value.
+ *
+ * Returns 0 for null or unparseable input so a single bad row cannot break
+ * the whole series.
+ */
+export function toPlotValue(value: string | null | undefined): number {
+  if (value === null || value === undefined || value === '') return 0;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 /** True when the amount is below zero, without parsing for arithmetic. */
 export function isNegative(value: string | null | undefined): boolean {
   return typeof value === 'string' && value.trimStart().startsWith('-');

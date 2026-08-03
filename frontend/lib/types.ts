@@ -162,3 +162,24 @@ export interface GameTotal {
   total: string;
   transactionCount: number;
 }
+
+export type TrendGranularity = 'day' | 'week' | 'month';
+
+export interface TrendPoint {
+  /** Bucket start, `YYYY-MM-DD`. */
+  bucket: string;
+  totalIn: string;
+  totalOut: string;
+  balance: string;
+  transactionCount: number;
+}
+
+export interface TrendResponse {
+  granularity: TrendGranularity;
+  /**
+   * Gap-filled by the API: buckets with no activity come back as zeros
+   * rather than being omitted, so a chart draws a flat line through a quiet
+   * period instead of joining across it.
+   */
+  points: TrendPoint[];
+}
