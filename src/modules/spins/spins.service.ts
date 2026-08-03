@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, desc, eq, inArray, isNull, sql, SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, sql, SQL } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { AuthRealm, SpinEventStatus, SpinSelectionMode } from '@common/constants/app.constants';
 import { ErrorCode } from '@common/constants/error-codes';
 import {
@@ -14,7 +15,9 @@ import { spinEvents, spinWinners, SpinEvent } from '@database/schema/spin-events
 import { vipCriteria } from '@database/schema/vip-criteria.schema';
 import { vipQualifications } from '@database/schema/vip-qualifications.schema';
 import { customers } from '@database/schema/customers.schema';
+import { staffUsers } from '@database/schema/staff-users.schema';
 import { AuditService } from '@shared/audit/audit.service';
+import { ScopeService } from '@shared/scope/scope.service';
 import {
   CreateSpinEventDto,
   UpdateSpinEventDto,
@@ -22,8 +25,11 @@ import {
   SpinWinnerInputDto,
   SpinEventFilterDto,
   RecentWinnersFilterDto,
+  SpinWinnersListFilterDto,
   SpinEventResponseDto,
   SpinWinnerResponseDto,
+  SpinWinnerListItemDto,
+  SpinWinnerSummaryDto,
   RecentWinnerDto,
 } from './dto/spin.dto';
 
@@ -35,6 +41,7 @@ export class SpinsService {
   constructor(
     @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
     private readonly auditService: AuditService,
+    private readonly scopeService: ScopeService,
   ) {}
 
   /**
@@ -342,6 +349,150 @@ export class SpinsService {
    * identifying form. A customer seeing their own win should recognise it;
    * nobody else should be able to work out who won.
    */
+  /**
+   * The winners register, for staff.
+   *
+   * Deliberately separate from `recentWinners`. That feed is public-facing
+   * and therefore masked and unscoped; this one names the customer, so it
+   * is scoped through the customer exactly like transactions and referrals
+   * are. A runner sees wins by their own customers and nobody else's —
+   * otherwise the register would become a way to enumerate accounts in
+   * another manager's chain, which is precisely what the masking in the
+   * public feed exists to prevent.
+   */
+  async findWinners(
+    actor: ICurrentStaff,
+    filters: SpinWinnersListFilterDto,
+  ): Promise<IPaginatedResult<SpinWinnerListItemDto, SpinWinnerSummaryDto>> {
+    const conditions: SQL[] = [isNull(spinEvents.deletedAt)];
+
+    const scope = await this.scopeService.customerIdScope(sql`${spinWinners.customerId}`, actor, {
+      managerId: filters.managerId,
+      runnerId: filters.runnerId,
+    });
+    if (scope) conditions.push(scope);
+
+    if (filters.spinEventId) conditions.push(eq(spinWinners.spinEventId, filters.spinEventId));
+    if (filters.customerId) conditions.push(eq(spinWinners.customerId, filters.customerId));
+    if (filters.isPreselected !== undefined) {
+      conditions.push(eq(spinWinners.isPreselected, filters.isPreselected));
+    }
+
+    const range = this.announcedRange(filters);
+    if (range) conditions.push(range);
+
+    if (filters.search) {
+      const term = `%${filters.search.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
+      conditions.push(
+        sql`(${customers.username} ILIKE ${term} OR ${customers.fullName} ILIKE ${term} OR ${spinEvents.name} ILIKE ${term})`,
+      );
+    }
+
+    const page = Math.max(1, filters.page ?? 1);
+    const limit = Math.min(Math.max(1, filters.limit ?? 25), 100);
+    const where = and(...conditions);
+
+    // Managers and runners are joined for display only; ownership is
+    // already enforced by the scope predicate above.
+    const managers = alias(staffUsers, 'winner_manager');
+    const runners = alias(staffUsers, 'winner_runner');
+
+    const [rows, [totalRow], [summaryRow]] = await Promise.all([
+      this.db
+        .select({
+          id: spinWinners.id,
+          spinEventId: spinWinners.spinEventId,
+          eventName: spinEvents.name,
+          eventStatus: spinEvents.status,
+          customerId: spinWinners.customerId,
+          customerUsername: customers.username,
+          customerFullName: customers.fullName,
+          managerUsername: managers.username,
+          runnerUsername: runners.username,
+          prizeLabel: spinWinners.prizeLabel,
+          prizeAmount: spinWinners.prizeAmount,
+          rank: spinWinners.rank,
+          isPreselected: spinWinners.isPreselected,
+          announcedAt: spinWinners.announcedAt,
+        })
+        .from(spinWinners)
+        .innerJoin(spinEvents, eq(spinWinners.spinEventId, spinEvents.id))
+        .innerJoin(customers, eq(spinWinners.customerId, customers.id))
+        .leftJoin(managers, eq(customers.managerId, managers.id))
+        .leftJoin(runners, eq(customers.runnerId, runners.id))
+        .where(where)
+        .orderBy(...this.winnerOrder(filters))
+        .limit(limit)
+        .offset((page - 1) * limit),
+      this.db
+        .select({ value: count() })
+        .from(spinWinners)
+        .innerJoin(spinEvents, eq(spinWinners.spinEventId, spinEvents.id))
+        .innerJoin(customers, eq(spinWinners.customerId, customers.id))
+        .where(where),
+      // A second aggregate over the same WHERE, not a reduction over the
+      // page — "total prizes" is only meaningful across the whole filter.
+      this.db
+        .select({
+          totalWinners: count(),
+          distinctCustomers: sql<number>`COUNT(DISTINCT ${spinWinners.customerId})`,
+          totalPrizeAmount: sql<string>`COALESCE(SUM(${spinWinners.prizeAmount}), 0)::text`,
+          preselectedCount: sql<number>`COUNT(*) FILTER (WHERE ${spinWinners.isPreselected})`,
+        })
+        .from(spinWinners)
+        .innerJoin(spinEvents, eq(spinWinners.spinEventId, spinEvents.id))
+        .innerJoin(customers, eq(spinWinners.customerId, customers.id))
+        .where(where),
+    ]);
+
+    const total = Number(totalRow?.value ?? 0);
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: rows as SpinWinnerListItemDto[],
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+      summary: {
+        totalWinners: Number(summaryRow?.totalWinners ?? 0),
+        distinctCustomers: Number(summaryRow?.distinctCustomers ?? 0),
+        totalPrizeAmount: summaryRow?.totalPrizeAmount ?? '0',
+        preselectedCount: Number(summaryRow?.preselectedCount ?? 0),
+      },
+    };
+  }
+
+  /** Date window over when the win was announced. */
+  private announcedRange(filters: SpinWinnersListFilterDto): SQL | undefined {
+    if (filters.lastNDays) {
+      return sql`${spinWinners.announcedAt} >= NOW() - ${`${filters.lastNDays} days`}::interval`;
+    }
+
+    const bounds: SQL[] = [];
+    if (filters.dateFrom) bounds.push(sql`${spinWinners.announcedAt} >= ${filters.dateFrom}`);
+    if (filters.dateTo) bounds.push(sql`${spinWinners.announcedAt} <= ${filters.dateTo}`);
+    return bounds.length > 0 ? and(...bounds) : undefined;
+  }
+
+  /** Whitelisted sort, with a primary-key tie-break so paging is stable. */
+  private winnerOrder(filters: SpinWinnersListFilterDto): SQL[] {
+    const direction = filters.sortOrder === 'asc' ? asc : desc;
+
+    switch (filters.sortBy) {
+      case 'rank':
+        return [direction(spinWinners.rank), desc(spinWinners.id)];
+      case 'prizeAmount':
+        return [direction(spinWinners.prizeAmount), desc(spinWinners.id)];
+      default:
+        return [direction(spinWinners.announcedAt), desc(spinWinners.id)];
+    }
+  }
+
   async recentWinners(filters: RecentWinnersFilterDto): Promise<IPaginatedResult<RecentWinnerDto>> {
     const conditions: SQL[] = [isNull(spinEvents.deletedAt)];
     if (filters.spinEventId) conditions.push(eq(spinWinners.spinEventId, filters.spinEventId));

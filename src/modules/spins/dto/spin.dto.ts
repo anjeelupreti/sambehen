@@ -216,6 +216,115 @@ export class RecentWinnersFilterDto extends BaseFilterDto {
   spinEventId?: string;
 }
 
+export const SPIN_WINNER_SORT_FIELDS = ['announcedAt', 'rank', 'prizeAmount'] as const;
+
+/**
+ * Filters for the staff winners register.
+ *
+ * Distinct from RecentWinnersFilterDto because that drives the masked
+ * public feed, which is unscoped by design. This list names the customer
+ * outright, so it carries the ownership filters every other
+ * customer-derived list has.
+ */
+export class SpinWinnersListFilterDto extends BaseFilterDto {
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsUUID('4')
+  @IsOptional()
+  spinEventId?: string;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsUUID('4')
+  @IsOptional()
+  customerId?: string;
+
+  @ApiPropertyOptional({ description: 'Chosen at event creation rather than keyed in after.' })
+  @Type(() => Boolean)
+  @IsOptional()
+  isPreselected?: boolean;
+
+  @ApiPropertyOptional({ format: 'uuid', description: 'Master only.' })
+  @IsUUID('4')
+  @IsOptional()
+  managerId?: string;
+
+  @ApiPropertyOptional({ format: 'uuid', description: "Master, or a manager's own runner." })
+  @IsUUID('4')
+  @IsOptional()
+  runnerId?: string;
+
+  @ApiPropertyOptional({
+    enum: SPIN_WINNER_SORT_FIELDS,
+    description: `Column to sort by. One of: ${SPIN_WINNER_SORT_FIELDS.join(', ')}.`,
+    example: 'announcedAt',
+  })
+  @IsIn(SPIN_WINNER_SORT_FIELDS as unknown as string[])
+  @IsOptional()
+  override sortBy?: string;
+}
+
+/** A winner as staff see them: named, with the event they won. */
+export class SpinWinnerListItemDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ format: 'uuid' })
+  spinEventId!: string;
+
+  @ApiProperty()
+  eventName!: string;
+
+  @ApiProperty({ enum: SpinEventStatus, enumName: 'SpinEventStatus' })
+  eventStatus!: SpinEventStatus;
+
+  @ApiProperty({ format: 'uuid' })
+  customerId!: string;
+
+  @ApiProperty({ nullable: true })
+  customerUsername!: string | null;
+
+  @ApiProperty({ nullable: true })
+  customerFullName!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'Owning manager, for a master reading across chains.',
+  })
+  managerUsername!: string | null;
+
+  @ApiProperty({ nullable: true })
+  runnerUsername!: string | null;
+
+  @ApiProperty({ nullable: true })
+  prizeLabel!: string | null;
+
+  @ApiProperty({ type: String, nullable: true, example: '500.00' })
+  prizeAmount!: string | null;
+
+  @ApiProperty({ example: 1 })
+  rank!: number;
+
+  @ApiProperty()
+  isPreselected!: boolean;
+
+  @ApiProperty({ format: 'date-time', nullable: true })
+  announcedAt!: Date | null;
+}
+
+/** Totals over the whole filtered set, not the current page. */
+export class SpinWinnerSummaryDto {
+  @ApiProperty({ example: 42 })
+  totalWinners!: number;
+
+  @ApiProperty({ example: 17, description: 'Distinct customers who have won at least once.' })
+  distinctCustomers!: number;
+
+  @ApiProperty({ type: String, example: '12500.00' })
+  totalPrizeAmount!: string;
+
+  @ApiProperty({ example: 8, description: 'Winners chosen at event creation.' })
+  preselectedCount!: number;
+}
+
 export class SpinWinnerResponseDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;

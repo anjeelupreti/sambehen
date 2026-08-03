@@ -205,6 +205,7 @@ describe('Cross-tenant isolation (e2e)', () => {
       ['vips', '/api/v1/team/vips?limit=1'],
       ['referrals', '/api/v1/team/referrals?limit=1'],
       ['conversations', '/api/v1/team/conversations?limit=1'],
+      ['spin-winners', '/api/v1/team/spin-winners?limit=1'],
     ])('%s totals partition across the chains', async (_name, path) => {
       const [master, m1, m2] = await Promise.all([
         get(path, tokens.master).expect(200),
@@ -213,6 +214,35 @@ describe('Cross-tenant isolation (e2e)', () => {
       ]);
 
       expect(master.body.meta.total).toBe(m1.body.meta.total + m2.body.meta.total);
+    });
+
+    /**
+     * The winners register names customers, unlike the public feed. If it
+     * ever stopped being scoped it would become a way to enumerate accounts
+     * in another manager's chain — exactly what masking the public feed
+     * exists to prevent.
+     */
+    it('never names a customer from another chain in the winners register', async () => {
+      const [m1, m2] = await Promise.all([
+        get('/api/v1/team/spin-winners?limit=100', tokens.manager1).expect(200),
+        get('/api/v1/team/spin-winners?limit=100', tokens.manager2).expect(200),
+      ]);
+
+      const idsOf = (res: { body: { data: { customerId: string }[] } }): string[] =>
+        res.body.data.map((row) => row.customerId);
+
+      const overlap = idsOf(m1).filter((id) => idsOf(m2).includes(id));
+      expect(overlap).toEqual([]);
+    });
+
+    /** The public feed is unscoped BY DESIGN, and must stay masked. */
+    it('keeps the public winners feed masked and id-free', async () => {
+      const res = await get('/api/v1/team/recent-winners?limit=5', tokens.runner11).expect(200);
+
+      for (const row of res.body.data as Record<string, unknown>[]) {
+        expect(row).not.toHaveProperty('customerId');
+        expect(row).toHaveProperty('displayName');
+      }
     });
   });
 
@@ -225,6 +255,7 @@ describe('Cross-tenant isolation (e2e)', () => {
       ['customers', '/api/v1/team/customers', '/api/v1/team/exports/customers/count'],
       ['transactions', '/api/v1/team/transactions', '/api/v1/team/exports/transactions/count'],
       ['conversations', '/api/v1/team/conversations', '/api/v1/team/exports/conversations/count'],
+      ['spin-winners', '/api/v1/team/spin-winners', '/api/v1/team/exports/spin-winners/count'],
     ])('%s export count equals the list count for a manager', async (_n, listPath, countPath) => {
       const [list, exported] = await Promise.all([
         get(`${listPath}?limit=1`, tokens.manager1).expect(200),
@@ -242,6 +273,34 @@ describe('Cross-tenant isolation (e2e)', () => {
 
       expect(file.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
       expect(count.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
+    });
+
+    /**
+     * The audit trail spans every chain and names customers, so it has no
+     * scoped view — a manager is refused outright rather than filtered.
+     */
+    it('refuses the audit-log export to a manager but allows a master', async () => {
+      const [refusedFile, refusedCount, allowed] = await Promise.all([
+        get('/api/v1/team/exports/audit-logs', tokens.manager1).expect(403),
+        get('/api/v1/team/exports/audit-logs/count', tokens.manager1).expect(403),
+        get('/api/v1/team/exports/audit-logs/count', tokens.master).expect(200),
+      ]);
+
+      expect(refusedFile.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
+      expect(refusedCount.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
+      expect(allowed.body.data.rowCount).toBeGreaterThan(0);
+    });
+
+    /**
+     * Without a campaign this export would dump every recipient of every
+     * campaign, so a missing filter must fail loudly rather than widen.
+     */
+    it('refuses the recipient export when no campaign is named', async () => {
+      const res = await get('/api/v1/team/exports/email-recipients/count', tokens.master).expect(
+        422,
+      );
+
+      expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
     });
   });
 
@@ -263,6 +322,18 @@ describe('Cross-tenant isolation (e2e)', () => {
         .set('Authorization', `Bearer ${tokens.runner11}`)
         .send({ name: 'X', code: 'XX1' })
         .expect(403);
+    });
+
+    it('refuses the audit trail to a manager and a runner, but not a master', async () => {
+      const [manager, runner, master] = await Promise.all([
+        get('/api/v1/team/audit-logs?limit=1', tokens.manager1).expect(403),
+        get('/api/v1/team/audit-logs?limit=1', tokens.runner11).expect(403),
+        get('/api/v1/team/audit-logs?limit=1', tokens.master).expect(200),
+      ]);
+
+      expect(manager.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
+      expect(runner.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
+      expect(master.body.meta.total).toBeGreaterThan(0);
     });
 
     it('refuses a manager creating a VIP criteria', async () => {

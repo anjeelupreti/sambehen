@@ -21,7 +21,10 @@ import {
   RecordWinnersDto,
   SpinEventFilterDto,
   RecentWinnersFilterDto,
+  SpinWinnersListFilterDto,
   SpinEventResponseDto,
+  SpinWinnerListItemDto,
+  SpinWinnerSummaryDto,
   RecentWinnerDto,
 } from './dto/spin.dto';
 
@@ -148,6 +151,41 @@ export class SpinEventsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<null> {
     return this.spinsService.removeEvent(actor, id);
+  }
+}
+
+/**
+ * The winners register, for staff.
+ *
+ * A separate controller from the masked feed below, on its own path, so
+ * the two can never be confused: this one names customers and is scoped,
+ * that one is anonymised and deliberately is not.
+ */
+@ApiTags('Spin Events')
+@Controller('team/spin-winners')
+@TeamAuth()
+export class TeamSpinWinnersController {
+  constructor(private readonly spinsService: SpinsService) {}
+
+  @Get()
+  @ResponseMessage('Spin winners retrieved successfully')
+  @ApiOperation({
+    summary: 'List spin winners',
+    description: [
+      'Every recorded win, named and scoped: a runner sees wins by their own customers,',
+      'a manager sees their chain, a master sees all. Filterable by event, customer,',
+      'ownership, announcement date and whether the winner was preselected.',
+      '',
+      'The summary totals cover the whole filtered set rather than the current page.',
+    ].join(' '),
+  })
+  @ApiOkList(SpinWinnerListItemDto, SpinWinnerSummaryDto)
+  @ApiErrors(401, 404, 422)
+  findAll(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Query() filters: SpinWinnersListFilterDto,
+  ): Promise<IPaginatedResult<SpinWinnerListItemDto, SpinWinnerSummaryDto>> {
+    return this.spinsService.findWinners(actor, filters);
   }
 }
 

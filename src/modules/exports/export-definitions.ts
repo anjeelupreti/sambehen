@@ -1,6 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { StaffRole } from '@common/constants/app.constants';
+import { ValidationException } from '@common/exceptions/business.exception';
 import { ICurrentStaff } from '@common/interfaces/auth.interface';
+import { AuditService } from '@shared/audit/audit.service';
 import { CustomersService } from '@modules/customers/customers.service';
 import { TransactionsService } from '@modules/transactions/transactions.service';
 import { StaffService } from '@modules/staff/staff.service';
@@ -47,6 +49,7 @@ export class ExportDefinitions implements OnModuleInit {
     private readonly spinsService: SpinsService,
     private readonly messagingService: MessagingService,
     private readonly emailingService: EmailingService,
+    private readonly auditService: AuditService,
   ) {}
 
   onModuleInit(): void {
@@ -59,6 +62,7 @@ export class ExportDefinitions implements OnModuleInit {
     this.registerSpins();
     this.registerConversations();
     this.registerEmail();
+    this.registerAuditLogs();
   }
 
   private registerCustomers(): void {
@@ -263,6 +267,30 @@ export class ExportDefinitions implements OnModuleInit {
       fetch: async (_actor, filters, page) =>
         (await this.spinsService.findAllEvents(asPage(filters, page) as never)).data,
     });
+
+    this.exportService.register({
+      key: 'spin-winners',
+      sheetName: 'Spin Winners',
+      filename: 'spin-winners',
+      columns: [
+        { header: 'Winner ID', path: 'id', width: 38 },
+        { header: 'Event', path: 'eventName' },
+        { header: 'Event Status', path: 'eventStatus', width: 12 },
+        { header: 'Customer', path: 'customerUsername' },
+        { header: 'Full Name', path: 'customerFullName' },
+        { header: 'Manager', path: 'managerUsername', width: 16 },
+        { header: 'Runner', path: 'runnerUsername', width: 16 },
+        { header: 'Prize', path: 'prizeLabel', width: 24 },
+        { header: 'Prize Amount', path: 'prizeAmount', format: 'currency' },
+        { header: 'Rank', path: 'rank', format: 'number' },
+        { header: 'Preselected', path: 'isPreselected', format: 'boolean' },
+        { header: 'Announced', path: 'announcedAt', format: 'datetime' },
+      ],
+      // The scoped register, not the masked public feed — an export of
+      // anonymised rows would be useless to the staff downloading it.
+      fetch: async (actor, filters, page) =>
+        (await this.spinsService.findWinners(actor, asPage(filters, page) as never)).data,
+    });
   }
 
   private registerConversations(): void {
@@ -311,6 +339,81 @@ export class ExportDefinitions implements OnModuleInit {
       fetch: async (_actor, filters, page) =>
         (await this.emailingService.findAll(asPage(filters, page) as never)).data,
     });
+
+    this.exportService.register({
+      key: 'email-recipients',
+      sheetName: 'Email Recipients',
+      filename: 'email-recipients',
+      // Per-recipient delivery detail, including addresses and bounce
+      // reasons. Same roles as the campaign list it belongs to.
+      allowedRoles: [StaffRole.MASTER, StaffRole.MANAGER],
+      columns: [
+        { header: 'Recipient ID', path: 'id', width: 38 },
+        { header: 'Customer ID', path: 'customerId', width: 38 },
+        { header: 'Email', path: 'email', width: 30 },
+        { header: 'Status', path: 'status', width: 12 },
+        { header: 'Error', path: 'error', width: 40 },
+        { header: 'Sent At', path: 'sentAt', format: 'datetime' },
+      ],
+      fetch: async (_actor, filters, page) => {
+        // The only export scoped to a single parent record. Without a
+        // campaign this would dump every recipient of every campaign ever
+        // sent, so it refuses rather than guessing.
+        const campaignId = typeof filters.campaignId === 'string' ? filters.campaignId : undefined;
+        if (!campaignId) {
+          throw new ValidationException(
+            [
+              {
+                field: 'campaignId',
+                constraint: 'isNotEmpty',
+                message: 'campaignId is required to export campaign recipients',
+              },
+            ],
+            'campaignId is required',
+          );
+        }
+
+        const paged = asPage(filters, page) as { page: number; limit: number };
+        const status = typeof filters.status === 'string' ? filters.status : undefined;
+
+        return (
+          await this.emailingService.findRecipients(
+            campaignId,
+            paged.page,
+            paged.limit,
+            status as never,
+          )
+        ).data;
+      },
+    });
+  }
+
+  private registerAuditLogs(): void {
+    this.exportService.register({
+      key: 'audit-logs',
+      sheetName: 'Audit Logs',
+      filename: 'audit-logs',
+      // Master-only, matching the list. The trail spans every chain and
+      // names customers, so there is no narrower view to hand a manager.
+      allowedRoles: [StaffRole.MASTER],
+      columns: [
+        { header: 'Entry ID', path: 'id', width: 38 },
+        { header: 'When', path: 'createdAt', format: 'datetime' },
+        { header: 'Actor Type', path: 'actorType', width: 12 },
+        { header: 'Actor ID', path: 'actorId', width: 38 },
+        { header: 'Actor Role', path: 'actorRole', width: 12 },
+        { header: 'Action', path: 'action', width: 28 },
+        { header: 'Entity Type', path: 'entityType', width: 18 },
+        { header: 'Entity ID', path: 'entityId', width: 38 },
+        { header: 'Method', path: 'method', width: 8 },
+        { header: 'Path', path: 'path', width: 40 },
+        { header: 'Status', path: 'statusCode', format: 'number' },
+        { header: 'IP', path: 'ip', width: 16 },
+        { header: 'Correlation ID', path: 'correlationId', width: 38 },
+      ],
+      fetch: async (_actor, filters, page) =>
+        (await this.auditService.findAll(asPage(filters, page) as never)).data,
+    });
   }
 }
 
@@ -325,8 +428,11 @@ export const EXPORT_KEYS = [
   'referrals',
   'referral-programs',
   'spin-events',
+  'spin-winners',
   'conversations',
   'email-campaigns',
+  'email-recipients',
+  'audit-logs',
 ] as const;
 
 export type ExportKey = (typeof EXPORT_KEYS)[number];

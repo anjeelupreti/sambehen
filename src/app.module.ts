@@ -47,6 +47,7 @@ import { MessagingModule } from '@modules/messaging/messaging.module';
 import { DashboardModule } from '@modules/dashboard/dashboard.module';
 import { EmailingModule } from '@modules/emailing/emailing.module';
 import { ExportsModule } from '@modules/exports/exports.module';
+import { AuditLogsModule } from '@modules/audit/audit-logs.module';
 
 import { CorrelationIdMiddleware } from '@common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middleware';
@@ -145,6 +146,7 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
     DashboardModule,
     EmailingModule,
     ExportsModule,
+    AuditLogsModule,
   ],
   providers: [
     // Order matters. Guards run first (authenticate, then authorize), then
