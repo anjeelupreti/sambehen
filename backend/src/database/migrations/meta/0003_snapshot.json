@@ -1,6 +1,6 @@
 {
-  "id": "ed013747-4bb6-468e-818a-fef2d91a87ed",
-  "prevId": "9fa205d8-d093-463f-9303-31fb635b63b7",
+  "id": "3941e009-8abf-4e5c-ba3b-be87212682e6",
+  "prevId": "ed013747-4bb6-468e-818a-fef2d91a87ed",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -399,12 +399,8 @@
           "name": "staff_users_parent_id_staff_users_id_fk",
           "tableFrom": "staff_users",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -735,12 +731,8 @@
           "name": "customers_owner_staff_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "owner_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -748,12 +740,8 @@
           "name": "customers_manager_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "manager_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["manager_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -761,12 +749,8 @@
           "name": "customers_runner_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "runner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["runner_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -774,12 +758,8 @@
           "name": "customers_created_by_staff_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "created_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1293,12 +1273,8 @@
           "name": "transactions_customer_id_customers_id_fk",
           "tableFrom": "transactions",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1306,12 +1282,8 @@
           "name": "transactions_game_id_games_id_fk",
           "tableFrom": "transactions",
           "tableTo": "games",
-          "columnsFrom": [
-            "game_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["game_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1319,12 +1291,8 @@
           "name": "transactions_parent_transaction_id_transactions_id_fk",
           "tableFrom": "transactions",
           "tableTo": "transactions",
-          "columnsFrom": [
-            "parent_transaction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_transaction_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1332,12 +1300,8 @@
           "name": "transactions_entered_by_staff_id_staff_users_id_fk",
           "tableFrom": "transactions",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "entered_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entered_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1367,6 +1331,316 @@
           "value": "\"transactions\".\"parent_transaction_id\" IS DISTINCT FROM \"transactions\".\"id\""
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.vip_criteria": {
+      "name": "vip_criteria",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tier": {
+          "name": "tier",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "metric": {
+          "name": "metric",
+          "type": "varchar(24)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'total_debit'"
+        },
+        "threshold_amount": {
+          "name": "threshold_amount",
+          "type": "numeric(18, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_start": {
+          "name": "period_start",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_by_staff_id": {
+          "name": "created_by_staff_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_vip_criteria_active": {
+          "name": "idx_vip_criteria_active",
+          "columns": [
+            {
+              "expression": "is_active",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_vip_criteria_period": {
+          "name": "idx_vip_criteria_period",
+          "columns": [
+            {
+              "expression": "period_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "period_end",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_vip_criteria_tier": {
+          "name": "idx_vip_criteria_tier",
+          "columns": [
+            {
+              "expression": "tier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "chk_vip_criteria_period": {
+          "name": "chk_vip_criteria_period",
+          "value": "\"vip_criteria\".\"period_end\" >= \"vip_criteria\".\"period_start\""
+        },
+        "chk_vip_criteria_threshold": {
+          "name": "chk_vip_criteria_threshold",
+          "value": "\"vip_criteria\".\"threshold_amount\" > 0"
+        },
+        "chk_vip_criteria_metric": {
+          "name": "chk_vip_criteria_metric",
+          "value": "\"vip_criteria\".\"metric\" IN ('total_debit', 'net', 'transaction_count')"
+        },
+        "chk_vip_criteria_tier": {
+          "name": "chk_vip_criteria_tier",
+          "value": "\"vip_criteria\".\"tier\" >= 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.vip_qualifications": {
+      "name": "vip_qualifications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "criteria_id": {
+          "name": "criteria_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "achieved_amount": {
+          "name": "achieved_amount",
+          "type": "numeric(18, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "threshold_amount": {
+          "name": "threshold_amount",
+          "type": "numeric(18, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "qualified_at": {
+          "name": "qualified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "uq_vip_qualifications": {
+          "name": "uq_vip_qualifications",
+          "columns": [
+            {
+              "expression": "criteria_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "customer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_vip_qualifications_customer": {
+          "name": "idx_vip_qualifications_customer",
+          "columns": [
+            {
+              "expression": "customer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_vip_qualifications_criteria": {
+          "name": "idx_vip_qualifications_criteria",
+          "columns": [
+            {
+              "expression": "criteria_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_vip_qualifications_qualified_at": {
+          "name": "idx_vip_qualifications_qualified_at",
+          "columns": [
+            {
+              "expression": "qualified_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "vip_qualifications_criteria_id_vip_criteria_id_fk": {
+          "name": "vip_qualifications_criteria_id_vip_criteria_id_fk",
+          "tableFrom": "vip_qualifications",
+          "tableTo": "vip_criteria",
+          "columnsFrom": ["criteria_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "vip_qualifications_customer_id_customers_id_fk": {
+          "name": "vip_qualifications_customer_id_customers_id_fk",
+          "tableFrom": "vip_qualifications",
+          "tableTo": "customers",
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     }
   },

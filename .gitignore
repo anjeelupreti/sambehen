@@ -5,6 +5,10 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+.next/
+out/
+next-env.d.ts
+.vercel
 
 # ── Environment ──────────────────────────────────────────────
 # .env.example IS tracked — it documents every required variable.
@@ -59,6 +63,7 @@ Thumbs.db
 skills-lock.json
 
 # NOTE: intentionally NOT ignored —
-#   package-lock.json          reproducible installs in CI and prod
-#   src/database/migrations/   including meta/ + _journal.json; drizzle
-#                              cannot apply migrations without them
+#   package-lock.json                  reproducible installs in CI and prod
+#   backend/src/database/migrations/   including meta/ + _journal.json;
+#                                      drizzle cannot apply migrations
+#                                      without them

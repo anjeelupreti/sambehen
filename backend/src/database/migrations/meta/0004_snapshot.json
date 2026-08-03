@@ -1,6 +1,6 @@
 {
-  "id": "33bd217a-9973-4140-b2c5-f26f568a9ead",
-  "prevId": "fc2e7a01-4ee2-4100-9ffc-d0a92b8fe60b",
+  "id": "fc2e7a01-4ee2-4100-9ffc-d0a92b8fe60b",
+  "prevId": "3941e009-8abf-4e5c-ba3b-be87212682e6",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -399,12 +399,8 @@
           "name": "staff_users_parent_id_staff_users_id_fk",
           "tableFrom": "staff_users",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -735,12 +731,8 @@
           "name": "customers_owner_staff_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "owner_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -748,12 +740,8 @@
           "name": "customers_manager_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "manager_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["manager_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -761,12 +749,8 @@
           "name": "customers_runner_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "runner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["runner_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -774,12 +758,8 @@
           "name": "customers_created_by_staff_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "created_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1293,12 +1273,8 @@
           "name": "transactions_customer_id_customers_id_fk",
           "tableFrom": "transactions",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1306,12 +1282,8 @@
           "name": "transactions_game_id_games_id_fk",
           "tableFrom": "transactions",
           "tableTo": "games",
-          "columnsFrom": [
-            "game_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["game_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1319,12 +1291,8 @@
           "name": "transactions_parent_transaction_id_transactions_id_fk",
           "tableFrom": "transactions",
           "tableTo": "transactions",
-          "columnsFrom": [
-            "parent_transaction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_transaction_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1332,12 +1300,8 @@
           "name": "transactions_entered_by_staff_id_staff_users_id_fk",
           "tableFrom": "transactions",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "entered_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entered_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1658,12 +1622,8 @@
           "name": "vip_qualifications_criteria_id_vip_criteria_id_fk",
           "tableFrom": "vip_qualifications",
           "tableTo": "vip_criteria",
-          "columnsFrom": [
-            "criteria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["criteria_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1671,12 +1631,8 @@
           "name": "vip_qualifications_customer_id_customers_id_fk",
           "tableFrom": "vip_qualifications",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1826,12 +1782,8 @@
           "name": "spin_events_vip_criteria_id_vip_criteria_id_fk",
           "tableFrom": "spin_events",
           "tableTo": "vip_criteria",
-          "columnsFrom": [
-            "vip_criteria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vip_criteria_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1839,12 +1791,8 @@
           "name": "spin_events_created_by_staff_id_staff_users_id_fk",
           "tableFrom": "spin_events",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "created_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2017,12 +1965,8 @@
           "name": "spin_winners_spin_event_id_spin_events_id_fk",
           "tableFrom": "spin_winners",
           "tableTo": "spin_events",
-          "columnsFrom": [
-            "spin_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["spin_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2030,12 +1974,8 @@
           "name": "spin_winners_customer_id_customers_id_fk",
           "tableFrom": "spin_winners",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2043,12 +1983,8 @@
           "name": "spin_winners_recorded_by_staff_id_staff_users_id_fk",
           "tableFrom": "spin_winners",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "recorded_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recorded_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2064,804 +2000,6 @@
         "chk_spin_winners_prize_amount": {
           "name": "chk_spin_winners_prize_amount",
           "value": "\"spin_winners\".\"prize_amount\" IS NULL OR \"spin_winners\".\"prize_amount\" >= 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.bonus_ledger": {
-      "name": "bonus_ledger",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "customer_id": {
-          "name": "customer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "referral_id": {
-          "name": "referral_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "direction": {
-          "name": "direction",
-          "type": "varchar(8)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "amount": {
-          "name": "amount",
-          "type": "numeric(18, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reason": {
-          "name": "reason",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "note": {
-          "name": "note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_by_staff_id": {
-          "name": "created_by_staff_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "uq_bonus_ledger_referral_reason": {
-          "name": "uq_bonus_ledger_referral_reason",
-          "columns": [
-            {
-              "expression": "referral_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "reason",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"bonus_ledger\".\"referral_id\" IS NOT NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_bonus_ledger_customer": {
-          "name": "idx_bonus_ledger_customer",
-          "columns": [
-            {
-              "expression": "customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_bonus_ledger_created": {
-          "name": "idx_bonus_ledger_created",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "bonus_ledger_customer_id_customers_id_fk": {
-          "name": "bonus_ledger_customer_id_customers_id_fk",
-          "tableFrom": "bonus_ledger",
-          "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "bonus_ledger_referral_id_referrals_id_fk": {
-          "name": "bonus_ledger_referral_id_referrals_id_fk",
-          "tableFrom": "bonus_ledger",
-          "tableTo": "referrals",
-          "columnsFrom": [
-            "referral_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "bonus_ledger_created_by_staff_id_staff_users_id_fk": {
-          "name": "bonus_ledger_created_by_staff_id_staff_users_id_fk",
-          "tableFrom": "bonus_ledger",
-          "tableTo": "staff_users",
-          "columnsFrom": [
-            "created_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "chk_bonus_ledger_direction": {
-          "name": "chk_bonus_ledger_direction",
-          "value": "\"bonus_ledger\".\"direction\" IN ('credit', 'debit')"
-        },
-        "chk_bonus_ledger_amount": {
-          "name": "chk_bonus_ledger_amount",
-          "value": "\"bonus_ledger\".\"amount\" > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.referral_codes": {
-      "name": "referral_codes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "customer_id": {
-          "name": "customer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "program_id": {
-          "name": "program_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "code": {
-          "name": "code",
-          "type": "varchar(16)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "link_slug": {
-          "name": "link_slug",
-          "type": "varchar(32)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "usage_count": {
-          "name": "usage_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "max_uses": {
-          "name": "max_uses",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "assigned_by_staff_id": {
-          "name": "assigned_by_staff_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "uq_referral_codes_code": {
-          "name": "uq_referral_codes_code",
-          "columns": [
-            {
-              "expression": "code",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "uq_referral_codes_slug": {
-          "name": "uq_referral_codes_slug",
-          "columns": [
-            {
-              "expression": "link_slug",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "uq_referral_codes_customer_program": {
-          "name": "uq_referral_codes_customer_program",
-          "columns": [
-            {
-              "expression": "customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "program_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_referral_codes_customer": {
-          "name": "idx_referral_codes_customer",
-          "columns": [
-            {
-              "expression": "customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_referral_codes_program": {
-          "name": "idx_referral_codes_program",
-          "columns": [
-            {
-              "expression": "program_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "referral_codes_customer_id_customers_id_fk": {
-          "name": "referral_codes_customer_id_customers_id_fk",
-          "tableFrom": "referral_codes",
-          "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "referral_codes_program_id_referral_programs_id_fk": {
-          "name": "referral_codes_program_id_referral_programs_id_fk",
-          "tableFrom": "referral_codes",
-          "tableTo": "referral_programs",
-          "columnsFrom": [
-            "program_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "referral_codes_assigned_by_staff_id_staff_users_id_fk": {
-          "name": "referral_codes_assigned_by_staff_id_staff_users_id_fk",
-          "tableFrom": "referral_codes",
-          "tableTo": "staff_users",
-          "columnsFrom": [
-            "assigned_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "chk_referral_codes_usage": {
-          "name": "chk_referral_codes_usage",
-          "value": "\"referral_codes\".\"usage_count\" >= 0"
-        },
-        "chk_referral_codes_max_uses": {
-          "name": "chk_referral_codes_max_uses",
-          "value": "\"referral_codes\".\"max_uses\" IS NULL OR \"referral_codes\".\"max_uses\" > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.referral_programs": {
-      "name": "referral_programs",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(150)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reward_type": {
-          "name": "reward_type",
-          "type": "varchar(12)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'fixed'"
-        },
-        "referrer_bonus": {
-          "name": "referrer_bonus",
-          "type": "numeric(18, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0.00'"
-        },
-        "referee_bonus": {
-          "name": "referee_bonus",
-          "type": "numeric(18, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0.00'"
-        },
-        "min_qualifying_debit": {
-          "name": "min_qualifying_debit",
-          "type": "numeric(18, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0.00'"
-        },
-        "max_rewards_per_referrer": {
-          "name": "max_rewards_per_referrer",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "valid_from": {
-          "name": "valid_from",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "valid_to": {
-          "name": "valid_to",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_by_staff_id": {
-          "name": "created_by_staff_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "idx_referral_programs_active": {
-          "name": "idx_referral_programs_active",
-          "columns": [
-            {
-              "expression": "is_active",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_referral_programs_validity": {
-          "name": "idx_referral_programs_validity",
-          "columns": [
-            {
-              "expression": "valid_from",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "valid_to",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "chk_referral_programs_type": {
-          "name": "chk_referral_programs_type",
-          "value": "\"referral_programs\".\"reward_type\" IN ('fixed', 'percentage')"
-        },
-        "chk_referral_programs_referrer_bonus": {
-          "name": "chk_referral_programs_referrer_bonus",
-          "value": "\"referral_programs\".\"referrer_bonus\" >= 0"
-        },
-        "chk_referral_programs_referee_bonus": {
-          "name": "chk_referral_programs_referee_bonus",
-          "value": "\"referral_programs\".\"referee_bonus\" >= 0"
-        },
-        "chk_referral_programs_min_debit": {
-          "name": "chk_referral_programs_min_debit",
-          "value": "\"referral_programs\".\"min_qualifying_debit\" >= 0"
-        },
-        "chk_referral_programs_validity": {
-          "name": "chk_referral_programs_validity",
-          "value": "\"referral_programs\".\"valid_to\" IS NULL OR \"referral_programs\".\"valid_to\" >= \"referral_programs\".\"valid_from\""
-        },
-        "chk_referral_programs_max_rewards": {
-          "name": "chk_referral_programs_max_rewards",
-          "value": "\"referral_programs\".\"max_rewards_per_referrer\" IS NULL OR \"referral_programs\".\"max_rewards_per_referrer\" > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.referrals": {
-      "name": "referrals",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "code_id": {
-          "name": "code_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "program_id": {
-          "name": "program_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "referrer_customer_id": {
-          "name": "referrer_customer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "referee_customer_id": {
-          "name": "referee_customer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(12)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "referrer_reward": {
-          "name": "referrer_reward",
-          "type": "numeric(18, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "referee_reward": {
-          "name": "referee_reward",
-          "type": "numeric(18, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "qualified_at": {
-          "name": "qualified_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "rewarded_at": {
-          "name": "rewarded_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "rejected_reason": {
-          "name": "rejected_reason",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "uq_referrals_referee": {
-          "name": "uq_referrals_referee",
-          "columns": [
-            {
-              "expression": "referee_customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_referrals_referrer": {
-          "name": "idx_referrals_referrer",
-          "columns": [
-            {
-              "expression": "referrer_customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_referrals_status": {
-          "name": "idx_referrals_status",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_referrals_program": {
-          "name": "idx_referrals_program",
-          "columns": [
-            {
-              "expression": "program_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_referrals_code": {
-          "name": "idx_referrals_code",
-          "columns": [
-            {
-              "expression": "code_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "referrals_code_id_referral_codes_id_fk": {
-          "name": "referrals_code_id_referral_codes_id_fk",
-          "tableFrom": "referrals",
-          "tableTo": "referral_codes",
-          "columnsFrom": [
-            "code_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "referrals_program_id_referral_programs_id_fk": {
-          "name": "referrals_program_id_referral_programs_id_fk",
-          "tableFrom": "referrals",
-          "tableTo": "referral_programs",
-          "columnsFrom": [
-            "program_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "referrals_referrer_customer_id_customers_id_fk": {
-          "name": "referrals_referrer_customer_id_customers_id_fk",
-          "tableFrom": "referrals",
-          "tableTo": "customers",
-          "columnsFrom": [
-            "referrer_customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "referrals_referee_customer_id_customers_id_fk": {
-          "name": "referrals_referee_customer_id_customers_id_fk",
-          "tableFrom": "referrals",
-          "tableTo": "customers",
-          "columnsFrom": [
-            "referee_customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "chk_referrals_status": {
-          "name": "chk_referrals_status",
-          "value": "\"referrals\".\"status\" IN ('pending', 'qualified', 'rewarded', 'rejected')"
-        },
-        "chk_referrals_not_self": {
-          "name": "chk_referrals_not_self",
-          "value": "\"referrals\".\"referrer_customer_id\" <> \"referrals\".\"referee_customer_id\""
         }
       },
       "isRLSEnabled": false

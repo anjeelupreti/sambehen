@@ -26,7 +26,7 @@
     "db:seed": "ts-node -r tsconfig-paths/register src/database/seed/index.ts",
     "db:studio": "drizzle-kit studio",
     "db:drop": "drizzle-kit drop",
-    "prepare": "husky",
+    "prepare": "cd .. && husky .husky",
     "docs:openapi": "ts-node -r tsconfig-paths/register scripts/generate-openapi.ts"
   },
   "dependencies": {

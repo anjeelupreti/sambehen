@@ -60,6 +60,12 @@ jobs:
       SWAGGER_ENABLED: 'false'
       LOG_LEVEL: warn
 
+    # Every step in this job runs inside backend/. The repo root holds two
+    # applications, and none of these commands mean anything from there.
+    defaults:
+      run:
+        working-directory: backend
+
     steps:
       - uses: actions/checkout@v4
 
@@ -67,6 +73,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: backend/package-lock.json
 
       # `npm ci` rather than `npm install`: it installs exactly the
       # lockfile, which is why the lockfile is tracked.
@@ -103,11 +110,13 @@ jobs:
       - name: Generate OpenAPI document
         run: npm run docs:openapi
 
+      # upload-artifact resolves paths from the repo root, not from the
+      # job's working-directory.
       - name: Upload OpenAPI document
         uses: actions/upload-artifact@v4
         with:
           name: openapi
-          path: openapi.json
+          path: backend/openapi.json
           if-no-files-found: error
 
   docker:
@@ -134,7 +143,8 @@ jobs:
 
       - uses: docker/build-push-action@v5
         with:
-          context: .
+          # The Dockerfile and everything it copies live in backend/.
+          context: ./backend
           push: true
           tags: |
             ${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}

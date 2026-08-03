@@ -22,5 +22,5 @@
 *.woff2     binary
 
 # Collapse generated files in diffs and PR reviews.
-package-lock.json          linguist-generated=true -diff
-src/database/migrations/** linguist-generated=true
+package-lock.json                  linguist-generated=true -diff
+backend/src/database/migrations/** linguist-generated=true

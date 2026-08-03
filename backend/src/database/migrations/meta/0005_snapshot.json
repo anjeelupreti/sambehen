@@ -1,6 +1,6 @@
 {
-  "id": "39599aad-2379-4b60-aed5-696e79b2606e",
-  "prevId": "8434fbe8-20b3-4ad8-bf01-861feec62bd7",
+  "id": "33bd217a-9973-4140-b2c5-f26f568a9ead",
+  "prevId": "fc2e7a01-4ee2-4100-9ffc-d0a92b8fe60b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -399,12 +399,8 @@
           "name": "staff_users_parent_id_staff_users_id_fk",
           "tableFrom": "staff_users",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -735,12 +731,8 @@
           "name": "customers_owner_staff_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "owner_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -748,12 +740,8 @@
           "name": "customers_manager_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "manager_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["manager_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -761,12 +749,8 @@
           "name": "customers_runner_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "runner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["runner_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -774,12 +758,8 @@
           "name": "customers_created_by_staff_id_staff_users_id_fk",
           "tableFrom": "customers",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "created_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1293,12 +1273,8 @@
           "name": "transactions_customer_id_customers_id_fk",
           "tableFrom": "transactions",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1306,12 +1282,8 @@
           "name": "transactions_game_id_games_id_fk",
           "tableFrom": "transactions",
           "tableTo": "games",
-          "columnsFrom": [
-            "game_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["game_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1319,12 +1291,8 @@
           "name": "transactions_parent_transaction_id_transactions_id_fk",
           "tableFrom": "transactions",
           "tableTo": "transactions",
-          "columnsFrom": [
-            "parent_transaction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_transaction_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1332,12 +1300,8 @@
           "name": "transactions_entered_by_staff_id_staff_users_id_fk",
           "tableFrom": "transactions",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "entered_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entered_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1658,12 +1622,8 @@
           "name": "vip_qualifications_criteria_id_vip_criteria_id_fk",
           "tableFrom": "vip_qualifications",
           "tableTo": "vip_criteria",
-          "columnsFrom": [
-            "criteria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["criteria_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1671,12 +1631,8 @@
           "name": "vip_qualifications_customer_id_customers_id_fk",
           "tableFrom": "vip_qualifications",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1826,12 +1782,8 @@
           "name": "spin_events_vip_criteria_id_vip_criteria_id_fk",
           "tableFrom": "spin_events",
           "tableTo": "vip_criteria",
-          "columnsFrom": [
-            "vip_criteria_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vip_criteria_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1839,12 +1791,8 @@
           "name": "spin_events_created_by_staff_id_staff_users_id_fk",
           "tableFrom": "spin_events",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "created_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2017,12 +1965,8 @@
           "name": "spin_winners_spin_event_id_spin_events_id_fk",
           "tableFrom": "spin_winners",
           "tableTo": "spin_events",
-          "columnsFrom": [
-            "spin_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["spin_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2030,12 +1974,8 @@
           "name": "spin_winners_customer_id_customers_id_fk",
           "tableFrom": "spin_winners",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2043,12 +1983,8 @@
           "name": "spin_winners_recorded_by_staff_id_staff_users_id_fk",
           "tableFrom": "spin_winners",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "recorded_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recorded_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2188,12 +2124,8 @@
           "name": "bonus_ledger_customer_id_customers_id_fk",
           "tableFrom": "bonus_ledger",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2201,12 +2133,8 @@
           "name": "bonus_ledger_referral_id_referrals_id_fk",
           "tableFrom": "bonus_ledger",
           "tableTo": "referrals",
-          "columnsFrom": [
-            "referral_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["referral_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2214,12 +2142,8 @@
           "name": "bonus_ledger_created_by_staff_id_staff_users_id_fk",
           "tableFrom": "bonus_ledger",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "created_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2409,12 +2333,8 @@
           "name": "referral_codes_customer_id_customers_id_fk",
           "tableFrom": "referral_codes",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2422,12 +2342,8 @@
           "name": "referral_codes_program_id_referral_programs_id_fk",
           "tableFrom": "referral_codes",
           "tableTo": "referral_programs",
-          "columnsFrom": [
-            "program_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["program_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2435,12 +2351,8 @@
           "name": "referral_codes_assigned_by_staff_id_staff_users_id_fk",
           "tableFrom": "referral_codes",
           "tableTo": "staff_users",
-          "columnsFrom": [
-            "assigned_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assigned_by_staff_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2802,12 +2714,8 @@
           "name": "referrals_code_id_referral_codes_id_fk",
           "tableFrom": "referrals",
           "tableTo": "referral_codes",
-          "columnsFrom": [
-            "code_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["code_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2815,12 +2723,8 @@
           "name": "referrals_program_id_referral_programs_id_fk",
           "tableFrom": "referrals",
           "tableTo": "referral_programs",
-          "columnsFrom": [
-            "program_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["program_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2828,12 +2732,8 @@
           "name": "referrals_referrer_customer_id_customers_id_fk",
           "tableFrom": "referrals",
           "tableTo": "customers",
-          "columnsFrom": [
-            "referrer_customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["referrer_customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2841,12 +2741,8 @@
           "name": "referrals_referee_customer_id_customers_id_fk",
           "tableFrom": "referrals",
           "tableTo": "customers",
-          "columnsFrom": [
-            "referee_customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["referee_customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2862,823 +2758,6 @@
         "chk_referrals_not_self": {
           "name": "chk_referrals_not_self",
           "value": "\"referrals\".\"referrer_customer_id\" <> \"referrals\".\"referee_customer_id\""
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.conversation_read_states": {
-      "name": "conversation_read_states",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "conversation_id": {
-          "name": "conversation_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "staff_id": {
-          "name": "staff_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "last_read_message_id": {
-          "name": "last_read_message_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "last_read_at": {
-          "name": "last_read_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "uq_conversation_read_states": {
-          "name": "uq_conversation_read_states",
-          "columns": [
-            {
-              "expression": "conversation_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "staff_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_conversation_read_states_staff": {
-          "name": "idx_conversation_read_states_staff",
-          "columns": [
-            {
-              "expression": "staff_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "conversation_read_states_conversation_id_conversations_id_fk": {
-          "name": "conversation_read_states_conversation_id_conversations_id_fk",
-          "tableFrom": "conversation_read_states",
-          "tableTo": "conversations",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "conversation_read_states_staff_id_staff_users_id_fk": {
-          "name": "conversation_read_states_staff_id_staff_users_id_fk",
-          "tableFrom": "conversation_read_states",
-          "tableTo": "staff_users",
-          "columnsFrom": [
-            "staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.conversations": {
-      "name": "conversations",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "customer_id": {
-          "name": "customer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "assigned_staff_id": {
-          "name": "assigned_staff_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(12)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'open'"
-        },
-        "last_message_at": {
-          "name": "last_message_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "last_message_preview": {
-          "name": "last_message_preview",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "last_customer_message_at": {
-          "name": "last_customer_message_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "last_staff_message_at": {
-          "name": "last_staff_message_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "message_count": {
-          "name": "message_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "uq_conversations_customer": {
-          "name": "uq_conversations_customer",
-          "columns": [
-            {
-              "expression": "customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_conversations_last_message": {
-          "name": "idx_conversations_last_message",
-          "columns": [
-            {
-              "expression": "last_message_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_conversations_status": {
-          "name": "idx_conversations_status",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_conversations_assigned": {
-          "name": "idx_conversations_assigned",
-          "columns": [
-            {
-              "expression": "assigned_staff_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "conversations_customer_id_customers_id_fk": {
-          "name": "conversations_customer_id_customers_id_fk",
-          "tableFrom": "conversations",
-          "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "conversations_assigned_staff_id_staff_users_id_fk": {
-          "name": "conversations_assigned_staff_id_staff_users_id_fk",
-          "tableFrom": "conversations",
-          "tableTo": "staff_users",
-          "columnsFrom": [
-            "assigned_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "chk_conversations_status": {
-          "name": "chk_conversations_status",
-          "value": "\"conversations\".\"status\" IN ('open', 'closed', 'archived')"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.messages": {
-      "name": "messages",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "conversation_id": {
-          "name": "conversation_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sender_type": {
-          "name": "sender_type",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sender_staff_id": {
-          "name": "sender_staff_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sender_customer_id": {
-          "name": "sender_customer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "body": {
-          "name": "body",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "attachments": {
-          "name": "attachments",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "delivered_at": {
-          "name": "delivered_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "idx_messages_conversation_created": {
-          "name": "idx_messages_conversation_created",
-          "columns": [
-            {
-              "expression": "conversation_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_messages_sender_staff": {
-          "name": "idx_messages_sender_staff",
-          "columns": [
-            {
-              "expression": "sender_staff_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_messages_created": {
-          "name": "idx_messages_created",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "messages_conversation_id_conversations_id_fk": {
-          "name": "messages_conversation_id_conversations_id_fk",
-          "tableFrom": "messages",
-          "tableTo": "conversations",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "messages_sender_staff_id_staff_users_id_fk": {
-          "name": "messages_sender_staff_id_staff_users_id_fk",
-          "tableFrom": "messages",
-          "tableTo": "staff_users",
-          "columnsFrom": [
-            "sender_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "messages_sender_customer_id_customers_id_fk": {
-          "name": "messages_sender_customer_id_customers_id_fk",
-          "tableFrom": "messages",
-          "tableTo": "customers",
-          "columnsFrom": [
-            "sender_customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "chk_messages_sender_type": {
-          "name": "chk_messages_sender_type",
-          "value": "\"messages\".\"sender_type\" IN ('customer', 'staff', 'system')"
-        },
-        "chk_messages_sender_consistency": {
-          "name": "chk_messages_sender_consistency",
-          "value": "(\"messages\".\"sender_type\" = 'customer' AND \"messages\".\"sender_customer_id\" IS NOT NULL)\n          OR (\"messages\".\"sender_type\" = 'staff' AND \"messages\".\"sender_staff_id\" IS NOT NULL)\n          OR \"messages\".\"sender_type\" = 'system'"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.email_campaign_recipients": {
-      "name": "email_campaign_recipients",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "campaign_id": {
-          "name": "campaign_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "customer_id": {
-          "name": "customer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "provider_message_id": {
-          "name": "provider_message_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "error": {
-          "name": "error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "attempts": {
-          "name": "attempts",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "sent_at": {
-          "name": "sent_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "uq_email_recipients": {
-          "name": "uq_email_recipients",
-          "columns": [
-            {
-              "expression": "campaign_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_email_recipients_claim": {
-          "name": "idx_email_recipients_claim",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "campaign_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_email_recipients_customer": {
-          "name": "idx_email_recipients_customer",
-          "columns": [
-            {
-              "expression": "customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "email_campaign_recipients_campaign_id_email_campaigns_id_fk": {
-          "name": "email_campaign_recipients_campaign_id_email_campaigns_id_fk",
-          "tableFrom": "email_campaign_recipients",
-          "tableTo": "email_campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "email_campaign_recipients_customer_id_customers_id_fk": {
-          "name": "email_campaign_recipients_customer_id_customers_id_fk",
-          "tableFrom": "email_campaign_recipients",
-          "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "chk_email_recipients_status": {
-          "name": "chk_email_recipients_status",
-          "value": "\"email_campaign_recipients\".\"status\" IN ('pending', 'sending', 'sent', 'failed', 'bounced')"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.email_campaigns": {
-      "name": "email_campaigns",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "subject": {
-          "name": "subject",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "body_html": {
-          "name": "body_html",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "body_text": {
-          "name": "body_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(12)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'draft'"
-        },
-        "filter_snapshot": {
-          "name": "filter_snapshot",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "recipient_count": {
-          "name": "recipient_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "sent_count": {
-          "name": "sent_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "failed_count": {
-          "name": "failed_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "scheduled_at": {
-          "name": "scheduled_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "started_at": {
-          "name": "started_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "completed_at": {
-          "name": "completed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_by_staff_id": {
-          "name": "created_by_staff_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "idx_email_campaigns_status": {
-          "name": "idx_email_campaigns_status",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_email_campaigns_scheduled": {
-          "name": "idx_email_campaigns_scheduled",
-          "columns": [
-            {
-              "expression": "scheduled_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_email_campaigns_creator": {
-          "name": "idx_email_campaigns_creator",
-          "columns": [
-            {
-              "expression": "created_by_staff_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "email_campaigns_created_by_staff_id_staff_users_id_fk": {
-          "name": "email_campaigns_created_by_staff_id_staff_users_id_fk",
-          "tableFrom": "email_campaigns",
-          "tableTo": "staff_users",
-          "columnsFrom": [
-            "created_by_staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "chk_email_campaigns_status": {
-          "name": "chk_email_campaigns_status",
-          "value": "\"email_campaigns\".\"status\" IN ('draft', 'queued', 'sending', 'sent', 'partial', 'failed', 'cancelled')"
         }
       },
       "isRLSEnabled": false
