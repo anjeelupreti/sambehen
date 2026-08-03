@@ -21,6 +21,12 @@ storage/
 uploads/
 tmp/
 
+# Regenerate with `npm run docs:openapi`. Deliberately untracked: a
+# committed copy drifts from the decorators the moment someone forgets to
+# regenerate it, and a stale API contract is worse than none. CI runs the
+# generator on every build so a broken Swagger decorator still fails there.
+openapi.json
+
 # ── Testing ──────────────────────────────────────────────────
 coverage/
 .nyc_output/
