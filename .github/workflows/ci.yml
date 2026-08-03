@@ -2,64 +2,137 @@ name: Continuous Integration
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main]
   pull_request:
-    branches: [ main, develop ]
+
+concurrency:
+  # A newer push supersedes an in-flight run on the same ref.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint-and-test:
+  verify:
+    name: Lint, type-check, test
     runs-on: ubuntu-latest
 
+    # Real postgres and redis rather than mocks. The cross-tenant suite is
+    # the point of this pipeline and only means something against a real
+    # database that enforces the CHECK constraints.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sambehen_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: sambehen_ci
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      # Test-only secrets. Each realm still gets a DIFFERENT one, so the
+      # realm-separation tests exercise real behaviour rather than passing
+      # because both sides happen to share a key.
+      JWT_SECRET: ci-team-access-secret-at-least-32-characters
+      JWT_REFRESH_SECRET: ci-team-refresh-secret-at-least-32-characters
+      JWT_CUSTOMER_SECRET: ci-customer-access-secret-at-least-32-chars
+      JWT_CUSTOMER_REFRESH_SECRET: ci-customer-refresh-secret-at-least-32-chars
+      SWAGGER_ENABLED: 'false'
+      LOG_LEVEL: warn
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
+          cache: npm
 
+      # `npm ci` rather than `npm install`: it installs exactly the
+      # lockfile, which is why the lockfile is tracked.
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint check
+      - name: Lint
         run: npm run lint:check
 
-      - name: Type check
+      - name: Type-check
         run: npm run type-check
 
-      - name: Run unit tests
-        run: npm run test
-
-      - name: Build application
+      - name: Build
         run: npm run build
 
-  docker-build:
-    needs: lint-and-test
+      - name: Apply migrations
+        run: npx drizzle-kit migrate
+
+      - name: Unit tests
+        run: npm test
+
+      # Seeded separately, because the e2e suite asserts on the specific
+      # hierarchy the seed creates.
+      - name: Seed database
+        run: npm run db:seed
+
+      - name: Cross-tenant e2e tests
+        run: npm run test:e2e
+
+      # openapi.json is untracked, so nothing else would catch a Swagger
+      # decorator that no longer compiles into a document. This boots the
+      # real app graph, so it also proves a clean shutdown: the script only
+      # exits if every handle was released.
+      - name: Generate OpenAPI document
+        run: npm run docs:openapi
+
+      - name: Upload OpenAPI document
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi
+          path: openapi.json
+          if-no-files-found: error
+
+  docker:
+    name: Build and push image
+    needs: verify
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # Only on main, and only when the registry is actually configured —
+    # otherwise every fork and every PR fails on missing secrets.
+    if: github.ref == 'refs/heads/main' && vars.PUBLISH_IMAGE == 'true'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
+      - uses: aws-actions/amazon-ecr-login@v2
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
         with:
           context: .
           push: true
