@@ -46,6 +46,7 @@ import { ReferralsModule } from '@modules/referrals/referrals.module';
 import { MessagingModule } from '@modules/messaging/messaging.module';
 import { DashboardModule } from '@modules/dashboard/dashboard.module';
 import { EmailingModule } from '@modules/emailing/emailing.module';
+import { ExportsModule } from '@modules/exports/exports.module';
 
 import { CorrelationIdMiddleware } from '@common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middleware';
@@ -143,7 +144,7 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
     MessagingModule,
     DashboardModule,
     EmailingModule,
-    // Phase 10: ExportsModule
+    ExportsModule,
   ],
   providers: [
     // Order matters. Guards run first (authenticate, then authorize), then
