@@ -8,16 +8,16 @@ quietly left to look finished.
 The audit column is re-checked at each milestone. `❌`/`⚠️` entries are the
 work queue, in priority order.
 
-| #   | Bar                                                             | Baseline (2026-08-04)                                                | Now (2026-08-04, verified against a running API)                              |
-| --- | --------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 1   | Alerts, animations, experience                                  | ⚠️ skeletons and an error boundary only; no toasts, no confirmations | ✅ toasts on every mutation, confirm dialogs, pending states, skeletons       |
-| 2   | Personalization                                                 | ⚠️ role-filtered nav; dark tokens defined but unreachable            | ✅ light/dark/system switch, role-shaped nav and copy                         |
-| 3   | Feature oriented — nothing advertised may 404                   | ❌ 9 dead links; 3 of 11 destinations existed                        | ✅ zero dead links; 8 areas built, 3 unbuilt and therefore unadvertised       |
-| 4   | Actions, icons, arrangement, modern theme                       | ⚠️ read-only; no write actions, no row actions                       | ⚠️ row actions and writes on customers and staff; other areas still read-only |
-| 5   | Mobile responsiveness                                           | ❌ no navigation at all below `md`                                   | ✅ drawer nav, scrolling tables, stacking controls                            |
-| 6   | Preview / real-time across components, sections, pages, metrics | ❌ none; Socket.IO backend unused                                    | ✅ live messaging over Socket.IO, verified against the gateway                |
-| 7   | Visualizations — line, dot, interactive charts                  | ❌ none; no chart layer                                              | ✅ trend line + dot plot, crosshair tooltips, table view, validated palette   |
-| 8   | List filters and searches utilized                              | ⚠️ search only; filters plumbed with no controls                     | ✅ every accepted filter has a control, chips, sortable headers               |
+| #   | Bar                                                             | Baseline (2026-08-04)                                                | Now (2026-08-04, verified against a running API)                            |
+| --- | --------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 1   | Alerts, animations, experience                                  | ⚠️ skeletons and an error boundary only; no toasts, no confirmations | ✅ toasts on every mutation, confirm dialogs, pending states, skeletons     |
+| 2   | Personalization                                                 | ⚠️ role-filtered nav; dark tokens defined but unreachable            | ✅ light/dark/system switch, role-shaped nav and copy                       |
+| 3   | Feature oriented — nothing advertised may 404                   | ❌ 9 dead links; 3 of 11 destinations existed                        | ✅ zero dead links; 9 areas built, 2 unbuilt and therefore unadvertised     |
+| 4   | Actions, icons, arrangement, modern theme                       | ⚠️ read-only; no write actions, no row actions                       | ✅ create + row actions on customers, transactions, staff, messaging        |
+| 5   | Mobile responsiveness                                           | ❌ no navigation at all below `md`                                   | ✅ drawer nav, scrolling tables, stacking controls                          |
+| 6   | Preview / real-time across components, sections, pages, metrics | ❌ none; Socket.IO backend unused                                    | ✅ live messaging over Socket.IO, verified against the gateway              |
+| 7   | Visualizations — line, dot, interactive charts                  | ❌ none; no chart layer                                              | ✅ trend line + dot plot, crosshair tooltips, table view, validated palette |
+| 8   | List filters and searches utilized                              | ⚠️ search only; filters plumbed with no controls                     | ✅ every accepted filter has a control, chips, sortable headers             |
 
 ### What bar 3 currently means
 
