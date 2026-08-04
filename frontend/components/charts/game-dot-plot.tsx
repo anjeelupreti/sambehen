@@ -41,9 +41,13 @@ export function GameDotPlot({ rows, measure }: { rows: GameTotal[]; measure: 'de
     () =>
       // Ascending so the largest sits at the top of a category axis, which
       // recharts draws bottom-up.
-      [...rows]
-        .reverse()
-        .map((row) => ({ game: row.gameName, total: toPlotValue(row.total), raw: row })),
+      [...rows].reverse().map((row) => ({
+        // Entries with no game are a real bucket, not missing data. A null
+        // category label would collapse them onto a blank axis tick.
+        game: row.gameName ?? 'No game',
+        total: toPlotValue(row.total),
+        raw: row,
+      })),
     [rows],
   );
 
@@ -89,7 +93,7 @@ export function GameDotPlot({ rows, measure }: { rows: GameTotal[]; measure: 'de
 
             return (
               <ChartTooltip
-                title={datum.raw.gameName}
+                title={datum.game}
                 rows={[{ key: 'total', label, value: datum.raw.total, color }]}
                 footer={tooltipCount(datum.raw.transactionCount, 'entry')}
               />

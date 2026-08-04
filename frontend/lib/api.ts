@@ -57,6 +57,26 @@ export class ApiError extends Error {
   }
 }
 
+/** Pulls the useful part out of a fetch rejection, which nests its reason. */
+function describeCause(error: unknown): string | null {
+  let current = error;
+
+  for (let depth = 0; depth < 4 && current; depth += 1) {
+    if (typeof current === 'object' && current !== null) {
+      const record = current as { code?: unknown; message?: unknown; cause?: unknown };
+      if (typeof record.code === 'string') return record.code;
+      if (record.cause) {
+        current = record.cause;
+        continue;
+      }
+      if (typeof record.message === 'string') return record.message;
+    }
+    break;
+  }
+
+  return error instanceof Error ? error.message : null;
+}
+
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
@@ -123,11 +143,18 @@ export async function apiRequest<TData, TSummary = undefined>(
     // A dead API is an operational failure, not a business one. Give it a
     // code of its own so the UI can say "cannot reach the API" instead of
     // rendering an empty list as though there were genuinely no rows.
+    //
+    // The underlying reason is carried through rather than flattened away:
+    // ECONNREFUSED, ETIMEDOUT and a TLS failure need completely different
+    // fixes, and "is it running?" sends whoever is on call after the wrong
+    // one.
+    const reason = describeCause(cause);
+
     throw new ApiError({
       status: 503,
       code: 'API_UNREACHABLE',
-      message: `Could not reach the API at ${API_URL}. Is it running?`,
-      details: { cause: String(cause) },
+      message: `Could not reach the API at ${API_URL}${reason ? ` (${reason})` : ''}.`,
+      details: { cause: String(cause), reason },
     });
   }
 

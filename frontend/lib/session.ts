@@ -54,10 +54,41 @@ export async function getActor(): Promise<SessionActor | null> {
   }
 }
 
+/**
+ * Reads the `exp` claim off an access token.
+ *
+ * The API returns no lifetime with the token, so the cookie has to take it
+ * from the token itself. This decodes the payload; it does NOT verify the
+ * signature and must never be used to decide anything about trust — the API
+ * verifies every request, and the only thing read here is when to stop
+ * sending a token that will be rejected anyway.
+ *
+ * Falls back to 15 minutes if the claim is unreadable: a cookie that
+ * expires too early costs a refresh, one that lives too long strands the
+ * user on failing requests.
+ */
+function accessTokenLifetime(token: string): number {
+  const FALLBACK = 15 * 60;
+
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return FALLBACK;
+
+    const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
+      exp?: number;
+    };
+    if (typeof claims.exp !== 'number') return FALLBACK;
+
+    const seconds = claims.exp - Math.floor(Date.now() / 1000);
+    return seconds > 0 ? seconds : FALLBACK;
+  } catch {
+    return FALLBACK;
+  }
+}
+
 export async function createSession(input: {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
   actor: SessionActor;
 }): Promise<void> {
   const store = await cookies();
@@ -67,7 +98,7 @@ export async function createSession(input: {
     secure: secureCookies,
     sameSite: 'lax',
     path: '/',
-    maxAge: input.expiresIn,
+    maxAge: accessTokenLifetime(input.accessToken),
   });
 
   // Outlives the access token deliberately — it exists to mint a new one.

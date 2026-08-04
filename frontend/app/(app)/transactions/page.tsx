@@ -1,5 +1,11 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
+import { AmountRangeFilter } from '@/components/filters/amount-range-filter';
+import { DateRangeFilter } from '@/components/filters/date-range-filter';
+import { FilterBar } from '@/components/filters/filter-bar';
+import { FilterSelect } from '@/components/filters/filter-select';
+import { SortableHeader } from '@/components/filters/sortable-header';
 import { Money } from '@/components/money';
 import { PaginationControls } from '@/components/pagination-controls';
 import { SearchField } from '@/components/search-field';
@@ -20,6 +26,55 @@ import type { Transaction, TransactionSummary } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Transactions' };
 
+const TYPE_OPTIONS = [
+  { value: 'debit', label: 'Debit (in)' },
+  { value: 'credit', label: 'Credit (out)' },
+];
+
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'reversed', label: 'Reversed' },
+];
+
+/**
+ * Corrections and withdrawals are separate API filters because they answer
+ * separate questions: `isCorrection` is a credit WITH a parent, and
+ * `isWithdrawal` is a credit with NO parent. Offering one combined control
+ * would force the user to guess which one it meant.
+ */
+const NATURE_OPTIONS = [
+  { value: 'withdrawals', label: 'Withdrawals only' },
+  { value: 'corrections', label: 'Corrections only' },
+  { value: 'excludeCorrections', label: 'Exclude corrections' },
+];
+
+const ACTIVE_FILTERS = [
+  { param: 'search', label: 'Search' },
+  { param: 'type', label: 'Type' },
+  { param: 'status', label: 'Status' },
+  { param: 'nature', label: 'Nature' },
+  { param: 'minAmount', label: 'Min' },
+  { param: 'maxAmount', label: 'Max' },
+  { param: 'dateFrom', label: 'From' },
+  { param: 'dateTo', label: 'To' },
+  { param: 'customerId', label: 'Customer' },
+];
+
+/** Maps the single "nature" control onto the two booleans the API takes. */
+function natureToQuery(nature: string | undefined) {
+  switch (nature) {
+    case 'withdrawals':
+      return { isWithdrawal: 'true', isCorrection: undefined };
+    case 'corrections':
+      return { isWithdrawal: undefined, isCorrection: 'true' };
+    case 'excludeCorrections':
+      return { isWithdrawal: undefined, isCorrection: 'false' };
+    default:
+      return { isWithdrawal: undefined, isCorrection: undefined };
+  }
+}
+
 export default async function TransactionsPage({
   searchParams,
 }: {
@@ -31,6 +86,8 @@ export default async function TransactionsPage({
     return Array.isArray(value) ? value[0] : value;
   };
 
+  const nature = natureToQuery(first('nature'));
+
   const { data, meta, summary } = await apiList<Transaction, TransactionSummary>(
     '/team/transactions',
     {
@@ -39,9 +96,16 @@ export default async function TransactionsPage({
         limit: 25,
         search: first('search'),
         type: first('type'),
+        status: first('status'),
         customerId: first('customerId'),
+        gameId: first('gameId'),
+        minAmount: first('minAmount'),
+        maxAmount: first('maxAmount'),
         dateFrom: first('dateFrom'),
         dateTo: first('dateTo'),
+        sortBy: first('sortBy'),
+        sortOrder: first('sortOrder'),
+        ...nature,
       },
     },
   );
@@ -58,34 +122,47 @@ export default async function TransactionsPage({
 
       {summary ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Entries" value={formatCount(summary.totalTransactions)} />
-          <StatCard label="Debit" value={<Money value={summary.totalDebit} />} hint="Money in." />
+          <StatCard label="Entries" value={formatCount(summary.totalCount)} />
+          <StatCard label="Debit" value={<Money value={summary.totalIn} />} hint="Money in." />
           <StatCard
             label="Credit"
-            value={<Money value={summary.totalCredit} />}
+            value={<Money value={summary.totalOut} />}
             hint="Money out, excluding corrections."
           />
           <StatCard
             label="Corrections"
-            value={<Money value={summary.totalCorrections} />}
-            hint="Fixes to earlier entries, not withdrawals."
+            value={<Money value={summary.correctionTotal} />}
+            hint={`${formatCount(summary.correctionCount)} fixes to earlier entries, not withdrawals.`}
           />
         </section>
       ) : null}
 
-      <Card className="py-0">
+      <Card className="gap-0 py-0">
         <CardContent className="px-0">
-          <div className="flex flex-wrap items-center gap-3 p-3">
+          <FilterBar active={ACTIVE_FILTERS}>
             <SearchField placeholder="Search customer, reference, note…" />
-          </div>
+            <FilterSelect param="type" label="Type" options={TYPE_OPTIONS} />
+            <FilterSelect param="status" label="Status" options={STATUS_OPTIONS} />
+            <FilterSelect
+              param="nature"
+              label="Nature"
+              options={NATURE_OPTIONS}
+              anyLabel="All entries"
+              className="w-[180px]"
+            />
+            <AmountRangeFilter />
+            <DateRangeFilter label="Occurred" />
+          </FilterBar>
 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>When</TableHead>
+                <SortableHeader column="occurredAt">When</SortableHeader>
                 <TableHead>Customer</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <SortableHeader column="type">Type</SortableHeader>
+                <SortableHeader column="amount" align="right">
+                  Amount
+                </SortableHeader>
                 <TableHead>Game</TableHead>
                 <TableHead>Reference</TableHead>
                 <TableHead>Entered by</TableHead>
@@ -101,10 +178,18 @@ export default async function TransactionsPage({
               ) : (
                 data.map((entry) => (
                   <TableRow key={entry.id}>
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                       {formatDateTime(entry.occurredAt)}
                     </TableCell>
-                    <TableCell className="font-medium">{entry.customerUsername ?? '—'}</TableCell>
+                    <TableCell className="font-medium">
+                      {entry.customerUsername ? (
+                        <Link href={`/customers/${entry.customerId}`} className="hover:underline">
+                          {entry.customerUsername}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         <Badge variant={entry.type === 'debit' ? 'debit' : 'credit'}>

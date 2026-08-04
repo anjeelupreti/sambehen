@@ -11,8 +11,15 @@ export interface ActiveFilterSpec {
   /** Query parameter this chip clears. */
   param: string;
   label: string;
-  /** Renders the raw value for display. Defaults to the value itself. */
-  format?: (value: string) => string;
+  /**
+   * Display text for raw values, when the stored value is not what a human
+   * should read — `isActive=true` shows as "Recent".
+   *
+   * A lookup rather than a formatting function on purpose: these specs are
+   * declared in Server Components and handed to this Client Component, and
+   * a function cannot cross that boundary.
+   */
+  labels?: Record<string, string>;
 }
 
 /**
@@ -49,9 +56,7 @@ export function FilterBar({
           {applied.map((spec) => (
             <Badge key={spec.param} variant="secondary" className="gap-1 pr-1 font-normal">
               <span className="text-muted-foreground">{spec.label}:</span>
-              <span className="max-w-40 truncate">
-                {spec.format ? spec.format(spec.value) : spec.value}
-              </span>
+              <span className="max-w-40 truncate">{spec.labels?.[spec.value] ?? spec.value}</span>
               <button
                 type="button"
                 onClick={() => setParam(spec.param, undefined)}

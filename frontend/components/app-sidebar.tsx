@@ -2,19 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  ArrowLeftRightIcon,
-  ClipboardListIcon,
-  CrownIcon,
-  GamepadIcon,
-  LayoutDashboardIcon,
-  MailIcon,
-  MessageSquareIcon,
-  ScrollTextIcon,
-  SparklesIcon,
-  UserCogIcon,
-  UsersIcon,
-} from 'lucide-react';
+import { ArrowLeftRightIcon, LayoutDashboardIcon, UsersIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import type { StaffRole } from '@/lib/types';
@@ -33,19 +21,16 @@ interface NavItem {
  * Hiding a link is presentation, not access control — the API refuses the
  * request regardless of what the sidebar shows. This exists so a runner is
  * not offered pages that would only ever return 403.
+ *
+ * Only routes that exist appear here. The API also backs messaging, VIPs,
+ * spin winners, games, staff, email campaigns, exports and the audit trail;
+ * those pages are not built yet, and advertising them would send staff to a
+ * 404. Add the entry in the same commit as the page, never before it.
  */
 const NAV: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboardIcon },
   { href: '/customers', label: 'Customers', icon: UsersIcon },
   { href: '/transactions', label: 'Transactions', icon: ArrowLeftRightIcon },
-  { href: '/messages', label: 'Messages', icon: MessageSquareIcon },
-  { href: '/vips', label: 'VIPs', icon: CrownIcon },
-  { href: '/spin-winners', label: 'Spin winners', icon: SparklesIcon },
-  { href: '/games', label: 'Games', icon: GamepadIcon },
-  { href: '/staff', label: 'Staff', icon: UserCogIcon, roles: ['master', 'manager'] },
-  { href: '/email', label: 'Email', icon: MailIcon, roles: ['master', 'manager'] },
-  { href: '/exports', label: 'Exports', icon: ClipboardListIcon },
-  { href: '/audit-logs', label: 'Audit trail', icon: ScrollTextIcon, roles: ['master'] },
 ];
 
 export function AppSidebar({ role }: { role: StaffRole }) {

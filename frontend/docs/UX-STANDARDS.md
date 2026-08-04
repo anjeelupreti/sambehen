@@ -8,16 +8,27 @@ quietly left to look finished.
 The audit column is re-checked at each milestone. `❌`/`⚠️` entries are the
 work queue, in priority order.
 
-| #   | Bar                                                             | Baseline (2026-08-04)                                                | Now |
-| --- | --------------------------------------------------------------- | -------------------------------------------------------------------- | --- |
-| 1   | Alerts, animations, experience                                  | ⚠️ skeletons and an error boundary only; no toasts, no confirmations | —   |
-| 2   | Personalization                                                 | ⚠️ role-filtered nav; dark tokens defined but unreachable            | —   |
-| 3   | Feature oriented — nothing advertised may 404                   | ❌ 9 dead links; 3 of 11 destinations existed                        | —   |
-| 4   | Actions, icons, arrangement, modern theme                       | ⚠️ read-only; no write actions, no row actions                       | —   |
-| 5   | Mobile responsiveness                                           | ❌ no navigation at all below `md`                                   | —   |
-| 6   | Preview / real-time across components, sections, pages, metrics | ❌ none; Socket.IO backend unused                                    | —   |
-| 7   | Visualizations — line, dot, interactive charts                  | ❌ none; no chart layer                                              | —   |
-| 8   | List filters and searches utilized                              | ⚠️ search only; filters plumbed with no controls                     | —   |
+| #   | Bar                                                             | Baseline (2026-08-04)                                                | Now (2026-08-04, verified against a running API)                                  |
+| --- | --------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1   | Alerts, animations, experience                                  | ⚠️ skeletons and an error boundary only; no toasts, no confirmations | ✅ toasts on every mutation, confirm dialogs, pending states, skeletons           |
+| 2   | Personalization                                                 | ⚠️ role-filtered nav; dark tokens defined but unreachable            | ✅ light/dark/system switch, role-shaped nav and copy                             |
+| 3   | Feature oriented — nothing advertised may 404                   | ❌ 9 dead links; 3 of 11 destinations existed                        | ✅ zero dead links — but 8 areas are unbuilt and therefore unadvertised           |
+| 4   | Actions, icons, arrangement, modern theme                       | ⚠️ read-only; no write actions, no row actions                       | ⚠️ row actions + status/password writes on customers; other areas still read-only |
+| 5   | Mobile responsiveness                                           | ❌ no navigation at all below `md`                                   | ✅ drawer nav, scrolling tables, stacking controls                                |
+| 6   | Preview / real-time across components, sections, pages, metrics | ❌ none; Socket.IO backend unused                                    | ❌ **not started** — Socket.IO still unused                                       |
+| 7   | Visualizations — line, dot, interactive charts                  | ❌ none; no chart layer                                              | ✅ trend line + dot plot, crosshair tooltips, table view, validated palette       |
+| 8   | List filters and searches utilized                              | ⚠️ search only; filters plumbed with no controls                     | ✅ every accepted filter has a control, chips, sortable headers                   |
+
+### What bar 3 currently means
+
+Nothing in the UI 404s, which is the bar as written. It is met by **not
+advertising** what is not built, not by building everything. These API areas
+have no page yet and no nav entry:
+
+messaging · VIPs · spin winners · games · staff · email campaigns · exports ·
+audit trail
+
+Add each nav entry in the same commit as its page, never before.
 
 ---
 

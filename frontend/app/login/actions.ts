@@ -70,12 +70,11 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
   await createSession({
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
-    expiresIn: session.expiresIn,
     actor: {
-      id: session.staff.id,
-      username: session.staff.username,
-      role: session.staff.role,
-      email: session.staff.email,
+      id: session.user.id,
+      username: session.user.username,
+      role: session.user.role,
+      email: session.user.email,
     },
   });
 

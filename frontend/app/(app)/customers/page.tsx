@@ -1,6 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BuildingIcon, GlobeIcon } from 'lucide-react';
 
+import { CustomerActions } from '@/components/customer-actions';
+import { DateRangeFilter } from '@/components/filters/date-range-filter';
+import { FilterBar } from '@/components/filters/filter-bar';
+import { FilterSelect } from '@/components/filters/filter-select';
+import { SortableHeader } from '@/components/filters/sortable-header';
+import { TextFilter } from '@/components/filters/text-filter';
 import { Money } from '@/components/money';
 import { PaginationControls } from '@/components/pagination-controls';
 import { SearchField } from '@/components/search-field';
@@ -29,6 +36,35 @@ const STATUS_VARIANT: Record<CustomerStatus, 'default' | 'secondary' | 'outline'
     banned: 'destructive',
   };
 
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'suspended', label: 'Suspended' },
+  { value: 'banned', label: 'Banned' },
+];
+
+/**
+ * `status` is the stored column; `isActive` is activity-based — status is
+ * active AND last seen inside the configured window. They are genuinely
+ * different questions, so they get separate controls rather than one
+ * merged "active" filter that would answer neither reliably.
+ */
+const ACTIVITY_OPTIONS = [
+  { value: 'true', label: 'Recently active' },
+  { value: 'false', label: 'Dormant' },
+];
+
+/** Chips describe what is filtered; every one here has a control above. */
+const ACTIVE_FILTERS = [
+  { param: 'search', label: 'Search' },
+  { param: 'status', label: 'Status' },
+  { param: 'isActive', label: 'Activity', labels: { true: 'Recent', false: 'Dormant' } },
+  { param: 'city', label: 'City' },
+  { param: 'country', label: 'Country' },
+  { param: 'dateFrom', label: 'From' },
+  { param: 'dateTo', label: 'To' },
+];
+
 export default async function CustomersPage({
   searchParams,
 }: {
@@ -49,6 +85,11 @@ export default async function CustomersPage({
       limit: 20,
       search: first('search'),
       status: first('status'),
+      isActive: first('isActive'),
+      city: first('city'),
+      country: first('country'),
+      dateFrom: first('dateFrom'),
+      dateTo: first('dateTo'),
       sortBy: first('sortBy'),
       sortOrder: first('sortOrder'),
     },
@@ -56,51 +97,69 @@ export default async function CustomersPage({
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground text-sm">
-            Only the customers in your chain. Totals below cover every match, not just this page.
-          </p>
-        </div>
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+        <p className="text-muted-foreground text-sm">
+          Only the customers in your chain. Totals below cover every match, not just this page.
+        </p>
       </header>
 
       {summary ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Matching" value={formatCount(summary.totalCustomers)} />
-          <StatCard label="Active" value={formatCount(summary.activeCustomers)} />
-          <StatCard label="Total spent" value={<Money value={summary.totalSpent} />} />
           <StatCard
-            label="Total withdrawn"
-            value={<Money value={summary.totalWithdrawn} />}
-            hint="Excludes corrections."
+            label="Active"
+            value={formatCount(summary.activeCustomers)}
+            hint={`${formatCount(summary.inactiveCustomers)} inactive, ${formatCount(summary.suspendedCustomers)} suspended.`}
+          />
+          <StatCard label="Total balance" value={<Money value={summary.totalBalance} />} />
+          <StatCard
+            label="Bonus balance"
+            value={<Money value={summary.totalBonusBalance} />}
+            hint="Referral bonuses, kept separate from real money."
           />
         </section>
       ) : null}
 
-      <Card className="py-0">
+      <Card className="gap-0 py-0">
         <CardContent className="px-0">
-          <div className="flex flex-wrap items-center gap-3 p-3">
+          <FilterBar active={ACTIVE_FILTERS}>
             <SearchField placeholder="Search username, name, email…" />
-          </div>
+            <FilterSelect param="status" label="Status" options={STATUS_OPTIONS} />
+            <FilterSelect
+              param="isActive"
+              label="Activity"
+              options={ACTIVITY_OPTIONS}
+              anyLabel="Any activity"
+              className="w-[160px]"
+            />
+            <TextFilter param="city" label="City" icon={<BuildingIcon className="size-4" />} />
+            <TextFilter param="country" label="Country" icon={<GlobeIcon className="size-4" />} />
+            <DateRangeFilter label="Registered" />
+          </FilterBar>
 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Status</TableHead>
+                <SortableHeader column="username">Customer</SortableHeader>
+                <SortableHeader column="status">Status</SortableHeader>
                 <TableHead>Owner</TableHead>
                 <TableHead className="text-right">Entries</TableHead>
                 <TableHead className="text-right">Spent</TableHead>
                 <TableHead className="text-right">Withdrawn</TableHead>
-                <TableHead className="text-right">Net</TableHead>
-                <TableHead>Last activity</TableHead>
+                <SortableHeader column="balance" align="right">
+                  Net
+                </SortableHeader>
+                <SortableHeader column="lastActivityAt">Last activity</SortableHeader>
+                <TableHead className="w-12">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-muted-foreground h-24 text-center">
+                  <TableCell colSpan={9} className="text-muted-foreground h-24 text-center">
                     No customers match these filters.
                   </TableCell>
                 </TableRow>
@@ -138,8 +197,15 @@ export default async function CustomersPage({
                     <TableCell className="text-right">
                       <Money value={customer.netBalance} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                       {formatDate(customer.lastActivityAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <CustomerActions
+                        customerId={customer.id}
+                        username={customer.username}
+                        status={customer.status}
+                      />
                     </TableCell>
                   </TableRow>
                 ))

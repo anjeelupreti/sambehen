@@ -76,11 +76,24 @@ export interface Staff {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
+  /** Always `Bearer`. The API does not return a lifetime — read `exp` off the token. */
+  tokenType: string;
 }
 
+/** The login payload's staff record: no `createdAt`, plus a password flag. */
+export interface AuthenticatedStaff extends Omit<Staff, 'createdAt'> {
+  mustChangePassword: boolean;
+}
+
+/**
+ * The login payload.
+ *
+ * The staff record comes back as `user`, not `staff`, and there is no
+ * `expiresIn` — the access token's own `exp` claim is the only statement of
+ * its lifetime.
+ */
 export interface TeamLoginResponse extends AuthTokens {
-  staff: Staff;
+  user: AuthenticatedStaff;
 }
 
 export interface Customer {
@@ -106,11 +119,20 @@ export interface Customer {
   registeredAt: string;
 }
 
+/**
+ * Totals over the whole filtered set, not the current page.
+ *
+ * Note this summarises *balances*, not lifetime spend — there is no
+ * spent/withdrawn total at the list level. Per-customer spend lives on each
+ * row instead.
+ */
 export interface CustomerSummary {
   totalCustomers: number;
   activeCustomers: number;
-  totalSpent: string;
-  totalWithdrawn: string;
+  inactiveCustomers: number;
+  suspendedCustomers: number;
+  totalBalance: string;
+  totalBonusBalance: string;
 }
 
 export interface Transaction {
@@ -136,29 +158,74 @@ export interface Transaction {
 }
 
 export interface TransactionSummary {
-  totalTransactions: number;
-  totalDebit: string;
-  totalCredit: string;
-  totalCorrections: string;
+  totalCount: number;
+  /** Debit — money in. */
+  totalIn: string;
+  /** Credit with no parent — money actually taken out. */
+  totalOut: string;
   net: string;
+  correctionCount: number;
+  /** Credits WITH a parent. Counted apart from `totalOut` on purpose. */
+  correctionTotal: string;
+}
+
+/** A money window: in, out, and the net of the two. */
+export interface PeriodTotals {
+  totalIn: string;
+  totalOut: string;
+  balance: string;
+  transactionCount: number;
+}
+
+export interface MonthTotals extends PeriodTotals {
+  /** Movement against the previous month. A number, not money. */
+  changePercent: number;
+  previousBalance: string;
 }
 
 export interface DashboardMetrics {
-  totalCustomers: number;
-  activeCustomers: number;
-  allTimeDebit: string;
-  allTimeCredit: string;
-  allTimeNet: string;
-  monthDebit: string;
-  monthCredit: string;
-  monthNet: string;
+  scope: StaffRole;
+  allTime: PeriodTotals;
+  thisMonth: MonthTotals;
   topGamesByDebit: GameTotal[];
   topGamesByCredit: GameTotal[];
+  customers: {
+    total: number;
+    active: number;
+    inactive: number;
+    newThisMonth: number;
+  };
+  vips: {
+    activeVips: number;
+    byTier: { tier: number; count: number }[];
+  };
+  messaging: {
+    unreadMessages: number;
+    conversationsToday: number;
+    responsesToday: number;
+    awaitingReply: number;
+  };
+  teamRollup: TeamRollupRow[];
+  generatedAt: string;
+}
+
+export interface TeamRollupRow {
+  staffId: string;
+  username: string;
+  role: StaffRole;
+  customerCount: number;
+  totalIn: string;
+  totalOut: string;
+  balance: string;
 }
 
 export interface GameTotal {
-  gameId: string;
-  gameName: string;
+  /**
+   * Null when the entries were recorded against no game. That is a real
+   * bucket, not missing data, so it is labelled rather than dropped.
+   */
+  gameId: string | null;
+  gameName: string | null;
   total: string;
   transactionCount: number;
 }

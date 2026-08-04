@@ -65,29 +65,37 @@ export default async function DashboardPage({
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Customers" value={formatCount(metrics.totalCustomers)} />
+        <StatCard
+          label="Customers"
+          value={formatCount(metrics.customers.total)}
+          hint={`${formatCount(metrics.customers.newThisMonth)} new this month.`}
+        />
         <StatCard
           label="Active"
-          value={formatCount(metrics.activeCustomers)}
+          value={formatCount(metrics.customers.active)}
           hint="Active within the configured activity window."
         />
-        <StatCard label="Net (all time)" value={<Money value={metrics.allTimeNet} />} />
-        <StatCard label="Net (this month)" value={<Money value={metrics.monthNet} />} />
+        <StatCard label="Net (all time)" value={<Money value={metrics.allTime.balance} />} />
+        <StatCard
+          label="Net (this month)"
+          value={<Money value={metrics.thisMonth.balance} />}
+          hint={describeChange(metrics.thisMonth.changePercent)}
+        />
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Debit (all time)"
-          value={<Money value={metrics.allTimeDebit} />}
+          value={<Money value={metrics.allTime.totalIn} />}
           hint="Money in."
         />
         <StatCard
           label="Credit (all time)"
-          value={<Money value={metrics.allTimeCredit} />}
+          value={<Money value={metrics.allTime.totalOut} />}
           hint="Money out, excluding corrections."
         />
-        <StatCard label="Debit (month)" value={<Money value={metrics.monthDebit} />} />
-        <StatCard label="Credit (month)" value={<Money value={metrics.monthCredit} />} />
+        <StatCard label="Debit (month)" value={<Money value={metrics.thisMonth.totalIn} />} />
+        <StatCard label="Credit (month)" value={<Money value={metrics.thisMonth.totalOut} />} />
       </section>
 
       <ChartCard
@@ -112,6 +120,19 @@ export default async function DashboardPage({
       </div>
     </div>
   );
+}
+
+/**
+ * Month-on-month movement.
+ *
+ * `changePercent` is a percentage, not money, so it is a real number and is
+ * formatted as one. A previous month of zero makes the change meaningless
+ * rather than infinite, which the API reports as -100.
+ */
+function describeChange(changePercent: number): string {
+  if (!Number.isFinite(changePercent) || changePercent === 0) return 'Level with last month.';
+  const direction = changePercent > 0 ? 'up' : 'down';
+  return `${Math.abs(Math.round(changePercent))}% ${direction} on last month.`;
 }
 
 function TrendTable({ points }: { points: TrendResponse['points'] }) {
@@ -173,8 +194,11 @@ function GameTable({ rows }: { rows: GameTotal[] }) {
       </TableHeader>
       <TableBody>
         {rows.map((row) => (
-          <TableRow key={row.gameId}>
-            <TableCell className="font-medium">{row.gameName}</TableCell>
+          // Entries recorded against no game come back with a null id and
+          // name. That is a real bucket, so it is labelled rather than
+          // dropped, and the row still needs a stable key.
+          <TableRow key={row.gameId ?? 'unassigned'}>
+            <TableCell className="font-medium">{row.gameName ?? 'No game'}</TableCell>
             <TableCell className="tabular text-right">
               {formatCount(row.transactionCount)}
             </TableCell>
