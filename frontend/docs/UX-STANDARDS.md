@@ -15,20 +15,37 @@ work queue, in priority order.
 | 3   | Feature oriented — nothing advertised may 404                   | ❌ 9 dead links; 3 of 11 destinations existed                        | ✅ zero dead links; 8 areas built, 3 unbuilt and therefore unadvertised       |
 | 4   | Actions, icons, arrangement, modern theme                       | ⚠️ read-only; no write actions, no row actions                       | ⚠️ row actions and writes on customers and staff; other areas still read-only |
 | 5   | Mobile responsiveness                                           | ❌ no navigation at all below `md`                                   | ✅ drawer nav, scrolling tables, stacking controls                            |
-| 6   | Preview / real-time across components, sections, pages, metrics | ❌ none; Socket.IO backend unused                                    | ❌ **not started** — Socket.IO still unused                                   |
+| 6   | Preview / real-time across components, sections, pages, metrics | ❌ none; Socket.IO backend unused                                    | ✅ live messaging over Socket.IO, verified against the gateway                |
 | 7   | Visualizations — line, dot, interactive charts                  | ❌ none; no chart layer                                              | ✅ trend line + dot plot, crosshair tooltips, table view, validated palette   |
 | 8   | List filters and searches utilized                              | ⚠️ search only; filters plumbed with no controls                     | ✅ every accepted filter has a control, chips, sortable headers               |
 
 ### What bar 3 currently means
 
 Nothing in the UI 404s. Built and navigable: dashboard, customers (list +
-detail), transactions, VIPs, spin winners, games, staff, audit trail.
+detail), transactions, messages, VIPs, spin winners, games, staff, audit
+trail.
 
-Three API areas still have no page, and therefore no nav entry:
+Two API areas still have no page, and therefore no nav entry:
 
-**messaging · email campaigns · exports**
+**email campaigns · exports**
 
 Add each nav entry in the same commit as its page, never before.
+
+### The one place the browser holds a token
+
+Everywhere else the access token stays in an httpOnly cookie and only this
+server reads it. Messaging is the exception: a WebSocket is opened _by the
+browser_, and the gateway authenticates the handshake with a bearer token,
+so the browser must have one.
+
+It is kept as narrow as possible — the short-lived access token only, never
+the refresh token; fetched on connect rather than embedded in the page, so
+it never appears in the HTML or RSC payload; and held in a variable rather
+than storage, so it dies with the tab.
+
+**Proxying the socket through this server is the stronger design** and is
+what to do if messaging grows beyond one page. It is recorded here rather
+than done silently.
 
 ### A note on status codes
 

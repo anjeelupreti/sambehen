@@ -7,6 +7,7 @@ import {
   CrownIcon,
   GamepadIcon,
   LayoutDashboardIcon,
+  MessageSquareIcon,
   ScrollTextIcon,
   SparklesIcon,
   UserCogIcon,
@@ -31,15 +32,15 @@ interface NavItem {
  * request regardless of what the sidebar shows. This exists so a runner is
  * not offered pages that would only ever return 403.
  *
- * Only routes that exist appear here. Messaging, email campaigns and
- * exports are still unbuilt and so stay unlisted — advertising them would
- * send staff to a 404. Add the entry in the same commit as the page, never
- * before it.
+ * Only routes that exist appear here. Email campaigns and exports are still
+ * unbuilt and so stay unlisted — advertising them would send staff to a
+ * 404. Add the entry in the same commit as the page, never before it.
  */
 const NAV: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboardIcon },
   { href: '/customers', label: 'Customers', icon: UsersIcon },
   { href: '/transactions', label: 'Transactions', icon: ArrowLeftRightIcon },
+  { href: '/messages', label: 'Messages', icon: MessageSquareIcon },
   { href: '/vips', label: 'VIPs', icon: CrownIcon },
   { href: '/spin-winners', label: 'Spin winners', icon: SparklesIcon },
   { href: '/games', label: 'Games', icon: GamepadIcon },
