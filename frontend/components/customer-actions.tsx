@@ -4,23 +4,15 @@ import { useState } from 'react';
 import {
   BanIcon,
   CheckCircleIcon,
-  CopyIcon,
   KeyRoundIcon,
   MoreHorizontalIcon,
   PauseCircleIcon,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { changeCustomerStatus, resetCustomerPassword } from '@/app/(app)/customers/actions';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { OneTimeSecretDialog } from '@/components/one-time-secret-dialog';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -153,43 +145,11 @@ export function CustomerActions({
         }}
       />
 
-      {/* The API generates this password once and cannot show it again, so
-          it gets a dialog the user has to dismiss rather than a toast that
-          disappears on its own. */}
-      <Dialog open={issuedPassword !== null} onOpenChange={() => setIssuedPassword(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New password for {username}</DialogTitle>
-            <DialogDescription>
-              This is shown once. Copy it now — it cannot be retrieved later.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex items-center gap-2">
-            <code className="bg-muted tabular flex-1 rounded-md px-3 py-2 text-sm break-all">
-              {issuedPassword}
-            </code>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Copy password"
-              onClick={async () => {
-                if (!issuedPassword) return;
-                try {
-                  await navigator.clipboard.writeText(issuedPassword);
-                  toast.success('Password copied.');
-                } catch {
-                  // Clipboard access is refused outside a secure context;
-                  // the password is on screen either way.
-                  toast.error('Could not copy. Select the text and copy it manually.');
-                }
-              }}
-            >
-              <CopyIcon className="size-4" />
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <OneTimeSecretDialog
+        secret={issuedPassword}
+        title={`New password for ${username}`}
+        onClose={() => setIssuedPassword(null)}
+      />
     </>
   );
 }

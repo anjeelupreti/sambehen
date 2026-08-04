@@ -8,27 +8,35 @@ quietly left to look finished.
 The audit column is re-checked at each milestone. `❌`/`⚠️` entries are the
 work queue, in priority order.
 
-| #   | Bar                                                             | Baseline (2026-08-04)                                                | Now (2026-08-04, verified against a running API)                                  |
-| --- | --------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| 1   | Alerts, animations, experience                                  | ⚠️ skeletons and an error boundary only; no toasts, no confirmations | ✅ toasts on every mutation, confirm dialogs, pending states, skeletons           |
-| 2   | Personalization                                                 | ⚠️ role-filtered nav; dark tokens defined but unreachable            | ✅ light/dark/system switch, role-shaped nav and copy                             |
-| 3   | Feature oriented — nothing advertised may 404                   | ❌ 9 dead links; 3 of 11 destinations existed                        | ✅ zero dead links — but 8 areas are unbuilt and therefore unadvertised           |
-| 4   | Actions, icons, arrangement, modern theme                       | ⚠️ read-only; no write actions, no row actions                       | ⚠️ row actions + status/password writes on customers; other areas still read-only |
-| 5   | Mobile responsiveness                                           | ❌ no navigation at all below `md`                                   | ✅ drawer nav, scrolling tables, stacking controls                                |
-| 6   | Preview / real-time across components, sections, pages, metrics | ❌ none; Socket.IO backend unused                                    | ❌ **not started** — Socket.IO still unused                                       |
-| 7   | Visualizations — line, dot, interactive charts                  | ❌ none; no chart layer                                              | ✅ trend line + dot plot, crosshair tooltips, table view, validated palette       |
-| 8   | List filters and searches utilized                              | ⚠️ search only; filters plumbed with no controls                     | ✅ every accepted filter has a control, chips, sortable headers                   |
+| #   | Bar                                                             | Baseline (2026-08-04)                                                | Now (2026-08-04, verified against a running API)                              |
+| --- | --------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 1   | Alerts, animations, experience                                  | ⚠️ skeletons and an error boundary only; no toasts, no confirmations | ✅ toasts on every mutation, confirm dialogs, pending states, skeletons       |
+| 2   | Personalization                                                 | ⚠️ role-filtered nav; dark tokens defined but unreachable            | ✅ light/dark/system switch, role-shaped nav and copy                         |
+| 3   | Feature oriented — nothing advertised may 404                   | ❌ 9 dead links; 3 of 11 destinations existed                        | ✅ zero dead links; 8 areas built, 3 unbuilt and therefore unadvertised       |
+| 4   | Actions, icons, arrangement, modern theme                       | ⚠️ read-only; no write actions, no row actions                       | ⚠️ row actions and writes on customers and staff; other areas still read-only |
+| 5   | Mobile responsiveness                                           | ❌ no navigation at all below `md`                                   | ✅ drawer nav, scrolling tables, stacking controls                            |
+| 6   | Preview / real-time across components, sections, pages, metrics | ❌ none; Socket.IO backend unused                                    | ❌ **not started** — Socket.IO still unused                                   |
+| 7   | Visualizations — line, dot, interactive charts                  | ❌ none; no chart layer                                              | ✅ trend line + dot plot, crosshair tooltips, table view, validated palette   |
+| 8   | List filters and searches utilized                              | ⚠️ search only; filters plumbed with no controls                     | ✅ every accepted filter has a control, chips, sortable headers               |
 
 ### What bar 3 currently means
 
-Nothing in the UI 404s, which is the bar as written. It is met by **not
-advertising** what is not built, not by building everything. These API areas
-have no page yet and no nav entry:
+Nothing in the UI 404s. Built and navigable: dashboard, customers (list +
+detail), transactions, VIPs, spin winners, games, staff, audit trail.
 
-messaging · VIPs · spin winners · games · staff · email campaigns · exports ·
-audit trail
+Three API areas still have no page, and therefore no nav entry:
+
+**messaging · email campaigns · exports**
 
 Add each nav entry in the same commit as its page, never before.
+
+### A note on status codes
+
+Role-gated pages call `notFound()`, which renders the "not found" page. The
+HTTP status is still 200 because the layout shell has already been flushed
+by the time the page body runs — that is how streaming SSR works, and it is
+not a gating failure. What matters is verified: a runner sent to `/staff`
+sees "not found", and their sidebar never offers the link.
 
 ---
 

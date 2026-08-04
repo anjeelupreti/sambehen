@@ -1,0 +1,133 @@
+import type { Metadata } from 'next';
+
+import { FilterBar } from '@/components/filters/filter-bar';
+import { FilterSelect } from '@/components/filters/filter-select';
+import { SortableHeader } from '@/components/filters/sortable-header';
+import { PaginationControls } from '@/components/pagination-controls';
+import { SearchField } from '@/components/search-field';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import { apiList } from '@/lib/api';
+import { formatDate } from '@/lib/money';
+import { getActor } from '@/lib/session';
+import type { Game } from '@/lib/types';
+
+export const metadata: Metadata = { title: 'Games' };
+
+const STATE_OPTIONS = [
+  { value: 'true', label: 'Active' },
+  { value: 'false', label: 'Retired' },
+];
+
+const ACTIVE_FILTERS = [
+  { param: 'search', label: 'Search' },
+  { param: 'isActive', label: 'State', labels: { true: 'Active', false: 'Retired' } },
+  { param: 'category', label: 'Category' },
+];
+
+export default async function GamesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const first = (key: string) => {
+    const value = params[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
+
+  const [actor, { data, meta }] = await Promise.all([
+    getActor(),
+    apiList<Game>('/team/games', {
+      query: {
+        page: first('page') ?? 1,
+        limit: 20,
+        search: first('search'),
+        isActive: first('isActive'),
+        category: first('category'),
+        sortBy: first('sortBy'),
+        sortOrder: first('sortOrder'),
+      },
+    }),
+  ]);
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Games</h1>
+        <p className="text-muted-foreground text-sm">
+          {actor?.role === 'master'
+            ? 'The catalogue transactions are recorded against.'
+            : 'Read-only. Only a master can change the catalogue.'}
+        </p>
+      </header>
+
+      <Card className="gap-0 py-0">
+        <CardContent className="px-0">
+          <FilterBar active={ACTIVE_FILTERS}>
+            <SearchField placeholder="Search name or code…" />
+            <FilterSelect
+              param="isActive"
+              label="State"
+              options={STATE_OPTIONS}
+              anyLabel="Any state"
+            />
+          </FilterBar>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortableHeader column="name">Game</SortableHeader>
+                <SortableHeader column="code">Code</SortableHeader>
+                <SortableHeader column="category">Category</SortableHeader>
+                <SortableHeader column="isActive">State</SortableHeader>
+                <SortableHeader column="createdAt">Added</SortableHeader>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
+                    No games match these filters.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.map((game) => (
+                  <TableRow key={game.id}>
+                    <TableCell>
+                      <span className="font-medium">{game.name}</span>
+                      {game.description ? (
+                        <p className="text-muted-foreground max-w-md truncate text-xs">
+                          {game.description}
+                        </p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="tabular text-muted-foreground text-sm">
+                      {game.code}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {game.category ?? '—'}
+                    </TableCell>
+                    <TableCell>
+                      {game.isActive ? (
+                        <Badge variant="default">Active</Badge>
+                      ) : (
+                        <Badge variant="outline">Retired</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                      {formatDate(game.createdAt)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+          <PaginationControls meta={meta} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
