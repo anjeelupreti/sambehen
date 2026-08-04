@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeftIcon } from 'lucide-react';
 
 import { CustomerActions } from '@/components/customer-actions';
+import { RecordTransactionModal } from '@/components/forms/record-transaction-modal';
 import { Money } from '@/components/money';
 import { StatCard } from '@/components/stat-card';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import { ApiError, apiGet, apiList } from '@/lib/api';
 import { formatCount, formatDate, formatDateTime } from '@/lib/money';
-import type { Customer, CustomerStatus, Transaction } from '@/lib/types';
+import type { Customer, CustomerStatus, Game, Transaction } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Customer' };
 
@@ -46,9 +47,12 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     throw error;
   }
 
-  const recent = await apiList<Transaction>('/team/transactions', {
-    query: { customerId: id, limit: 10, sortBy: 'occurredAt', sortOrder: 'desc' },
-  });
+  const [recent, { data: games }] = await Promise.all([
+    apiList<Transaction>('/team/transactions', {
+      query: { customerId: id, limit: 10, sortBy: 'occurredAt', sortOrder: 'desc' },
+    }),
+    apiList<Game>('/team/games', { query: { limit: 100, isActive: true } }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -75,11 +79,23 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             ) : null}
           </div>
 
-          <CustomerActions
-            customerId={customer.id}
-            username={customer.username}
-            status={customer.status}
-          />
+          <div className="flex items-center gap-2">
+            {/* Pre-targeted: opened from a customer's own page, there is
+                nothing to search for. */}
+            <RecordTransactionModal
+              games={games}
+              customer={{
+                id: customer.id,
+                username: customer.username,
+                fullName: customer.fullName,
+              }}
+            />
+            <CustomerActions
+              customerId={customer.id}
+              username={customer.username}
+              status={customer.status}
+            />
+          </div>
         </header>
       </div>
 

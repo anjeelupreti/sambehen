@@ -56,6 +56,62 @@ export async function resetCustomerPassword(
   );
 }
 
+export interface NewCustomerInput {
+  email: string;
+  username: string;
+  password: string;
+  /**
+   * Who ends up owning the customer.
+   *
+   * Required for a master: ownership defaults to the caller, and a master
+   * sits above the chain rather than in it, so defaulting would fail with
+   * `CUSTOMER_INVALID_OWNER`. A manager may name one of their runners or
+   * omit it to take the customer themselves; a runner's choice is ignored
+   * by the API, which always assigns to them.
+   */
+  ownerStaffId?: string;
+  fullName?: string;
+  phone?: string;
+  city?: string;
+  country?: string;
+  notes?: string;
+}
+
+/**
+ * Creates a customer.
+ *
+ * The password is set by staff here and can only ever be changed by staff —
+ * a customer can read their own record but never edit it, including their
+ * own credentials. That is an API rule this form simply reflects.
+ *
+ * The new customer is owned by whoever created them unless a specific owner
+ * is supplied, which is what a runner adding their own customer expects.
+ */
+export async function createCustomer(input: NewCustomerInput): Promise<ActionResult<Customer>> {
+  const result = await runAction(
+    () =>
+      apiMutate<Customer>('/team/customers', 'POST', {
+        email: input.email,
+        username: input.username,
+        password: input.password,
+        ...(input.ownerStaffId ? { ownerStaffId: input.ownerStaffId } : {}),
+        ...(input.fullName ? { fullName: input.fullName } : {}),
+        ...(input.phone ? { phone: input.phone } : {}),
+        ...(input.city ? { city: input.city } : {}),
+        ...(input.country ? { country: input.country } : {}),
+        ...(input.notes ? { notes: input.notes } : {}),
+      }),
+    'Customer created.',
+  );
+
+  if (result.ok) {
+    revalidatePath('/customers');
+    revalidatePath('/dashboard');
+  }
+
+  return result;
+}
+
 export async function reassignCustomer(
   id: string,
   ownerStaffId: string,

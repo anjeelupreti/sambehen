@@ -6,7 +6,9 @@ import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
 import { SortableHeader } from '@/components/filters/sortable-header';
+import { RecordTransactionModal } from '@/components/forms/record-transaction-modal';
 import { Money } from '@/components/money';
+import { TransactionActions } from '@/components/transaction-actions';
 import { PaginationControls } from '@/components/pagination-controls';
 import { SearchField } from '@/components/search-field';
 import { StatCard } from '@/components/stat-card';
@@ -22,7 +24,7 @@ import {
 } from '@/components/ui/table';
 import { apiList } from '@/lib/api';
 import { formatCount, formatDateTime } from '@/lib/money';
-import type { Transaction, TransactionSummary } from '@/lib/types';
+import type { Game, Transaction, TransactionSummary } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Transactions' };
 
@@ -88,6 +90,11 @@ export default async function TransactionsPage({
 
   const nature = natureToQuery(first('nature'));
 
+  // The catalogue is small and every entry form needs it, so it is fetched
+  // alongside the list rather than on opening the modal — the picker is
+  // populated the moment it appears.
+  const gamesPromise = apiList<Game>('/team/games', { query: { limit: 100, isActive: true } });
+
   const { data, meta, summary } = await apiList<Transaction, TransactionSummary>(
     '/team/transactions',
     {
@@ -110,14 +117,19 @@ export default async function TransactionsPage({
     },
   );
 
+  const { data: games } = await gamesPromise;
+
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
-        <p className="text-muted-foreground text-sm">
-          Debit is money in, credit is money out. A credit against a parent entry is a correction,
-          and is counted separately from a withdrawal.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
+          <p className="text-muted-foreground text-sm">
+            Debit is money in, credit is money out. A credit against a parent entry is a correction,
+            and is counted separately from a withdrawal.
+          </p>
+        </div>
+        <RecordTransactionModal games={games} />
       </header>
 
       {summary ? (
@@ -166,12 +178,15 @@ export default async function TransactionsPage({
                 <TableHead>Game</TableHead>
                 <TableHead>Reference</TableHead>
                 <TableHead>Entered by</TableHead>
+                <TableHead className="w-12">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-muted-foreground h-24 text-center">
+                  <TableCell colSpan={8} className="text-muted-foreground h-24 text-center">
                     No transactions match these filters.
                   </TableCell>
                 </TableRow>
@@ -218,6 +233,14 @@ export default async function TransactionsPage({
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {entry.enteredByUsername ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <TransactionActions
+                        transactionId={entry.id}
+                        amount={entry.amount}
+                        customerUsername={entry.customerUsername ?? null}
+                        isCorrection={entry.isCorrection}
+                      />
                     </TableCell>
                   </TableRow>
                 ))

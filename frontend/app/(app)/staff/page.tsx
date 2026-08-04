@@ -5,6 +5,7 @@ import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
 import { SortableHeader } from '@/components/filters/sortable-header';
+import { NewStaffModal } from '@/components/forms/new-staff-modal';
 import { PaginationControls } from '@/components/pagination-controls';
 import { SearchField } from '@/components/search-field';
 import { StaffActions } from '@/components/staff-actions';
@@ -62,6 +63,14 @@ export default async function StaffPage({
     return Array.isArray(value) ? value[0] : value;
   };
 
+  // Parent options for the create form. Fetched separately from the table:
+  // reading them off the current page would empty the list the moment
+  // someone filters to runners, leaving a required select with no choices.
+  const managersPromise =
+    actor?.role === 'master'
+      ? apiList<Staff>('/team/staff', { query: { role: 'manager', isActive: true, limit: 100 } })
+      : null;
+
   const { data, meta } = await apiList<Staff>('/team/staff', {
     query: {
       page: first('page') ?? 1,
@@ -76,15 +85,25 @@ export default async function StaffPage({
     },
   });
 
+  const managers = managersPromise
+    ? (await managersPromise).data.map((member) => ({
+        id: member.id,
+        username: member.username,
+      }))
+    : [];
+
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Staff</h1>
-        <p className="text-muted-foreground text-sm">
-          {actor?.role === 'master'
-            ? 'Every manager and runner.'
-            : 'Your own runners. Other managers and their chains are not visible.'}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Staff</h1>
+          <p className="text-muted-foreground text-sm">
+            {actor?.role === 'master'
+              ? 'Every manager and runner.'
+              : 'Your own runners. Other managers and their chains are not visible.'}
+          </p>
+        </div>
+        {actor ? <NewStaffModal actorRole={actor.role} managers={managers} /> : null}
       </header>
 
       <Card className="gap-0 py-0">

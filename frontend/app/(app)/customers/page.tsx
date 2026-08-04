@@ -7,6 +7,7 @@ import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
 import { SortableHeader } from '@/components/filters/sortable-header';
+import { NewCustomerModal } from '@/components/forms/new-customer-modal';
 import { TextFilter } from '@/components/filters/text-filter';
 import { Money } from '@/components/money';
 import { PaginationControls } from '@/components/pagination-controls';
@@ -24,7 +25,8 @@ import {
 } from '@/components/ui/table';
 import { apiList } from '@/lib/api';
 import { formatCount, formatDate } from '@/lib/money';
-import type { Customer, CustomerStatus, CustomerSummary } from '@/lib/types';
+import { getActor } from '@/lib/session';
+import type { Customer, CustomerStatus, CustomerSummary, Staff } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Customers' };
 
@@ -76,6 +78,16 @@ export default async function CustomersPage({
     return Array.isArray(value) ? value[0] : value;
   };
 
+  const actor = await getActor();
+
+  // Who a new customer can be assigned to. A runner is never asked, so the
+  // list is not fetched for them. Masters and managers see the scoped staff
+  // list minus masters, who sit above the chain and cannot own customers.
+  const ownersPromise =
+    actor && actor.role !== 'runner'
+      ? apiList<Staff>('/team/staff', { query: { limit: 100, isActive: true } })
+      : null;
+
   // Filters pass straight through to the API, which validates them and
   // returns 422 on anything it does not accept. There is no second
   // whitelist here — one authority for what a valid filter is.
@@ -95,13 +107,22 @@ export default async function CustomersPage({
     },
   });
 
+  const owners = ownersPromise
+    ? (await ownersPromise).data
+        .filter((member) => member.role !== 'master')
+        .map((member) => ({ id: member.id, username: member.username, role: member.role }))
+    : [];
+
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
-        <p className="text-muted-foreground text-sm">
-          Only the customers in your chain. Totals below cover every match, not just this page.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+          <p className="text-muted-foreground text-sm">
+            Only the customers in your chain. Totals below cover every match, not just this page.
+          </p>
+        </div>
+        {actor ? <NewCustomerModal actorRole={actor.role} owners={owners} /> : null}
       </header>
 
       {summary ? (
