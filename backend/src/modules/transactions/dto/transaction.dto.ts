@@ -268,7 +268,7 @@ export class TransactionResponseDto {
   @ApiProperty({ format: 'uuid' })
   customerId!: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   customerUsername?: string | null;
 
   @ApiProperty({ enum: TransactionType, enumName: 'TransactionType' })
@@ -277,13 +277,14 @@ export class TransactionResponseDto {
   @ApiProperty({ type: String, example: '250.00' })
   amount!: string;
 
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
   gameId!: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   gameName?: string | null;
 
   @ApiProperty({
+    type: String,
     format: 'uuid',
     nullable: true,
     description: 'Present only on corrections. Its presence excludes this row from totalWithdrawn.',
@@ -296,13 +297,13 @@ export class TransactionResponseDto {
   @ApiProperty({ enum: TransactionStatus, enumName: 'TransactionStatus' })
   status!: TransactionStatus;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   channel!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   referenceNo!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   note!: string | null;
 
   @ApiProperty({ format: 'date-time' })
@@ -311,7 +312,7 @@ export class TransactionResponseDto {
   @ApiProperty({ format: 'uuid' })
   enteredByStaffId!: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   enteredByUsername?: string | null;
 
   @ApiProperty({ format: 'date-time' })

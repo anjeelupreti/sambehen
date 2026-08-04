@@ -58,34 +58,43 @@ export class AuditLogDto {
   @ApiProperty({ enum: AUDIT_ACTOR_TYPES, enumName: 'AuditActorType' })
   actorType!: string;
 
-  @ApiProperty({ format: 'uuid', nullable: true, description: 'Null for system actions.' })
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'Null for system actions.',
+  })
   actorId!: string | null;
 
-  @ApiProperty({ nullable: true, example: 'manager' })
+  @ApiProperty({ type: String, nullable: true, example: 'manager' })
   actorRole!: string | null;
 
   @ApiProperty({ example: 'transaction.correction' })
   action!: string;
 
-  @ApiProperty({ nullable: true, example: 'transaction' })
+  @ApiProperty({ type: String, nullable: true, example: 'transaction' })
   entityType!: string | null;
 
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
   entityId!: string | null;
 
-  @ApiProperty({ nullable: true, example: 'POST' })
+  @ApiProperty({ type: String, nullable: true, example: 'POST' })
   method!: string | null;
 
-  @ApiProperty({ nullable: true, example: '/api/v1/team/transactions' })
+  @ApiProperty({ type: String, nullable: true, example: '/api/v1/team/transactions' })
   path!: string | null;
 
-  @ApiProperty({ nullable: true, example: 201 })
+  @ApiProperty({ type: Number, nullable: true, example: 201 })
   statusCode!: number | null;
 
-  @ApiProperty({ nullable: true, example: '10.0.0.4' })
+  @ApiProperty({ type: String, nullable: true, example: '10.0.0.4' })
   ip!: string | null;
 
-  @ApiProperty({ nullable: true, description: 'Ties the entry to the request log lines.' })
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Ties the entry to the request log lines.',
+  })
   correlationId!: string | null;
 
   @ApiProperty({ format: 'date-time' })

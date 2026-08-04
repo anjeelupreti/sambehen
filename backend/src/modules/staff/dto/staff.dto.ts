@@ -176,19 +176,19 @@ export class StaffResponseDto {
   @ApiProperty()
   username!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   firstName!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   lastName!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   phone!: string | null;
 
   @ApiProperty({ enum: StaffRole, enumName: 'StaffRole' })
   role!: StaffRole;
 
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
   parentId!: string | null;
 
   @ApiProperty()
@@ -197,7 +197,7 @@ export class StaffResponseDto {
   @ApiProperty()
   mustChangePassword!: boolean;
 
-  @ApiProperty({ nullable: true, format: 'date-time' })
+  @ApiProperty({ type: String, nullable: true, format: 'date-time' })
   lastLoginAt!: Date | null;
 
   @ApiProperty({ format: 'date-time' })

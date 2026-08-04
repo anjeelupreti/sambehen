@@ -137,6 +137,7 @@ export class MessageResponseDto {
   senderType!: MessageSenderType;
 
   @ApiPropertyOptional({
+    type: String,
     format: 'uuid',
     nullable: true,
     description:
@@ -144,7 +145,7 @@ export class MessageResponseDto {
   })
   senderStaffId?: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   senderStaffUsername?: string | null;
 
   @ApiProperty()
@@ -161,22 +162,22 @@ export class ConversationResponseDto {
   @ApiProperty({ format: 'uuid' })
   customerId!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   customerUsername!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   customerFullName!: string | null;
 
   @ApiProperty({ enum: ConversationStatus, enumName: 'ConversationStatus' })
   status!: ConversationStatus;
 
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
   assignedStaffId!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   lastMessagePreview!: string | null;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   lastMessageAt!: Date | null;
 
   @ApiProperty({ example: 42 })
@@ -193,10 +194,10 @@ export class ConversationResponseDto {
   })
   awaitingReply!: boolean;
 
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
   managerId!: string | null;
 
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
   runnerId!: string | null;
 }
 

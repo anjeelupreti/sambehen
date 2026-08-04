@@ -279,22 +279,23 @@ export class SpinWinnerListItemDto {
   @ApiProperty({ format: 'uuid' })
   customerId!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   customerUsername!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   customerFullName!: string | null;
 
   @ApiProperty({
+    type: String,
     nullable: true,
     description: 'Owning manager, for a master reading across chains.',
   })
   managerUsername!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   runnerUsername!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   prizeLabel!: string | null;
 
   @ApiProperty({ type: String, nullable: true, example: '500.00' })
@@ -306,7 +307,7 @@ export class SpinWinnerListItemDto {
   @ApiProperty()
   isPreselected!: boolean;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   announcedAt!: Date | null;
 }
 
@@ -332,13 +333,13 @@ export class SpinWinnerResponseDto {
   @ApiProperty({ format: 'uuid' })
   customerId!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   customerUsername!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   customerFullName!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   prizeLabel!: string | null;
 
   @ApiProperty({ type: String, nullable: true, example: '500.00' })
@@ -350,7 +351,7 @@ export class SpinWinnerResponseDto {
   @ApiProperty({ description: 'Chosen at event creation rather than keyed in after the draw.' })
   isPreselected!: boolean;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   announcedAt!: Date | null;
 }
 
@@ -361,7 +362,7 @@ export class SpinEventResponseDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   description!: string | null;
 
   @ApiProperty({ format: 'uuid' })
@@ -385,7 +386,7 @@ export class SpinEventResponseDto {
   @ApiProperty({ format: 'date-time' })
   scheduledAt!: Date;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   prizeDescription!: string | null;
 
   @ApiProperty({ type: String, nullable: true })
@@ -416,7 +417,7 @@ export class RecentWinnerDto {
   @ApiProperty()
   eventName!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   prizeLabel!: string | null;
 
   @ApiProperty({ type: String, nullable: true })
@@ -425,6 +426,6 @@ export class RecentWinnerDto {
   @ApiProperty({ example: 1 })
   rank!: number;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   announcedAt!: Date | null;
 }

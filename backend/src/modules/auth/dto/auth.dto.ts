@@ -65,16 +65,21 @@ export class StaffProfileDto {
   @ApiProperty()
   username!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   firstName!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   lastName!: string | null;
 
   @ApiProperty({ enum: StaffRole, enumName: 'StaffRole' })
   role!: StaffRole;
 
-  @ApiProperty({ format: 'uuid', nullable: true, description: 'Managing staff member' })
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'Managing staff member',
+  })
   parentId!: string | null;
 
   @ApiProperty()
@@ -83,7 +88,7 @@ export class StaffProfileDto {
   @ApiProperty({ description: 'Client should force a password change before continuing' })
   mustChangePassword!: boolean;
 
-  @ApiProperty({ nullable: true, format: 'date-time' })
+  @ApiProperty({ type: String, nullable: true, format: 'date-time' })
   lastLoginAt!: Date | null;
 }
 
@@ -97,7 +102,7 @@ export class CustomerProfileDto {
   @ApiProperty()
   username!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   fullName!: string | null;
 
   @ApiProperty({ description: 'Account status' })
@@ -109,7 +114,7 @@ export class CustomerProfileDto {
   @ApiProperty({ type: String, description: 'Decimal serialised as a string' })
   bonusBalance!: string;
 
-  @ApiProperty({ nullable: true, format: 'date-time' })
+  @ApiProperty({ type: String, nullable: true, format: 'date-time' })
   lastLoginAt!: Date | null;
 }
 

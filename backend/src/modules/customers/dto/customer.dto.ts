@@ -287,19 +287,19 @@ export class CustomerResponseDto {
   @ApiProperty()
   username!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   fullName!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   phone!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   city!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   state!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   country!: string | null;
 
   @ApiProperty({ enum: CustomerStatus, enumName: 'CustomerStatus' })
@@ -318,31 +318,31 @@ export class CustomerResponseDto {
   @ApiProperty({ format: 'uuid' })
   ownerStaffId!: string;
 
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
   managerId!: string | null;
 
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
   runnerId!: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: "Owning manager's username" })
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Owning manager's username" })
   managerUsername?: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: "Owning runner's username" })
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Owning runner's username" })
   runnerUsername?: string | null;
 
   @ApiProperty()
   emailOptOut!: boolean;
 
-  @ApiProperty({ nullable: true, format: 'date-time' })
+  @ApiProperty({ type: String, nullable: true, format: 'date-time' })
   lastActivityAt!: Date | null;
 
-  @ApiProperty({ nullable: true, format: 'date-time' })
+  @ApiProperty({ type: String, nullable: true, format: 'date-time' })
   lastLoginAt!: Date | null;
 
   @ApiProperty({ format: 'date-time' })
   registeredAt!: Date;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   notes?: string | null;
 
   @ApiProperty({ format: 'date-time' })
@@ -382,7 +382,7 @@ export class CustomerResponseDto {
   })
   netBalance?: string;
 
-  @ApiPropertyOptional({ format: 'date-time', nullable: true })
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   lastTransactionAt?: Date | null;
 }
 

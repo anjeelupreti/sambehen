@@ -322,16 +322,16 @@ export class CampaignResponseDto {
   @ApiProperty({ example: 14 })
   failedCount!: number;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   scheduledAt!: Date | null;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   startedAt!: Date | null;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   completedAt!: Date | null;
 
-  @ApiProperty({ format: 'uuid', nullable: true })
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
   createdByStaffId!: string | null;
 
   @ApiProperty({ format: 'date-time' })
@@ -351,9 +351,9 @@ export class CampaignRecipientDto {
   @ApiProperty({ example: 'sent' })
   status!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   error!: string | null;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   sentAt!: Date | null;
 }

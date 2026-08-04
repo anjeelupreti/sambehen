@@ -133,10 +133,10 @@ export class GameResponseDto {
   @ApiProperty()
   code!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   category!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   description!: string | null;
 
   @ApiProperty()

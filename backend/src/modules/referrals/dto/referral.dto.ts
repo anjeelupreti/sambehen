@@ -243,7 +243,7 @@ export class ReferralProgramResponseDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   description!: string | null;
 
   @ApiProperty({ enum: ReferralRewardType, enumName: 'ReferralRewardType' })
@@ -258,13 +258,13 @@ export class ReferralProgramResponseDto {
   @ApiProperty({ type: String })
   minQualifyingDebit!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: Number, nullable: true })
   maxRewardsPerReferrer!: number | null;
 
   @ApiProperty({ format: 'date' })
   validFrom!: string;
 
-  @ApiProperty({ format: 'date', nullable: true })
+  @ApiProperty({ type: String, format: 'date', nullable: true })
   validTo!: string | null;
 
   @ApiProperty()
@@ -287,7 +287,7 @@ export class ReferralCodeResponseDto {
   @ApiProperty({ format: 'uuid' })
   customerId!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   customerUsername!: string | null;
 
   @ApiProperty({ example: 'BRZK7QP4' })
@@ -305,10 +305,10 @@ export class ReferralCodeResponseDto {
   @ApiProperty({ example: 3 })
   usageCount!: number;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: Number, nullable: true })
   maxUses!: number | null;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   expiresAt!: Date | null;
 }
 
@@ -325,13 +325,13 @@ export class ReferralResponseDto {
   @ApiProperty({ format: 'uuid' })
   referrerCustomerId!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   referrerUsername!: string | null;
 
   @ApiProperty({ format: 'uuid' })
   refereeCustomerId!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   refereeUsername!: string | null;
 
   @ApiProperty({ enum: ReferralStatus, enumName: 'ReferralStatus' })
@@ -343,7 +343,7 @@ export class ReferralResponseDto {
   @ApiProperty({ type: String, nullable: true })
   refereeReward!: string | null;
 
-  @ApiProperty({ format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   rewardedAt!: Date | null;
 
   @ApiProperty({ format: 'date-time' })
@@ -369,13 +369,17 @@ export class ReferralSummaryDto {
 
 /** The customer's own referral view. */
 export class MyReferralDto {
-  @ApiProperty({ nullable: true, example: 'BRZK7QP4' })
+  @ApiProperty({ type: String, nullable: true, example: 'BRZK7QP4' })
   code!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   referralLink!: string | null;
 
-  @ApiProperty({ nullable: true, description: 'The program this code was issued under.' })
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'The program this code was issued under.',
+  })
   programName!: string | null;
 
   @ApiProperty({ type: String, nullable: true, description: 'What a successful referral earns.' })

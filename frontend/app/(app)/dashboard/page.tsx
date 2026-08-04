@@ -126,11 +126,14 @@ export default async function DashboardPage({
  * Month-on-month movement.
  *
  * `changePercent` is a percentage, not money, so it is a real number and is
- * formatted as one. A previous month of zero makes the change meaningless
- * rather than infinite, which the API reports as -100.
+ * formatted as one. It is **null** when the previous month was zero: a
+ * percentage change from nothing is undefined rather than infinite, and
+ * printing it as a number would show "NaN%" or a meaningless 100%.
  */
-function describeChange(changePercent: number): string {
+function describeChange(changePercent: number | null): string {
+  if (changePercent === null) return 'No activity last month to compare against.';
   if (!Number.isFinite(changePercent) || changePercent === 0) return 'Level with last month.';
+
   const direction = changePercent > 0 ? 'up' : 'down';
   return `${Math.abs(Math.round(changePercent))}% ${direction} on last month.`;
 }

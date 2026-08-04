@@ -100,13 +100,14 @@ export class MonthlyNetDto extends NetPositionDto {
 
 export class TopGameDto {
   @ApiProperty({
+    type: String,
     format: 'uuid',
     nullable: true,
     description: 'Null groups transactions with no game.',
   })
   gameId!: string | null;
 
-  @ApiProperty({ nullable: true, example: 'Golden Dragon' })
+  @ApiProperty({ type: String, nullable: true, example: 'Golden Dragon' })
   gameName!: string | null;
 
   @ApiProperty({ type: String, example: '48200.00' })
@@ -278,7 +279,7 @@ export class CustomerDashboardDto {
   @ApiProperty({ description: 'Qualifies under at least one currently-active criteria.' })
   isVip!: boolean;
 
-  @ApiProperty({ nullable: true, example: 2 })
+  @ApiProperty({ type: Number, nullable: true, example: 2 })
   vipTier!: number | null;
 
   @ApiProperty({ example: 3, description: 'Unread staff replies.' })

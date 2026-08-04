@@ -232,7 +232,7 @@ export class VipCriteriaResponseDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   description!: string | null;
 
   @ApiProperty({ example: 1 })
@@ -273,10 +273,10 @@ export class VipResponseDto {
   @ApiProperty({ format: 'uuid' })
   customerId!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   customerUsername!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   customerFullName!: string | null;
 
   @ApiProperty({ format: 'uuid' })
@@ -317,7 +317,12 @@ export class VipStatusDto {
   })
   isVip!: boolean;
 
-  @ApiProperty({ example: 2, nullable: true, description: 'Highest tier currently held.' })
+  @ApiProperty({
+    type: Number,
+    example: 2,
+    nullable: true,
+    description: 'Highest tier currently held.',
+  })
   currentTier!: number | null;
 
   @ApiProperty({ type: [Object], description: 'Progress against every currently-active criteria.' })
