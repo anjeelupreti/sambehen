@@ -123,6 +123,7 @@ export class GamesService {
       code: game.code,
       category: game.category,
       description: game.description,
+      imageUrl: game.imageUrl,
       isActive: game.isActive,
       createdAt: game.createdAt,
     };

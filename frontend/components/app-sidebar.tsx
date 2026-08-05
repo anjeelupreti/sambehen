@@ -7,7 +7,6 @@ import {
   CrownIcon,
   GamepadIcon,
   LayoutDashboardIcon,
-  MessageSquareIcon,
   ScrollTextIcon,
   SparklesIcon,
   UserCogIcon,
@@ -40,9 +39,11 @@ const NAV: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboardIcon },
   { href: '/customers', label: 'Customers', icon: UsersIcon },
   { href: '/transactions', label: 'Transactions', icon: ArrowLeftRightIcon },
-  { href: '/messages', label: 'Messages', icon: MessageSquareIcon },
   { href: '/vips', label: 'VIPs', icon: CrownIcon },
-  { href: '/spin-winners', label: 'Spin winners', icon: SparklesIcon },
+  // Criteria live on the VIPs page and events live on the Spins page —
+  // configuration above the list it produces, rather than a separate
+  // destination you have to hold in your head alongside it.
+  { href: '/spin-winners', label: 'Spins', icon: SparklesIcon },
   { href: '/games', label: 'Games', icon: GamepadIcon },
   { href: '/staff', label: 'Staff', icon: UserCogIcon, roles: ['master', 'manager'] },
   { href: '/audit-logs', label: 'Audit trail', icon: ScrollTextIcon, roles: ['master'] },

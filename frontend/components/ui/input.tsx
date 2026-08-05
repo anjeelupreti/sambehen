@@ -2,9 +2,23 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * `suppressHydrationWarning` is here for password managers.
+ *
+ * Extensions like 1Password, LastPass and Bitwarden stamp their own
+ * attributes (`data-has-listeners` and friends) onto form fields before
+ * React hydrates, so the client markup no longer matches what the server
+ * sent and React logs a hydration mismatch on every sign-in page.
+ *
+ * Nothing is broken by it — React cannot patch attributes either way, and
+ * the field works — but the warning is noise that hides real mismatches.
+ * The suppression applies only to this element's own attributes, not to its
+ * children, so a genuine mismatch anywhere else still surfaces.
+ */
 function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
   return (
     <input
+      suppressHydrationWarning
       type={type}
       data-slot="input"
       className={cn(

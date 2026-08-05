@@ -5,6 +5,8 @@ import * as schema from '../schema';
 import { DrizzleDB } from '../database.provider';
 import { seedStaff, SEED_PASSWORD } from './staff.seed';
 import { seedCustomers } from './customer.seed';
+import { seedGamesAndTransactions } from './transactions.seed';
+import { seedEngagement } from './engagement.seed';
 
 /**
  * Database seed runner — `npm run db:seed`.
@@ -41,7 +43,18 @@ async function main(): Promise<void> {
 
       const seededCustomers = await seedCustomers(tx as unknown as DrizzleDB, staff);
       logger.log(`  customers: ${seededCustomers.length}`);
-      // Phase 3 onward: await seedGamesAndTransactions(tx, seededCustomers);
+
+      await seedGamesAndTransactions(tx as unknown as DrizzleDB, seededCustomers);
+      logger.log(`  games and transactions seeded`);
+
+      // Last, because VIP qualification and spin winners are derived from
+      // the transactions above rather than invented alongside them.
+      const engagement = await seedEngagement(tx as unknown as DrizzleDB, staff, seededCustomers);
+      logger.log(
+        `  vip: ${engagement.criteria} criteria, ${engagement.qualifications} qualifications`,
+      );
+      logger.log(`  spins: ${engagement.events} events, ${engagement.winners} winners`);
+      logger.log(`  audit: ${engagement.audit} entries`);
     });
 
     logger.log('Seed completed successfully');

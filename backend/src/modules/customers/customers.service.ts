@@ -19,6 +19,7 @@ import {
 import { AuthSessionRepository } from '@database/repositories/auth-session.repository';
 import { customers, Customer } from '@database/schema/customers.schema';
 import { staffUsers } from '@database/schema/staff-users.schema';
+import { transactions } from '@database/schema/transactions.schema';
 import { ScopeService } from '@shared/scope/scope.service';
 import { AuditService } from '@shared/audit/audit.service';
 import { CustomerAssignmentService } from '@modules/staff/customer-assignment.service';
@@ -33,6 +34,7 @@ import {
   CustomerResponseDto,
   CustomerListSummaryDto,
 } from './dto/customer.dto';
+import { TrendQueryDto, TrendGranularity, TrendResponseDto } from '../dashboard/dto/dashboard.dto';
 
 @Injectable()
 export class CustomersService {
@@ -186,6 +188,64 @@ export class CustomersService {
       this.transactionRepository.totalsForCustomers([customer.id]),
     ]);
     return this.toResponse(customer, ownerNames, totals.get(customer.id));
+  }
+
+  /**
+   * Time-bucketed net series specifically for this customer.
+   */
+  async getTrends(
+    actor: ICurrentStaff,
+    id: string,
+    query: TrendQueryDto,
+  ): Promise<TrendResponseDto> {
+    await this.requireScoped(actor, id);
+
+    const granularity = query.granularity ?? TrendGranularity.DAY;
+    const to = query.dateTo ?? new Date();
+    const from = query.dateFrom ?? new Date(to.getTime() - (query.lastNDays ?? 30) * 86_400_000);
+
+    const rows = await this.db.execute(sql`
+      WITH buckets AS (
+        SELECT generate_series(
+          date_trunc(${granularity}, ${from.toISOString()}::timestamptz),
+          date_trunc(${granularity}, ${to.toISOString()}::timestamptz),
+          ${'1 ' + granularity}::interval
+        ) AS bucket
+      ),
+      totals AS (
+        SELECT
+          date_trunc(${granularity}, t.occurred_at) AS bucket,
+          COALESCE(SUM(t.amount) FILTER (WHERE t.type = 'debit'), 0) AS total_in,
+          COALESCE(SUM(t.amount) FILTER (WHERE t.type = 'credit'), 0) AS total_out,
+          COUNT(*) AS transaction_count
+        FROM ${transactions} t
+        WHERE t.customer_id = ${id}
+          AND t.deleted_at IS NULL
+          AND t.occurred_at >= ${from.toISOString()}::timestamptz
+          AND t.occurred_at <= ${to.toISOString()}::timestamptz
+        GROUP BY 1
+      )
+      SELECT
+        to_char(b.bucket, 'YYYY-MM-DD') AS bucket,
+        COALESCE(t.total_in, 0)::text AS total_in,
+        COALESCE(t.total_out, 0)::text AS total_out,
+        (COALESCE(t.total_in, 0) - COALESCE(t.total_out, 0))::text AS balance,
+        COALESCE(t.transaction_count, 0)::int AS transaction_count
+      FROM buckets b
+      LEFT JOIN totals t ON t.bucket = b.bucket
+      ORDER BY b.bucket
+    `);
+
+    return {
+      granularity,
+      points: (rows.rows as Record<string, unknown>[]).map((row) => ({
+        bucket: row.bucket as string,
+        totalIn: row.total_in as string,
+        totalOut: row.total_out as string,
+        balance: row.balance as string,
+        transactionCount: Number(row.transaction_count),
+      })),
+    };
   }
 
   async create(actor: ICurrentStaff, dto: CreateCustomerDto): Promise<CustomerResponseDto> {

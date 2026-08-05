@@ -79,7 +79,12 @@ export default async function DashboardPage({
         <StatCard
           label="Net (this month)"
           value={<Money value={metrics.thisMonth.balance} />}
-          hint={describeChange(metrics.thisMonth.changePercent)}
+          trend={metrics.thisMonth.changePercent}
+          hint={
+            metrics.thisMonth.changePercent === null
+              ? 'No activity last month to compare against.'
+              : undefined
+          }
         />
       </section>
 
@@ -120,22 +125,6 @@ export default async function DashboardPage({
       </div>
     </div>
   );
-}
-
-/**
- * Month-on-month movement.
- *
- * `changePercent` is a percentage, not money, so it is a real number and is
- * formatted as one. It is **null** when the previous month was zero: a
- * percentage change from nothing is undefined rather than infinite, and
- * printing it as a number would show "NaN%" or a meaningless 100%.
- */
-function describeChange(changePercent: number | null): string {
-  if (changePercent === null) return 'No activity last month to compare against.';
-  if (!Number.isFinite(changePercent) || changePercent === 0) return 'Level with last month.';
-
-  const direction = changePercent > 0 ? 'up' : 'down';
-  return `${Math.abs(Math.round(changePercent))}% ${direction} on last month.`;
 }
 
 function TrendTable({ points }: { points: TrendResponse['points'] }) {

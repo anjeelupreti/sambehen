@@ -44,5 +44,7 @@ export function useAction<TArgs extends unknown[], TData>(
     [action],
   );
 
-  return { run, pending, fieldErrors, clearFieldErrors: () => setFieldErrors({}) };
+  const clearFieldErrors = useCallback(() => setFieldErrors({}), []);
+
+  return { run, pending, fieldErrors, clearFieldErrors };
 }

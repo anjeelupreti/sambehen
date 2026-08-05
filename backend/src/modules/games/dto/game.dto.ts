@@ -67,6 +67,12 @@ export class CreateGameDto {
   @MaxLength(1000)
   @IsOptional()
   description?: string;
+
+  @ApiPropertyOptional({ type: String, maxLength: 2000 })
+  @IsString()
+  @MaxLength(2000)
+  @IsOptional()
+  imageUrl?: string;
 }
 
 export class UpdateGameDto {
@@ -91,6 +97,12 @@ export class UpdateGameDto {
   @MaxLength(1000)
   @IsOptional()
   description?: string;
+
+  @ApiPropertyOptional({ type: String, maxLength: 2000 })
+  @IsString()
+  @MaxLength(2000)
+  @IsOptional()
+  imageUrl?: string;
 
   @ApiPropertyOptional({
     description: 'Inactive games are rejected for new transactions but keep their history.',
@@ -138,6 +150,9 @@ export class GameResponseDto {
 
   @ApiProperty({ type: String, nullable: true })
   description!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  imageUrl!: string | null;
 
   @ApiProperty()
   isActive!: boolean;

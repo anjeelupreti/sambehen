@@ -9,15 +9,17 @@
 Staff-facing web client for the [Sambehen API](../backend). Next.js App
 Router, React Server Components, Tailwind v4 and shadcn/ui.
 
-> **Status: scaffold.** Auth, the app shell, and three read screens
-> (dashboard, customers, transactions) are implemented end to end against
-> the real API contract. The remaining screens listed in
-> [§ What's not built](#whats-not-built) are navigation entries only.
+> **Status: the staff app is complete and verified against a running API.**
+> Dashboard (with charts), customers, transactions, messages, VIPs, spins,
+> games, staff and the audit trail are all built, with filters, sortable
+> columns, write actions and live messaging over Socket.IO.
 >
-> **This has never been installed or built** — it was written while the
-> machine had no free disk space for `npm install`. Treat the first
-> `npm install && npm run build` as the real review. See
-> [§ First run](#first-run).
+> Two things are deliberately unfinished and are listed in
+> [§ What's not built](#whats-not-built): **email campaigns**, and the
+> **customer portal**, which has a sign-in page but nothing behind it.
+>
+> Types are **generated** from the API's OpenAPI document — see
+> [§ Types are generated](#types-are-generated). Do not hand-write them.
 
 ---
 
@@ -49,18 +51,18 @@ Browser ──▶ Next.js server ──▶ API
 Every API response is wrapped. [lib/api.ts](lib/api.ts) unwraps it so pages
 deal in domain data:
 
-| Helper       | Returns                     | Use for                             |
-| ------------ | --------------------------- | ----------------------------------- |
-| `apiGet`     | `data`                      | A single resource                   |
-| `apiList`    | `{ data, meta, summary }`   | Lists — keeps pagination and totals |
-| `apiMutate`  | `data`                      | POST / PATCH / DELETE               |
-| `apiRequest` | The whole envelope          | When you need `correlationId`       |
+| Helper       | Returns                   | Use for                             |
+| ------------ | ------------------------- | ----------------------------------- |
+| `apiGet`     | `data`                    | A single resource                   |
+| `apiList`    | `{ data, meta, summary }` | Lists — keeps pagination and totals |
+| `apiMutate`  | `data`                    | POST / PATCH / DELETE               |
+| `apiRequest` | The whole envelope        | When you need `correlationId`       |
 
 Failures throw `ApiError` carrying `status`, `code`, `details` and
 `correlationId`. **Branch on `code`, never on `message`** — codes are
 contractual, messages get reworded.
 
-`summary` is computed by the API over the *whole filtered set*. Never
+`summary` is computed by the API over the _whole filtered set_. Never
 recompute it by reducing over `data`: that only sees the current page.
 
 ### Money
@@ -126,12 +128,12 @@ reconcile any drift.
 
 ### Environment
 
-| Variable               | Purpose                                                     |
-| ---------------------- | ----------------------------------------------------------- |
-| `API_URL`              | Backend origin. **Server-side only** — never exposed.        |
+| Variable               | Purpose                                                         |
+| ---------------------- | --------------------------------------------------------------- |
+| `API_URL`              | Backend origin. **Server-side only** — never exposed.           |
 | `API_PREFIX`           | Route prefix, matches the backend's `API_PREFIX`+`API_VERSION`. |
-| `NEXT_PUBLIC_CURRENCY` | Display currency for money formatting.                       |
-| `NEXT_PUBLIC_LOCALE`   | Number and date formatting locale.                           |
+| `NEXT_PUBLIC_CURRENCY` | Display currency for money formatting.                          |
+| `NEXT_PUBLIC_LOCALE`   | Number and date formatting locale.                              |
 
 Anything prefixed `NEXT_PUBLIC_` is inlined into the browser bundle at
 build time. **Never put a secret behind that prefix.** `API_URL` is
@@ -194,12 +196,12 @@ request regardless of what the sidebar shows.
 The natural home for this half. Point Vercel at the repo and set the **root
 directory to `frontend`** — without that it builds the backend and fails.
 
-| Setting        | Value                            |
-| -------------- | -------------------------------- |
-| Root Directory | `frontend`                       |
-| Framework      | Next.js (auto-detected)          |
-| Build Command  | `npm run build` (default)        |
-| Install        | `npm install` (default)          |
+| Setting        | Value                     |
+| -------------- | ------------------------- |
+| Root Directory | `frontend`                |
+| Framework      | Next.js (auto-detected)   |
+| Build Command  | `npm run build` (default) |
+| Install        | `npm install` (default)   |
 
 Environment variables, set for Production and Preview:
 
@@ -223,7 +225,7 @@ vercel --prod
 **The API must be reachable from Vercel's servers**, not just your laptop —
 `localhost` will not resolve there. Deploy the backend somewhere public
 first ([backend deployment](../backend/README.md#deployment)); it does
-*not* belong on Vercel, for reasons documented there.
+_not_ belong on Vercel, for reasons documented there.
 
 Cookies are `secure` when `NODE_ENV=production`, which Vercel sets, so the
 session requires HTTPS in production. That is intended.
@@ -243,30 +245,64 @@ carries only the traced dependencies.
 
 ## What's not built
 
-The sidebar lists these; the routes do not exist yet. Each is a Server
-Component reading an endpoint the API already exposes:
+Nothing in the navigation 404s. These two areas have no page, and are
+therefore **not advertised** in the sidebar — add the nav entry in the same
+commit as the page, never before it.
 
-| Screen        | Endpoint                    | Notes                                    |
-| ------------- | --------------------------- | ---------------------------------------- |
-| Messages      | `/team/conversations`       | Socket.IO for live updates               |
-| VIPs          | `/team/vips`                | Plus criteria management for master       |
-| Spin winners  | `/team/spin-winners`        | Scoped register, not the masked feed      |
-| Games         | `/team/games`               | Read for all, write for master            |
-| Staff         | `/team/staff`               | Master and manager only                   |
-| Email         | `/team/email/campaigns`     | Audience preview before send              |
-| Exports       | `/team/exports`             | 14 lists; streams binary, needs a download handler |
-| Audit trail   | `/team/audit-logs`          | Master only                               |
-| Customer detail | `/team/customers/:id`     | Linked from the list but not yet written  |
+| Area                | Endpoint                | Notes                                                |
+| ------------------- | ----------------------- | ---------------------------------------------------- |
+| **Email campaigns** | `/team/email/campaigns` | Audience preview before send                         |
+| **Customer portal** | `/me/*`                 | See below — a sign-in page exists, nothing behind it |
 
-Also absent: any write path (creating customers, recording transactions),
-token refresh on expiry (the session currently just ends), and tests.
+### The customer portal is a stub, and currently misleading
+
+`/customer/login` exists and calls the right endpoint
+(`/auth/customer/login`), but it then writes the **staff** session cookies
+and redirects to the **staff** dashboard. The two realms are signed with
+different secrets, so a customer landing there has a token every team route
+rejects — and, because both realms share one cookie namespace, signing in as
+a customer clobbers any staff session in the same browser.
+
+The API side is complete (`/me/dashboard`, `/me/profile`, `/me/messages`,
+`/me/vip-status`, `/me/referral`). What is missing is a portal to land on
+and a separate cookie namespace to land with. Until one is built, the link
+from the staff sign-in page leads somewhere that does not work.
+
+Also still absent: tests.
+
+### Types are generated
+
+`lib/types.ts` is thin aliases over `lib/api-schema.d.ts`, which is
+generated from the API:
+
+```bash
+npm run types:api      # regenerates backend/openapi.json, then the .d.ts
+```
+
+An earlier hand-written version type-checked cleanly while getting the login
+payload, the dashboard shape and two list summaries wrong — every one of
+which surfaced as a broken page rather than a compile error. Do not
+reintroduce hand-written response types.
+
+### Sessions refresh themselves
+
+The access token lasts about fifteen minutes; the refresh token lasts a
+week. `middleware.ts` mints a new pair when the access token has expired, so
+a session survives for a week of activity.
+
+This has to happen in middleware: a Server Component cannot set a cookie
+during render, so it can only notice an expired token and redirect — which
+is precisely what produced an infinite `/dashboard` ⇄ `/login` loop before
+the middleware existed. Every exit path there either establishes a working
+session or clears it completely; a half-session is what the loop was made
+of.
 
 ---
 
 ## Related
 
-| Document                                             | What it covers                         |
-| ---------------------------------------------------- | -------------------------------------- |
-| [../backend/README.md](../backend/README.md)         | The API, its rules, and how to run it  |
-| [../backend/docs/ARCHITECTURE.md](../backend/docs/ARCHITECTURE.md) | Why the API is shaped the way it is     |
-| `/api/docs` on a running backend                     | Live Swagger, every enum value          |
+| Document                                                           | What it covers                        |
+| ------------------------------------------------------------------ | ------------------------------------- |
+| [../backend/README.md](../backend/README.md)                       | The API, its rules, and how to run it |
+| [../backend/docs/ARCHITECTURE.md](../backend/docs/ARCHITECTURE.md) | Why the API is shaped the way it is   |
+| `/api/docs` on a running backend                                   | Live Swagger, every enum value        |

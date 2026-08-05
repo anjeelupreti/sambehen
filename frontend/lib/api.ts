@@ -124,7 +124,9 @@ export async function apiRequest<TData, TSummary = undefined>(
   if (!anonymous) {
     const token = await getAccessToken();
     if (!token) {
-      if (redirectOnUnauthorized) redirect('/login');
+      if (redirectOnUnauthorized) {
+        redirect('/logout');
+      }
       throw new ApiError({ status: 401, code: 'AUTH_UNAUTHENTICATED', message: 'Not signed in' });
     }
     headers.Authorization = `Bearer ${token}`;
@@ -165,7 +167,7 @@ export async function apiRequest<TData, TSummary = undefined>(
     const envelope = payload as ApiErrorEnvelope | null;
 
     if (response.status === 401 && redirectOnUnauthorized) {
-      redirect('/login');
+      redirect('/logout');
     }
 
     throw new ApiError({

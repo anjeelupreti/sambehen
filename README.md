@@ -96,7 +96,13 @@ cross-tenant e2e tests, 69 API paths, 19 tables. The e2e suite is the one
 that matters: a scoping bug fails silently, returning `200` with somebody
 else's rows.
 
-**Frontend** — scaffold. Auth, shell and three read screens work against
-the real contract; the rest of the sidebar is navigation only. **It has
-never been installed or built** — see the warning at the top of
-[frontend/README.md](frontend/README.md).
+**Frontend** — the staff app is complete and verified against a running
+API: dashboard with charts, customers, transactions, messages (live over
+Socket.IO), VIPs, spins, games, staff and the audit trail, with filters,
+sortable columns and write actions throughout. Types are generated from the
+API's OpenAPI document rather than hand-written.
+
+Two areas remain: **email campaigns**, and the **customer portal** — which
+has a sign-in page that currently writes staff cookies and lands on the
+staff dashboard, so it does not work. Both are described in
+[frontend/README.md](frontend/README.md#whats-not-built).

@@ -32,6 +32,7 @@ export function FormModal({
   description,
   submitLabel,
   pending,
+  className,
   onSubmit,
   children,
 }: {
@@ -41,12 +42,13 @@ export function FormModal({
   description?: string;
   submitLabel: string;
   pending: boolean;
+  className?: string;
   onSubmit: () => void;
   children: React.ReactNode;
 }) {
   return (
     <Dialog open={open} onOpenChange={pending ? undefined : onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className={className || 'max-h-[90svh] overflow-y-auto sm:max-w-lg'}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}

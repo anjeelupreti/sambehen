@@ -21,9 +21,12 @@ import {
 } from '@/components/ui/table';
 import { apiList } from '@/lib/api';
 import { formatCount, formatDateTime } from '@/lib/money';
-import type { SpinWinner, SpinWinnerSummary } from '@/lib/types';
+import type { SpinEvent, SpinWinner, SpinWinnerSummary } from '@/lib/types';
+import { getActor } from '@/lib/session';
+import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/money';
 
-export const metadata: Metadata = { title: 'Spin winners' };
+export const metadata: Metadata = { title: 'Spins' };
 
 /**
  * A winner can be chosen before the draw or recorded after it. The
@@ -52,6 +55,12 @@ export default async function SpinWinnersPage({
     return Array.isArray(value) ? value[0] : value;
   };
 
+  const actor = await getActor();
+
+  // Events sit above the winners they produce, the same way criteria sit
+  // above VIP qualifications: a draw is only meaningful next to who won it.
+  const eventsPromise = apiList<SpinEvent>('/team/spin-events', { query: { limit: 25 } });
+
   const { data, meta, summary } = await apiList<SpinWinner, SpinWinnerSummary>(
     '/team/spin-winners',
     {
@@ -70,14 +79,18 @@ export default async function SpinWinnersPage({
     },
   );
 
+  const { data: events } = await eventsPromise;
+
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Spin winners</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Spins</h1>
         <p className="text-muted-foreground text-sm">
-          Winners of spin events run against an active VIP criteria.
+          Events run against an active VIP criteria, and the winners they produced.
         </p>
       </header>
+
+      <SpinEventsSection events={events} canManage={actor?.role === 'master'} />
 
       {summary ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -178,5 +191,80 @@ export default async function SpinWinnersPage({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/**
+ * The events that produced the winners listed below.
+ *
+ * On the same page on purpose: a draw read apart from who won it says very
+ * little, and the winners list is the reason anyone opens an event.
+ */
+function SpinEventsSection({ events, canManage }: { events: SpinEvent[]; canManage: boolean }) {
+  return (
+    <Card className="gap-0 py-0">
+      <CardContent className="px-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b p-3">
+          <div>
+            <h2 className="text-sm font-semibold">Spin events</h2>
+            <p className="text-muted-foreground text-xs">
+              Each runs against an active VIP criteria, which decides who is eligible.
+            </p>
+          </div>
+          {canManage ? (
+            <Button asChild size="sm">
+              <Link href="/spin-events/new">New event</Link>
+            </Button>
+          ) : null}
+        </div>
+
+        {events.length === 0 ? (
+          <p className="text-muted-foreground p-6 text-center text-sm">
+            No spin events yet. Winners appear here once an event has run.
+          </p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Event</TableHead>
+                <TableHead>Criteria</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Selection</TableHead>
+                <TableHead className="text-right">Prize pool</TableHead>
+                <TableHead className="text-right">Winners</TableHead>
+                <TableHead>Scheduled</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {events.map((event) => (
+                <TableRow key={event.id}>
+                  <TableCell className="font-medium">{event.name}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {event.vipCriteriaName}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={event.status === 'completed' ? 'default' : 'outline'}>
+                      {event.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {/* Preselected means winners were chosen before the draw
+                        rather than after it. It is auditable, so it is shown. */}
+                    {event.selectionMode === 'preselected' ? 'Preselected' : 'Post-draw'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Money value={event.prizePool} />
+                  </TableCell>
+                  <TableCell className="tabular text-right">{event.winnerCount}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                    {event.scheduledAt ? formatDate(event.scheduledAt) : '—'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
   );
 }

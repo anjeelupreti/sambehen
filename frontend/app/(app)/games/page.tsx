@@ -7,7 +7,16 @@ import { PaginationControls } from '@/components/pagination-controls';
 import { SearchField } from '@/components/search-field';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { GameActions } from '@/components/game-actions';
+import { NewGameModal } from '@/components/forms/new-game-modal';
 import { apiList } from '@/lib/api';
 import { formatDate } from '@/lib/money';
 import { getActor } from '@/lib/session';
@@ -54,13 +63,16 @@ export default async function GamesPage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Games</h1>
-        <p className="text-muted-foreground text-sm">
-          {actor?.role === 'master'
-            ? 'The catalogue transactions are recorded against.'
-            : 'Read-only. Only a master can change the catalogue.'}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Games</h1>
+          <p className="text-muted-foreground text-sm">
+            {actor?.role === 'master'
+              ? 'The catalogue transactions are recorded against.'
+              : 'Read-only. Only a master can change the catalogue.'}
+          </p>
+        </div>
+        {actor ? <NewGameModal actorRole={actor.role} /> : null}
       </header>
 
       <Card className="gap-0 py-0">
@@ -83,12 +95,15 @@ export default async function GamesPage({
                 <SortableHeader column="category">Category</SortableHeader>
                 <SortableHeader column="isActive">State</SortableHeader>
                 <SortableHeader column="createdAt">Added</SortableHeader>
+                <TableHead className="w-12">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
+                  <TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
                     No games match these filters.
                   </TableCell>
                 </TableRow>
@@ -118,6 +133,9 @@ export default async function GamesPage({
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                       {formatDate(game.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <GameActions game={game} actorRole={actor?.role} />
                     </TableCell>
                   </TableRow>
                 ))

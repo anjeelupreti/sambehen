@@ -112,6 +112,32 @@ export async function createCustomer(input: NewCustomerInput): Promise<ActionRes
   return result;
 }
 
+export async function updateCustomer(
+  id: string,
+  payload: {
+    email?: string;
+    fullName?: string;
+    phone?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    emailOptOut?: boolean;
+    notes?: string;
+  },
+): Promise<ActionResult<Customer>> {
+  const result = await runAction(
+    () => apiMutate<Customer>(`/team/customers/${id}`, 'PATCH', payload),
+    'Customer updated.',
+  );
+
+  if (result.ok) {
+    revalidatePath('/customers');
+    revalidatePath(`/customers/${id}`);
+  }
+
+  return result;
+}
+
 export async function reassignCustomer(
   id: string,
   ownerStaffId: string,

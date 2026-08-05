@@ -88,6 +88,31 @@ export class StaffController {
     return this.staffService.findAll(actor, filters);
   }
 
+  @Patch('me')
+  @ResponseMessage('Profile updated successfully')
+  @ApiOperation({ summary: 'Update your own profile' })
+  @ApiOkData(StaffResponseDto)
+  @ApiErrors(401, 409, 422)
+  updateProfile(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Body() dto: UpdateStaffDto,
+  ): Promise<StaffResponseDto> {
+    return this.staffService.update(actor, actor.id, dto);
+  }
+
+  @Post('me/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Password updated successfully')
+  @ApiOperation({ summary: 'Update your own password' })
+  @ApiOkData(Object, 'Password updated and sessions revoked')
+  @ApiErrors(401, 422)
+  resetOwnPassword(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Body() dto: ResetStaffPasswordDto,
+  ): Promise<{ revokedSessions: number }> {
+    return this.staffService.resetPassword(actor, actor.id, dto);
+  }
+
   @Get(':id')
   @ResponseMessage('Staff member retrieved successfully')
   @ApiParam({ name: 'id', format: 'uuid' })

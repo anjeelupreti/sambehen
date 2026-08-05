@@ -16,6 +16,7 @@ import { TeamAuth } from '@common/decorators/composite-auth.decorator';
 import { CurrentStaff } from '@common/decorators/auth.decorators';
 import { ResponseMessage } from '@common/decorators/response-message.decorator';
 import { ParseUUIDPipe } from '@common/pipes/parse-uuid.pipe';
+import { TrendQueryDto, TrendResponseDto } from '../dashboard/dto/dashboard.dto';
 import {
   ApiOkData,
   ApiOkList,
@@ -104,6 +105,23 @@ export class CustomersController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<CustomerResponseDto> {
     return this.customersService.findOne(actor, id);
+  }
+
+  @Get(':id/trends')
+  @ResponseMessage('Customer trends retrieved successfully')
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOperation({
+    summary: 'Get customer transaction trends',
+    description: 'Time-bucketed net series specifically for this customer.',
+  })
+  @ApiOkData(TrendResponseDto)
+  @ApiErrors(401, 404, 422)
+  getTrends(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: TrendQueryDto,
+  ): Promise<TrendResponseDto> {
+    return this.customersService.getTrends(actor, id, query);
   }
 
   @Patch(':id')

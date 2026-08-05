@@ -1,0 +1,55 @@
+Guide to Spin Up the Sambehen System
+=====================================
+
+1. Start Infrastructure (Docker)
+   Ensure Docker is running, then start the Postgres and Redis containers:
+   ```bash
+   cd backend
+   docker compose up -d db redis
+   ```
+
+2. Start the Backend API (Port 3001)
+   The backend is configured to run on port 3001 to leave port 3000 free for the frontend.
+   ```bash
+   cd backend
+   npm run start:dev
+   ```
+
+3. Start the Frontend (Port 3000)
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+4. Database Migrations & Seeding
+   If the database is empty, you must migrate and seed the data:
+   ```bash
+   cd backend
+   npm run db:migrate
+   npm run db:seed
+   ```
+
+Seed Credentials
+================
+Login URL for Staff (Master, Manager, Runner): http://localhost:3000/login
+
+After running `npm run db:seed`, the following accounts are created with the password `Password123!`:
+
+Master Account (System Owner):
+- master@sambehen.local
+
+Managers:
+- manager1@sambehen.local
+- manager2@sambehen.local
+
+Runners (Field Staff):
+- runner11@sambehen.local
+- runner12@sambehen.local
+- runner21@sambehen.local
+- runner22@sambehen.local
+
+Customers (Sample Data):
+- customer1@example.com
+- customer2@example.com
+...up to customer14@example.com
+(Note: Customers do not log into the system directly. They are managed by the staff.)

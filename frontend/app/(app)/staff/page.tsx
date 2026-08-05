@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
+import { ExportButton } from '@/components/export-button';
 import { SortableHeader } from '@/components/filters/sortable-header';
 import { NewStaffModal } from '@/components/forms/new-staff-modal';
 import { PaginationControls } from '@/components/pagination-controls';
@@ -103,7 +104,10 @@ export default async function StaffPage({
               : 'Your own runners. Other managers and their chains are not visible.'}
           </p>
         </div>
-        {actor ? <NewStaffModal actorRole={actor.role} managers={managers} /> : null}
+        <div className="flex items-center gap-2">
+          <ExportButton exportKey="staff" />
+          {actor ? <NewStaffModal actorRole={actor.role} managers={managers} /> : null}
+        </div>
       </header>
 
       <Card className="gap-0 py-0">
@@ -173,13 +177,7 @@ export default async function StaffPage({
                       <TableCell className="text-right">
                         {/* A master can act on anyone; a manager only on their
                             own runners, which is also what the API allows. */}
-                        {member.role === 'master' ? null : (
-                          <StaffActions
-                            staffId={member.id}
-                            username={member.username}
-                            isActive={member.isActive}
-                          />
-                        )}
+                        {member.role === 'master' ? null : <StaffActions staff={member} />}
                       </TableCell>
                     </TableRow>
                   );

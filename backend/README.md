@@ -165,6 +165,31 @@ The seed deliberately builds **two** managers with two runners each. With a
 single manager, a broken scope predicate that returns everything looks
 identical to one that returns the right rows.
 
+#### What the seed produces
+
+| Area          | Contents                                                                 |
+| ------------- | ------------------------------------------------------------------------ |
+| Staff         | 1 master, 2 managers, 4 runners                                          |
+| Customers     | 24, spread across both chains, with a mix of statuses                    |
+| Transactions  | Debits, credits and corrections against seeded games                     |
+| VIP criteria  | 3 — two active tiers plus one closed window                              |
+| VIP quals     | ~70, **computed from the seeded spend**, not invented                    |
+| Spin events   | 3 — two completed, one scheduled; preselected and post-draw both present |
+| Spin winners  | 5, drawn only from customers who actually qualified                      |
+| Audit entries | ~94 across 6 actors and 13 actions, including refusals                   |
+
+Two details are deliberate. **VIP qualification and spin winners are derived
+from the transactions already seeded**, by reading spend back out of the
+database — so the VIP list agrees with the transaction list instead of
+contradicting it.
+
+And the **audit trail is seeded to be worth reading**: several staff plus a
+customer and a system actor, successes alongside a runner refused another
+chain's customer (`404`) and a manager refused the audit trail itself
+(`403`), and one scheduled-job entry with no request behind it — which is
+why `statusCode` is nullable. A trail of nothing but `200`s from one account
+demonstrates nothing.
+
 ### Scripts
 
 | Command                                            | What it does                                 |

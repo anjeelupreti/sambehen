@@ -2063,6 +2063,7 @@ export interface components {
       code: string;
       category: string | null;
       description: string | null;
+      imageUrl: string | null;
       isActive: boolean;
       /** Format: date-time */
       createdAt: string;
@@ -2081,12 +2082,14 @@ export interface components {
        */
       category?: string;
       description?: string;
+      imageUrl?: string;
     };
     UpdateGameDto: {
       name?: string;
       /** @description Free text. Conventional values: slots, table, live, sports, lottery, arcade, other. */
       category?: string;
       description?: string;
+      imageUrl?: string;
       /** @description Inactive games are rejected for new transactions but keep their history. */
       isActive?: boolean;
     };

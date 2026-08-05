@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import { apiMutate } from '@/lib/api';
 import { runAction } from '@/lib/run-action';
+import { getActor } from '@/lib/session';
 import type { ActionResult } from '@/lib/action-result';
 import type { Staff } from '@/lib/types';
 
@@ -67,6 +68,28 @@ export async function createStaff(input: NewStaffInput): Promise<ActionResult<St
   return result;
 }
 
+export async function updateStaff(
+  id: string,
+  payload: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    email?: string;
+  },
+): Promise<ActionResult<Staff>> {
+  const result = await runAction(
+    () => apiMutate<Staff>(`/team/staff/${id}`, 'PATCH', payload),
+    'Staff member updated.',
+  );
+
+  if (result.ok) {
+    revalidatePath('/staff');
+    revalidatePath(`/staff/${id}`);
+  }
+
+  return result;
+}
+
 /**
  * Issues a new password.
  *
@@ -77,5 +100,52 @@ export async function resetStaffPassword(id: string): Promise<ActionResult<{ pas
   return runAction(
     () => apiMutate<{ password: string }>(`/team/staff/${id}/reset-password`, 'POST'),
     'Password reset. Copy it now — it cannot be shown again.',
+  );
+}
+
+/**
+ * Updates the signed-in member's own profile.
+ *
+ * There is no `/team/staff/me` on the API — self-service goes through the
+ * ordinary staff route with the caller's own id, which the scoping already
+ * permits. Only these four fields are editable; role and parent are not
+ * self-service by design.
+ */
+export async function updateOwnProfile(input: {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+}): Promise<ActionResult<Staff>> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, message: 'Not signed in.', code: 'AUTH_UNAUTHENTICATED' };
+
+  const result = await runAction(
+    () => apiMutate<Staff>(`/team/staff/${actor.id}`, 'PATCH', input),
+    'Profile updated.',
+  );
+
+  if (result.ok) revalidatePath('/', 'layout');
+  return result;
+}
+
+/**
+ * Sets the signed-in member's own password.
+ *
+ * `mustChangePassword` is false here, unlike an administrative reset: a
+ * password you chose yourself should not prompt you to change it again on
+ * the next sign-in.
+ */
+export async function changeOwnPassword(newPassword: string): Promise<ActionResult<unknown>> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, message: 'Not signed in.', code: 'AUTH_UNAUTHENTICATED' };
+
+  return runAction(
+    () =>
+      apiMutate<unknown>(`/team/staff/${actor.id}/reset-password`, 'POST', {
+        newPassword,
+        mustChangePassword: false,
+      }),
+    'Password updated.',
   );
 }

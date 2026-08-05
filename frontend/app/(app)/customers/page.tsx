@@ -11,6 +11,7 @@ import { NewCustomerModal } from '@/components/forms/new-customer-modal';
 import { TextFilter } from '@/components/filters/text-filter';
 import { Money } from '@/components/money';
 import { PaginationControls } from '@/components/pagination-controls';
+import { ExportButton } from '@/components/export-button';
 import { SearchField } from '@/components/search-field';
 import { StatCard } from '@/components/stat-card';
 import { Badge } from '@/components/ui/badge';
@@ -122,7 +123,10 @@ export default async function CustomersPage({
             Only the customers in your chain. Totals below cover every match, not just this page.
           </p>
         </div>
-        {actor ? <NewCustomerModal actorRole={actor.role} owners={owners} /> : null}
+        <div className="flex items-center gap-2">
+          <ExportButton exportKey="customers" />
+          {actor ? <NewCustomerModal actorRole={actor.role} owners={owners} /> : null}
+        </div>
       </header>
 
       {summary ? (
@@ -222,11 +226,7 @@ export default async function CustomersPage({
                       {formatDate(customer.lastActivityAt)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <CustomerActions
-                        customerId={customer.id}
-                        username={customer.username}
-                        status={customer.status}
-                      />
+                      <CustomerActions customer={customer} />
                     </TableCell>
                   </TableRow>
                 ))

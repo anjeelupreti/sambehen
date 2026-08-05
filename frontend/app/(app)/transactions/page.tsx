@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { AmountRangeFilter } from '@/components/filters/amount-range-filter';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
+import { ExportButton } from '@/components/export-button';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
 import { SortableHeader } from '@/components/filters/sortable-header';
@@ -129,7 +130,10 @@ export default async function TransactionsPage({
             and is counted separately from a withdrawal.
           </p>
         </div>
-        <RecordTransactionModal games={games} />
+        <div className="flex items-center gap-2">
+          <ExportButton exportKey="transactions" />
+          <RecordTransactionModal games={games} />
+        </div>
       </header>
 
       {summary ? (

@@ -136,7 +136,18 @@ export class StaffService {
 
   async update(actor: ICurrentStaff, id: string, dto: UpdateStaffDto): Promise<StaffResponseDto> {
     await this.scopeService.assertCanManageStaff(actor, id);
+    return this.updateUnscoped(actor, id, dto);
+  }
 
+  async updateProfile(actor: ICurrentStaff, dto: UpdateStaffDto): Promise<StaffResponseDto> {
+    return this.updateUnscoped(actor, actor.id, dto);
+  }
+
+  private async updateUnscoped(
+    actor: ICurrentStaff,
+    id: string,
+    dto: UpdateStaffDto,
+  ): Promise<StaffResponseDto> {
     const existing = await this.requireStaff(id);
 
     if (dto.email && (await this.staffRepository.emailTaken(dto.email, id))) {
@@ -174,6 +185,21 @@ export class StaffService {
     dto: ResetStaffPasswordDto,
   ): Promise<{ revokedSessions: number }> {
     await this.scopeService.assertCanManageStaff(actor, id);
+    return this.resetPasswordUnscoped(actor, id, dto);
+  }
+
+  async resetOwnPassword(
+    actor: ICurrentStaff,
+    dto: ResetStaffPasswordDto,
+  ): Promise<{ revokedSessions: number }> {
+    return this.resetPasswordUnscoped(actor, actor.id, dto);
+  }
+
+  private async resetPasswordUnscoped(
+    actor: ICurrentStaff,
+    id: string,
+    dto: ResetStaffPasswordDto,
+  ): Promise<{ revokedSessions: number }> {
     await this.requireStaff(id);
 
     await this.staffRepository.update(id, {

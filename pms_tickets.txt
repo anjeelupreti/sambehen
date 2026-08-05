@@ -1,0 +1,47 @@
+Sambehen : Environment & Database Setup
+Initialize the project infrastructure. Define the Drizzle schema based on the entity diagram. Set up PostgreSQL and Redis. Configure NestJS basic modules and database connection.
+2026-08-05
+
+Sambehen : Authentication & Security Core
+Implement JWT-based authentication for Team and Customer realms. Create the role-based access control (RBAC) and row-level scoping system in the backend. Build login forms.
+2026-08-06
+
+Sambehen : Staff & Team Management
+Build CRUD endpoints and frontend pages for managing staff members (Managers, Runners, Affiliates). Implement invite and role assignment functionality.
+2026-08-07
+
+Sambehen : Customer Management & Portal
+Develop the customer registration and profile management. Create the Customer Dashboard (Customer Portal) where they can view their status. Build the team-facing customer list.
+2026-08-08
+
+Sambehen : Games & Catalogue Setup
+Build the Game catalogue CRUD (Master only) to define available games. Add image upload functionality for game covers. Setup frontend game cards.
+2026-08-09
+
+Sambehen : Transactions Engine
+Develop the core transaction recording system. Ensure transactions update customer metrics and VIP drift synchronously. Build the transaction list with advanced filtering.
+2026-08-10
+
+Sambehen : VIP Criteria & Rules
+Implement the VIP Criteria definition endpoints. Setup logic to materialise and recompute VIP qualifications based on transaction periods. Build VIP Criteria UI.
+2026-08-11
+
+Sambehen : Spin Events & Gamification
+Create endpoints to define Spin Events tied to VIP criteria. Build workflows for pre-selecting winners or recording drawn winners. Create the Spin Winners lists for staff and customers.
+2026-08-12
+
+Sambehen : Messaging System
+Build the messaging infrastructure (REST & WebSocket). Implement staff-to-customer chat. Add floating action buttons (FAB) for messages on the frontend.
+2026-08-13
+
+Sambehen : Analytics & Dashboard Visualization
+Implement the aggregation pipelines for dashboard metrics. Add trend charts, game popularity, and customer-specific transaction change metrics (vs last 30 days, etc).
+2026-08-14
+
+Sambehen : Data Import/Export Modules
+Build CSV/XLSX export streaming endpoints for all major tables. Implement bulk CSV import processors (Customers, Transactions, Staff) with validation.
+2026-08-15
+
+Sambehen : Final Polish & Seeding
+Add robust seed scripts to populate the database with realistic data for all entities. Perform end-to-end testing, UI polish, and final bug fixes.
+2026-08-16

@@ -124,6 +124,10 @@ export async function createSession(input: {
 export async function clearSession(): Promise<void> {
   const store = await cookies();
   for (const name of [ACCESS_COOKIE, REFRESH_COOKIE, ACTOR_COOKIE]) {
-    store.delete(name);
+    try {
+      store.delete(name);
+    } catch {
+      // Next.js throws if we modify cookies during Server Component rendering.
+    }
   }
 }

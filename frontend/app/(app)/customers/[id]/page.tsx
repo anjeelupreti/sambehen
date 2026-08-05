@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeftIcon } from 'lucide-react';
 
+import { ChartCard } from '@/components/charts/chart-card';
+import { TrendChart } from '@/components/charts/trend-chart';
+import { TrendControls } from '@/components/charts/trend-controls';
 import { CustomerActions } from '@/components/customer-actions';
 import { RecordTransactionModal } from '@/components/forms/record-transaction-modal';
 import { Money } from '@/components/money';
@@ -20,9 +23,18 @@ import {
 } from '@/components/ui/table';
 import { ApiError, apiGet, apiList } from '@/lib/api';
 import { formatCount, formatDate, formatDateTime } from '@/lib/money';
-import type { Customer, CustomerStatus, Game, Transaction } from '@/lib/types';
+import type {
+  Customer,
+  CustomerStatus,
+  Game,
+  Transaction,
+  TrendResponse,
+  TrendGranularity,
+} from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Customer' };
+
+const GRANULARITIES: TrendGranularity[] = ['day', 'week', 'month'];
 
 const STATUS_VARIANT: Record<CustomerStatus, 'default' | 'secondary' | 'outline' | 'destructive'> =
   {
@@ -32,8 +44,27 @@ const STATUS_VARIANT: Record<CustomerStatus, 'default' | 'secondary' | 'outline'
     banned: 'destructive',
   };
 
-export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CustomerDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
+  const searchParamsObj = await searchParams;
+  const first = (key: string) => {
+    const value = searchParamsObj[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
+
+  const requested = first('granularity');
+  const granularity: TrendGranularity = GRANULARITIES.includes(requested as TrendGranularity)
+    ? (requested as TrendGranularity)
+    : 'day';
+
+  const lastNDays = Number(first('lastNDays'));
+  const range = Number.isInteger(lastNDays) && lastNDays > 0 && lastNDays <= 730 ? lastNDays : 30;
 
   let customer: Customer;
   try {
@@ -47,11 +78,14 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     throw error;
   }
 
-  const [recent, { data: games }] = await Promise.all([
+  const [recent, { data: games }, trends] = await Promise.all([
     apiList<Transaction>('/team/transactions', {
       query: { customerId: id, limit: 10, sortBy: 'occurredAt', sortOrder: 'desc' },
     }),
     apiList<Game>('/team/games', { query: { limit: 100, isActive: true } }),
+    apiGet<TrendResponse>(`/team/customers/${id}/trends`, {
+      query: { granularity, lastNDays: range },
+    }),
   ]);
 
   return (
@@ -90,11 +124,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                 fullName: customer.fullName,
               }}
             />
-            <CustomerActions
-              customerId={customer.id}
-              username={customer.username}
-              status={customer.status}
-            />
+            <CustomerActions customer={customer} hideView={true} />
           </div>
         </header>
       </div>
@@ -117,6 +147,14 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           hint="Referral bonuses, kept separate from real money."
         />
       </section>
+
+      <ChartCard
+        title="Transaction History"
+        description="Customer's money in and out over time."
+        controls={<TrendControls />}
+        chart={<TrendChart points={trends.points} granularity={granularity} />}
+        table={<TrendTable points={trends.points} />}
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
@@ -208,6 +246,49 @@ function Detail({ label, value }: { label: string; value: string | null }) {
     <div className="flex items-baseline justify-between gap-4">
       <dt className="text-muted-foreground shrink-0">{label}</dt>
       <dd className="min-w-0 truncate text-right font-medium">{value ?? '—'}</dd>
+    </div>
+  );
+}
+
+function TrendTable({ points }: { points: TrendResponse['points'] }) {
+  if (points.length === 0) {
+    return (
+      <p className="text-muted-foreground py-6 text-center text-sm">Nothing in this period.</p>
+    );
+  }
+
+  return (
+    <div className="max-h-72 overflow-y-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Period</TableHead>
+            <TableHead className="text-right">In</TableHead>
+            <TableHead className="text-right">Out</TableHead>
+            <TableHead className="text-right">Net</TableHead>
+            <TableHead className="text-right">Entries</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {points.map((point) => (
+            <TableRow key={point.bucket}>
+              <TableCell className="whitespace-nowrap">{formatDate(point.bucket)}</TableCell>
+              <TableCell className="text-right">
+                <Money value={point.totalIn} />
+              </TableCell>
+              <TableCell className="text-right">
+                <Money value={point.totalOut} />
+              </TableCell>
+              <TableCell className="text-right">
+                <Money value={point.balance} />
+              </TableCell>
+              <TableCell className="tabular text-right">
+                {formatCount(point.transactionCount)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

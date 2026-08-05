@@ -28,6 +28,7 @@ export const games = pgTable(
     code: varchar('code', { length: 50 }).notNull(),
     category: varchar('category', { length: 80 }),
     description: text('description'),
+    imageUrl: varchar('image_url', { length: 2000 }),
 
     isActive: boolean('is_active').notNull().default(true),
 
