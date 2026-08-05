@@ -2,14 +2,19 @@
 
 import { redirect } from 'next/navigation';
 import { ApiError, apiRequest } from '@/lib/api';
-import { createSession, type SessionActor } from '@/lib/session';
+import { createCustomerSession } from '@/lib/customer-session';
 
 /** Shape returned by the customer realm's login route. */
 interface CustomerLoginResponse {
   accessToken: string;
   refreshToken: string;
   tokenType: string;
-  user?: { id?: string; username?: string; email?: string };
+  user: {
+    id: string;
+    email: string;
+    username: string;
+    fullName: string | null;
+  };
 }
 
 export interface CustomerLoginState {
@@ -57,20 +62,26 @@ export async function customerLogin(
     throw error;
   }
 
-  // Create session for the customer (though customer portal might not be fully built out yet)
-  // We'll set a generic actor structure for customer
-  await createSession({
+  /*
+   * The customer's own cookie namespace, never the staff one.
+   *
+   * The two realms are signed with different secrets, so a customer token
+   * is rejected on every team route. Writing it into the staff cookies —
+   * which this used to do — dropped the customer on a dashboard where
+   * nothing loaded, and silently destroyed any staff session in the same
+   * browser.
+   */
+  await createCustomerSession({
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
     actor: {
-      id: session.user?.id || 'customer-id',
-      username: session.user?.username || identifier,
-      // The session helper is typed for staff roles; the customer realm
-      // has no role of its own. See the portal note in frontend/README.md.
-      role: 'customer' as unknown as SessionActor['role'],
-      email: session.user?.email || '',
+      id: session.user.id,
+      username: session.user.username,
+      email: session.user.email,
+      fullName: session.user.fullName,
     },
   });
 
-  redirect('/dashboard');
+  // Outside the try: redirect() throws a control-flow signal.
+  redirect('/customer');
 }

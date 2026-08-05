@@ -36,8 +36,19 @@ const API_PREFIX = process.env.API_PREFIX ?? '/api/v1';
 
 const secureCookies = process.env.NODE_ENV === 'production';
 
-/** Reachable without a session. */
-const PUBLIC_PATHS = ['/login', '/logout', '/customer'];
+/*
+ * The customer realm.
+ *
+ * Its own cookies, because the API signs the two realms with different
+ * secrets and one namespace meant a customer sign-in silently destroyed a
+ * staff session in the same browser.
+ */
+const CUSTOMER_ACCESS_COOKIE = 'sambehen_customer_access';
+const CUSTOMER_REFRESH_COOKIE = 'sambehen_customer_refresh';
+const CUSTOMER_ACTOR_COOKIE = 'sambehen_customer_actor';
+
+/** Reachable without any session. */
+const PUBLIC_PATHS = ['/login', '/logout', '/customer/login', '/customer/logout'];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -127,6 +138,55 @@ function applyTokens(
   return response;
 }
 
+/** The customer realm's own refresh route — a different secret entirely. */
+async function refreshCustomer(refreshToken: string) {
+  try {
+    const response = await fetch(`${API_URL}${API_PREFIX}/auth/customer/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) return null;
+
+    const payload = (await response.json()) as {
+      data?: { accessToken?: string; refreshToken?: string };
+    };
+
+    const accessToken = payload.data?.accessToken;
+    const nextRefreshToken = payload.data?.refreshToken;
+    if (!accessToken || !nextRefreshToken) return null;
+
+    return { accessToken, refreshToken: nextRefreshToken };
+  } catch {
+    return null;
+  }
+}
+
+function applyCustomerTokens(
+  response: NextResponse,
+  tokens: { accessToken: string; refreshToken: string },
+): NextResponse {
+  response.cookies.set(CUSTOMER_ACCESS_COOKIE, tokens.accessToken, {
+    httpOnly: true,
+    secure: secureCookies,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 15,
+  });
+
+  response.cookies.set(CUSTOMER_REFRESH_COOKIE, tokens.refreshToken, {
+    httpOnly: true,
+    secure: secureCookies,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
@@ -158,9 +218,45 @@ export async function middleware(request: NextRequest) {
     return actor ? clearSession(NextResponse.next()) : NextResponse.next();
   }
 
+  // ── /customer/login ────────────────────────────────────────────────────
+  if (pathname === '/customer/login') {
+    const customerAccess = request.cookies.get(CUSTOMER_ACCESS_COOKIE)?.value;
+    if (customerAccess && !expiresSoon(customerAccess)) {
+      return NextResponse.redirect(new URL('/customer', request.url));
+    }
+    return NextResponse.next();
+  }
+
   if (isPublic(pathname)) return NextResponse.next();
 
-  // ── Everything behind the session ──────────────────────────────────────
+  // ── The customer portal ────────────────────────────────────────────────
+  //
+  // Guarded against the *customer* cookies. A staff session must never open
+  // these pages and a customer session must never open the staff app: the
+  // API signs the realms with different secrets, so the wrong token is
+  // rejected at signature verification and every request would fail.
+  if (pathname === '/customer' || pathname.startsWith('/customer/')) {
+    const customerAccess = request.cookies.get(CUSTOMER_ACCESS_COOKIE)?.value;
+    const customerRefresh = request.cookies.get(CUSTOMER_REFRESH_COOKIE)?.value;
+    const customerActor = request.cookies.get(CUSTOMER_ACTOR_COOKIE)?.value;
+
+    if (customerAccess && !expiresSoon(customerAccess) && customerActor) {
+      return NextResponse.next();
+    }
+
+    if (customerRefresh && customerActor) {
+      const tokens = await refreshCustomer(customerRefresh);
+      if (tokens) return applyCustomerTokens(NextResponse.next(), tokens);
+    }
+
+    const response = NextResponse.redirect(new URL('/customer/login', request.url));
+    for (const name of [CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE, CUSTOMER_ACTOR_COOKIE]) {
+      response.cookies.set(name, '', { path: '/', maxAge: 0 });
+    }
+    return response;
+  }
+
+  // ── Everything behind the staff session ────────────────────────────────
   //
   // The actor cookie is required as well as a token. The signed-in shell
   // renders from it, so a request carrying a valid token but no actor would
