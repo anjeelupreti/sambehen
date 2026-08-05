@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   EditIcon,
   EyeIcon,
@@ -47,13 +48,15 @@ export function StaffActions({ staff, hideView }: { staff: Staff; hideView?: boo
       <div className="flex items-center justify-end gap-1">
         {!hideView && (
           <Button
+            asChild
             variant="ghost"
             size="icon"
             className="size-8"
-            onClick={() => alert(`View details for ${username}`)}
             aria-label={`View ${username}`}
           >
-            <EyeIcon className="size-4" />
+            <Link href={`/staff/${staff.id}`}>
+              <EyeIcon className="size-4" />
+            </Link>
           </Button>
         )}
         <Button
