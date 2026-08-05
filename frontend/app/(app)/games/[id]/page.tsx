@@ -4,7 +4,9 @@ import type { Game } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-export default async function GameDetailsPage({ params }: { params: { id: string } }) {
+// `params` is a Promise in Next 15 — the code already awaited it, but the
+// type said otherwise, so the route's generated types did not type-check.
+export default async function GameDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   let game: Game;
   try {
     // Await params as per Next.js 15+ App Router rules
