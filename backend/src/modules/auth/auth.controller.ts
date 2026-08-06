@@ -16,6 +16,7 @@ import {
   TeamLoginResponseDto,
   CustomerLoginResponseDto,
   TokenPairDto,
+  ChangeOwnPasswordDto,
   StaffProfileDto,
   CustomerProfileDto,
 } from './dto/auth.dto';
@@ -97,6 +98,33 @@ export class AuthController {
   async logoutAllTeam(@CurrentStaff() staff: ICurrentStaff): Promise<{ revokedSessions: number }> {
     const revokedSessions = await this.authService.logoutAll(AuthRealm.TEAM, staff.id);
     return { revokedSessions };
+  }
+
+  @Post('team/change-password')
+  @TeamAuth()
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Password changed')
+  @Auditable({ action: 'auth.password_changed', entityType: 'staff', entityIdParam: null })
+  @ApiOperation({
+    summary: "Change the signed-in staff member's own password",
+    description: [
+      'Requires the current password. This is the self-service path and is',
+      'distinct from an administrative reset, which proves authority over an',
+      'account rather than possession of it — so an unlocked laptop is not',
+      'enough to take an account over.',
+      '',
+      'Every session is revoked, including the one making the call: a',
+      'password changed because it may have leaked is worth nothing if the',
+      'old sessions survive it.',
+    ].join(' '),
+  })
+  @ApiOkData(Object, 'Password changed and sessions revoked')
+  @ApiErrors(401, 422)
+  async changeOwnPassword(
+    @CurrentStaff() staff: ICurrentStaff,
+    @Body() dto: ChangeOwnPasswordDto,
+  ): Promise<{ revokedSessions: number }> {
+    return this.authService.changeOwnPassword(staff.id, dto);
   }
 
   @Get('team/me')

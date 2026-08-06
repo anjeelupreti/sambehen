@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { ClickableRow } from '@/components/clickable-row';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
@@ -149,7 +150,7 @@ export default async function StaffPage({
                   const fullName = [member.firstName, member.lastName].filter(Boolean).join(' ');
 
                   return (
-                    <TableRow key={member.id}>
+                    <ClickableRow key={member.id} href={`/staff/${member.id}`}>
                       <TableCell>
                         <span className="font-medium">{member.username}</span>
                         {fullName ? (
@@ -179,7 +180,7 @@ export default async function StaffPage({
                             own runners, which is also what the API allows. */}
                         {member.role === 'master' ? null : <StaffActions staff={member} />}
                       </TableCell>
-                    </TableRow>
+                    </ClickableRow>
                   );
                 })
               )}

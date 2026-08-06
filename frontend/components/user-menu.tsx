@@ -72,6 +72,7 @@ export function UserMenu({ username, role }: { username: string; role: StaffRole
       </DropdownMenu>
 
       <EditProfileModal
+        role={role}
         open={isProfileOpen}
         onOpenChange={setIsProfileOpen}
         initialData={{ username }}

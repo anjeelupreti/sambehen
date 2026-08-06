@@ -130,22 +130,49 @@ export async function updateOwnProfile(input: {
 }
 
 /**
- * Sets the signed-in member's own password.
+ * Changes the signed-in member's own password.
  *
- * `mustChangePassword` is false here, unlike an administrative reset: a
- * password you chose yourself should not prompt you to change it again on
- * the next sign-in.
+ * The current password is required and checked by the API. That is what
+ * separates this from an administrative reset: a reset proves authority
+ * over an account, while this proves possession of it — so an unlocked
+ * laptop is not enough to take someone's account over.
+ *
+ * A master is exempt, per the operator's instruction, and goes through the
+ * administrative reset path instead.
+ *
+ * Every session is revoked on success, including this one, so the caller
+ * signs back in with the new password.
  */
-export async function changeOwnPassword(newPassword: string): Promise<ActionResult<unknown>> {
+export async function changeOwnPassword(
+  newPassword: string,
+  currentPassword?: string,
+): Promise<ActionResult<unknown>> {
   const actor = await getActor();
   if (!actor) return { ok: false, message: 'Not signed in.', code: 'AUTH_UNAUTHENTICATED' };
 
+  if (actor.role === 'master') {
+    return runAction(
+      () =>
+        apiMutate<unknown>(`/team/staff/${actor.id}/reset-password`, 'POST', {
+          newPassword,
+          mustChangePassword: false,
+        }),
+      'Password updated.',
+    );
+  }
+
+  if (!currentPassword) {
+    return {
+      ok: false,
+      message: 'Enter your current password.',
+      code: 'VALIDATION_FAILED',
+      fieldErrors: { currentPassword: 'Enter your current password.' },
+    };
+  }
+
   return runAction(
     () =>
-      apiMutate<unknown>(`/team/staff/${actor.id}/reset-password`, 'POST', {
-        newPassword,
-        mustChangePassword: false,
-      }),
-    'Password updated.',
+      apiMutate<unknown>('/auth/team/change-password', 'POST', { currentPassword, newPassword }),
+    'Password changed. Sign in again with the new password.',
   );
 }

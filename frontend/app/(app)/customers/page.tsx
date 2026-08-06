@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BuildingIcon, GlobeIcon } from 'lucide-react';
 
+import { ClickableRow } from '@/components/clickable-row';
 import { CustomerActions } from '@/components/customer-actions';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { FilterBar } from '@/components/filters/filter-bar';
@@ -190,7 +191,7 @@ export default async function CustomersPage({
                 </TableRow>
               ) : (
                 data.map((customer) => (
-                  <TableRow key={customer.id}>
+                  <ClickableRow key={customer.id} href={`/customers/${customer.id}`}>
                     <TableCell>
                       <Link
                         href={`/customers/${customer.id}`}
@@ -228,7 +229,7 @@ export default async function CustomersPage({
                     <TableCell className="text-right">
                       <CustomerActions customer={customer} />
                     </TableCell>
-                  </TableRow>
+                  </ClickableRow>
                 ))
               )}
             </TableBody>

@@ -18,6 +18,7 @@ import {
   StaffProfileDto,
   CustomerProfileDto,
   TokenPairDto,
+  ChangeOwnPasswordDto,
 } from './dto/auth.dto';
 
 interface IRequestContext {
@@ -221,6 +222,53 @@ export class AuthService {
     if (session && !session.revokedAt) {
       await this.sessionRepository.revoke(session.id, 'logout');
     }
+  }
+
+  /**
+   * Changes the signed-in staff member's own password.
+   *
+   * Requires the current password. That is the whole point: an
+   * administrative reset (`/team/staff/:id/reset-password`) proves authority
+   * over the account, whereas this proves possession *of the account itself*
+   * — so an unlocked laptop is not enough to take it over.
+   *
+   * Every other session is revoked afterwards. If the password was changed
+   * because it may have leaked, leaving other sessions alive would defeat
+   * the change; the caller's own session is revoked too, so they sign back
+   * in with the new password.
+   */
+  async changeOwnPassword(
+    staffId: string,
+    dto: ChangeOwnPasswordDto,
+  ): Promise<{ revokedSessions: number }> {
+    const staff = await this.staffRepository.findById(staffId);
+    if (!staff) {
+      throw new AuthenticationException(ErrorCode.AUTH_INVALID_CREDENTIALS, 'Not signed in');
+    }
+
+    const matches = await HashUtil.verifyPassword(staff.passwordHash, dto.currentPassword);
+    if (!matches) {
+      // Deliberately not a 422 on the field: a wrong current password is a
+      // failed authentication, not malformed input.
+      throw new AuthenticationException(
+        ErrorCode.AUTH_INVALID_CREDENTIALS,
+        'Current password is incorrect',
+      );
+    }
+
+    await this.staffRepository.update(staffId, {
+      passwordHash: await HashUtil.hashPassword(dto.newPassword),
+      // They chose it themselves, so there is nothing to force at next login.
+      mustChangePassword: false,
+    });
+
+    const revokedSessions = await this.sessionRepository.revokeAllForSubject(
+      AuthRealm.TEAM,
+      staffId,
+      'password_change',
+    );
+
+    return { revokedSessions };
   }
 
   /** Revokes every session for a subject — "sign out everywhere". */

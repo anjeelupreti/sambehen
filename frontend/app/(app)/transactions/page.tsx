@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { ClickableRow } from '@/components/clickable-row';
 import { AmountRangeFilter } from '@/components/filters/amount-range-filter';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { ExportButton } from '@/components/export-button';
@@ -196,7 +197,7 @@ export default async function TransactionsPage({
                 </TableRow>
               ) : (
                 data.map((entry) => (
-                  <TableRow key={entry.id}>
+                  <ClickableRow key={entry.id} href={`/customers/${entry.customerId}`}>
                     <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                       {formatDateTime(entry.occurredAt)}
                     </TableCell>
@@ -246,7 +247,7 @@ export default async function TransactionsPage({
                         isCorrection={entry.isCorrection}
                       />
                     </TableCell>
-                  </TableRow>
+                  </ClickableRow>
                 ))
               )}
             </TableBody>

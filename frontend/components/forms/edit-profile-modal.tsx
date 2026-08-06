@@ -21,10 +21,13 @@ export function EditProfileModal({
   open,
   onOpenChange,
   initialData,
+  role,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData: { firstName?: string; lastName?: string; phone?: string; username: string };
+  /** A master is exempt from supplying the current password. */
+  role?: string;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -35,6 +38,7 @@ export function EditProfileModal({
     phone: initialData.phone ?? '',
   });
 
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [passwordPending, startPasswordTransition] = useTransition();
 
@@ -47,6 +51,7 @@ export function EditProfileModal({
         phone: initialData.phone ?? '',
       });
       setNewPassword('');
+      setCurrentPassword('');
     }
   }, [open, initialData]);
 
@@ -65,18 +70,30 @@ export function EditProfileModal({
     });
   };
 
+  const requiresCurrent = role !== 'master';
+
   const onUpdatePassword = () => {
     if (!newPassword || newPassword.length < 8) {
       toast.error('Password must be at least 8 characters');
       return;
     }
+    // Checked here as well as by the API so the user is told before a round
+    // trip; the API is still the authority and rejects a wrong one.
+    if (requiresCurrent && !currentPassword) {
+      toast.error('Enter your current password');
+      return;
+    }
 
     startPasswordTransition(async () => {
-      const result = await changeOwnPassword(newPassword);
+      const result = await changeOwnPassword(
+        newPassword,
+        requiresCurrent ? currentPassword : undefined,
+      );
 
       if (result.ok) {
         toast.success(result.message);
         setNewPassword('');
+        setCurrentPassword('');
       } else {
         toast.error(result.message);
       }
@@ -139,17 +156,33 @@ export function EditProfileModal({
 
         <div className="mt-4 pt-4 border-t">
           <h4 className="text-sm font-medium mb-2">Change Password</h4>
-          <div className="flex gap-2">
+          {requiresCurrent ? (
+            <p className="text-muted-foreground mb-2 text-xs">
+              Your current password is required. Changing it signs you out everywhere, including
+              here.
+            </p>
+          ) : null}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {requiresCurrent ? (
+              <Input
+                type="password"
+                placeholder="Current password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+            ) : null}
             <Input
               type="password"
               placeholder="New password"
+              autoComplete="new-password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
             />
             <Button
               type="button"
               variant="secondary"
-              disabled={passwordPending || !newPassword}
+              disabled={passwordPending || !newPassword || (requiresCurrent && !currentPassword)}
               onClick={onUpdatePassword}
             >
               {passwordPending ? 'Updating...' : 'Update'}
