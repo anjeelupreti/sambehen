@@ -47,8 +47,15 @@ const CUSTOMER_ACCESS_COOKIE = 'sambehen_customer_access';
 const CUSTOMER_REFRESH_COOKIE = 'sambehen_customer_refresh';
 const CUSTOMER_ACTOR_COOKIE = 'sambehen_customer_actor';
 
-/** Reachable without any session. */
-const PUBLIC_PATHS = ['/login', '/logout', '/customer/login', '/customer/logout'];
+/*
+ * Reachable without any session.
+ *
+ * `/unsubscribe` is here because it is reached from an email footer by
+ * someone who has no session and cannot be asked to sign in — requiring
+ * one would make the opt-out link useless, which is the opposite of what
+ * an opt-out is for.
+ */
+const PUBLIC_PATHS = ['/login', '/logout', '/customer/login', '/customer/logout', '/unsubscribe'];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
