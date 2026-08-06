@@ -23,6 +23,7 @@ import { apiList } from '@/lib/api';
 import { formatCount, formatDateTime } from '@/lib/money';
 import type { SpinEvent, SpinWinner, SpinWinnerSummary } from '@/lib/types';
 import { getActor } from '@/lib/session';
+import { RecordWinnersModal } from '@/components/spin/record-winners-modal';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/money';
 
@@ -233,6 +234,9 @@ function SpinEventsSection({ events, canManage }: { events: SpinEvent[]; canMana
                 <TableHead className="text-right">Prize pool</TableHead>
                 <TableHead className="text-right">Winners</TableHead>
                 <TableHead>Scheduled</TableHead>
+                <TableHead className="w-40">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -258,6 +262,19 @@ function SpinEventsSection({ events, canManage }: { events: SpinEvent[]; canMana
                   <TableCell className="tabular text-right">{event.winnerCount}</TableCell>
                   <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                     {event.scheduledAt ? formatDate(event.scheduledAt) : '—'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {/* Only a post-draw event can take winners afterwards; a
+                        preselected one already carries them and the API
+                        refuses more, so the option is absent rather than
+                        present-and-failing. */}
+                    {canManage && event.selectionMode === 'post_draw' ? (
+                      <RecordWinnersModal
+                        eventId={event.id}
+                        eventName={event.name}
+                        criteriaId={event.vipCriteriaId}
+                      />
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))}

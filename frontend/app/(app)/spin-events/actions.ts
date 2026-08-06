@@ -60,3 +60,37 @@ export async function listQualifiedCustomers(criteriaId: string) {
     return [];
   }
 }
+
+/**
+ * Records winners against an event after it has been drawn.
+ *
+ * Only meaningful for a post-draw event: a preselected one already has its
+ * winners, and the API refuses to add more. Each customer must already hold
+ * a qualification for the event's criteria.
+ */
+export async function recordWinners(
+  eventId: string,
+  winners: { customerId: string; prizeLabel: string; prizeAmount: string; rank: number }[],
+): Promise<ActionResult<SpinEvent>> {
+  const result = await runAction(
+    () => apiMutate<SpinEvent>(`/team/spin-events/${eventId}/winners`, 'POST', { winners }),
+    `${winners.length} winner${winners.length === 1 ? '' : 's'} recorded.`,
+  );
+
+  if (result.ok) revalidatePath('/spin-winners');
+  return result;
+}
+
+/** Removes a single winner from an event, for a mis-keyed entry. */
+export async function removeWinner(
+  eventId: string,
+  winnerId: string,
+): Promise<ActionResult<unknown>> {
+  const result = await runAction(
+    () => apiMutate<unknown>(`/team/spin-events/${eventId}/winners/${winnerId}`, 'DELETE'),
+    'Winner removed.',
+  );
+
+  if (result.ok) revalidatePath('/spin-winners');
+  return result;
+}
