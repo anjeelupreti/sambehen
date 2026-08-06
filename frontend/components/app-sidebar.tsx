@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   ArrowLeftRightIcon,
   MegaphoneIcon,
+  GiftIcon,
   CrownIcon,
   GamepadIcon,
   LayoutDashboardIcon,
@@ -46,6 +47,7 @@ const NAV: NavItem[] = [
   // destination you have to hold in your head alongside it.
   { href: '/spin-winners', label: 'Spins', icon: SparklesIcon },
   { href: '/games', label: 'Games', icon: GamepadIcon },
+  { href: '/referrals', label: 'Referrals', icon: GiftIcon },
   { href: '/broadcast', label: 'Broadcast', icon: MegaphoneIcon, roles: ['master', 'manager'] },
   { href: '/staff', label: 'Staff', icon: UserCogIcon, roles: ['master', 'manager'] },
   { href: '/audit-logs', label: 'Audit trail', icon: ScrollTextIcon, roles: ['master'] },
