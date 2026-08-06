@@ -119,7 +119,11 @@ export async function apiRequest<TData, TSummary = undefined>(
   } = options;
 
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  // FormData sets its own multipart boundary; a manual Content-Type here
+  // would omit it and the backend would fail to split the parts.
+  if (body !== undefined && !(body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (!anonymous) {
     const token = await getAccessToken();
@@ -137,7 +141,8 @@ export async function apiRequest<TData, TSummary = undefined>(
     response = await fetch(buildUrl(path, query), {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body:
+        body === undefined || body instanceof FormData ? (body as BodyInit) : JSON.stringify(body),
       cache: revalidate === undefined ? 'no-store' : undefined,
       next: revalidate === undefined ? undefined : { revalidate },
     });
@@ -216,6 +221,19 @@ export async function apiList<TRow, TSummary = undefined>(
     },
     summary: envelope.summary,
   };
+}
+
+/**
+ * Uploads a file from a server action.
+ *
+ * A server action can take a `File` straight off a `<input type="file">`
+ * via FormData — no relay route needed, since the action already runs on
+ * the server where the session cookie is readable. This just points that
+ * FormData at the API with the bearer token attached.
+ */
+export async function apiUpload<TData>(path: string, formData: FormData): Promise<TData> {
+  const envelope = await apiRequest<TData>(path, { method: 'POST', body: formData });
+  return envelope.data;
 }
 
 export async function apiMutate<TData>(

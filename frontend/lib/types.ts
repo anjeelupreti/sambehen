@@ -74,6 +74,11 @@ export type Customer = Schemas['CustomerResponseDto'];
 export type CustomerSummary = Schemas['CustomerListSummaryDto'];
 export type CustomerStatus = Customer['status'];
 
+export type ImportRow = Schemas['ImportCustomerRowDto'];
+export type ImportRowIssue = Schemas['ImportRowIssueDto'];
+export type ImportPreview = Schemas['ImportPreviewResponseDto'];
+export type CommitImportResult = Schemas['CommitImportResponseDto'];
+
 /* ── Transactions ─────────────────────────────────────────────────────── */
 
 export type Transaction = Schemas['TransactionResponseDto'];

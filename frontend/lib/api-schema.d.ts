@@ -101,6 +101,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/auth/team/change-password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Change the signed-in staff member's own password
+     * @description Requires the current password. This is the self-service path and is distinct from an administrative reset, which proves authority over an account rather than possession of it — so an unlocked laptop is not enough to take an account over.  Every session is revoked, including the one making the call: a password changed because it may have leaked is worth nothing if the old sessions survive it.
+     */
+    post: operations['AuthController_changeOwnPassword'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/auth/team/me': {
     parameters: {
       query?: never;
@@ -210,6 +230,40 @@ export interface paths {
      * @description A master creates managers, and runners under an explicit manager. A manager creates runners only, always attached to themselves — a supplied parentId is ignored, so a runner cannot be planted in another manager's team.
      */
     post: operations['StaffController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/staff/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update your own profile */
+    patch: operations['StaffController_updateProfile'];
+    trace?: never;
+  };
+  '/api/team/staff/me/reset-password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Update your own password */
+    post: operations['StaffController_resetOwnPassword'];
     delete?: never;
     options?: never;
     head?: never;
@@ -342,6 +396,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/team/customers/import/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Parse and validate an import file without writing anything
+     * @description Returns the rows that would be created and, separately, every row that cannot be — each with its own reason. Nothing is written.  This exists so a bulk import is reviewable before it happens. A spreadsheet of several hundred customers is where a mis-mapped column does real damage, and writing on upload means the damage is only discovered afterwards.  The sheet needs `email` and `username` columns; `fullName`, `phone`, `city` and `country` are optional. Header matching ignores case, spacing and common wordings.
+     */
+    post: operations['CustomersController_previewImport'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/customers/import': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create the confirmed rows in one transaction
+     * @description All or nothing. A file whose two-hundredth row collides with an existing username must not leave 199 customers behind — there is no sensible way to resume a half-finished import.  Takes the rows returned by the preview rather than the file again, so what is written is what the operator reviewed. Collisions are re-checked here because preview may have run minutes ago.
+     */
+    post: operations['CustomersController_commitImport'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/team/customers/{id}': {
     parameters: {
       query?: never;
@@ -368,6 +462,26 @@ export interface paths {
      * @description Credentials and status are excluded on purpose: password changes go through the reset endpoint so sessions can be revoked, and status changes through their own endpoint so they audit as status changes.
      */
     patch: operations['CustomersController_update'];
+    trace?: never;
+  };
+  '/api/team/customers/{id}/trends': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get customer transaction trends
+     * @description Time-bucketed net series specifically for this customer.
+     */
+    get: operations['CustomersController_getTrends'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/team/customers/{id}/set-password': {
@@ -1615,6 +1729,12 @@ export interface components {
       refreshToken: string;
     };
     Object: Record<string, never>;
+    ChangeOwnPasswordDto: {
+      /** @example CurrentPass123! */
+      currentPassword: string;
+      /** @example NewStrongPass456! */
+      newPassword: string;
+    };
     CustomerProfileDto: {
       /** Format: uuid */
       id: string;
@@ -1792,6 +1912,47 @@ export interface components {
        */
       referralCode?: string;
     };
+    ImportCustomerRowDto: {
+      /** @description Row number in the source file, 1-based excluding the header. */
+      rowNumber: number;
+      email: string;
+      username: string;
+      fullName?: string | null;
+      phone?: string | null;
+      city?: string | null;
+      country?: string | null;
+    };
+    ImportRowIssueDto: {
+      rowNumber: number;
+      /** @example email */
+      field: string;
+      /** @example A customer with this email already exists */
+      message: string;
+    };
+    ImportPreviewResponseDto: {
+      /** @description Rows that can be imported as-is. */
+      valid: components['schemas']['ImportCustomerRowDto'][];
+      /** @description Rows that cannot. Reported per row rather than as a single failure, so one bad line does not hide the other twenty. */
+      issues: components['schemas']['ImportRowIssueDto'][];
+      /** @description Rows found in the file, excluding the header. */
+      totalRows: number;
+    };
+    CommitImportResponseDto: {
+      /** @description How many customers were created. */
+      imported: number;
+      customerIds: string[];
+    };
+    CommitImportDto: {
+      /** @description The rows the operator confirmed. Sent back rather than re-parsed from the file, so what is written is what was reviewed. */
+      rows: components['schemas']['ImportCustomerRowDto'][];
+      /** @description Password issued to every imported customer. They cannot change it themselves — staff do. */
+      password: string;
+      /**
+       * Format: uuid
+       * @description Who owns the imported customers. Required for a master, who sits above the chain; a manager or runner defaults to themselves.
+       */
+      ownerStaffId?: string;
+    };
     CustomerListSummaryDto: {
       /** @example 1240 */
       totalCustomers: number;
@@ -1814,6 +1975,28 @@ export interface components {
        * @example 15300.00
        */
       totalBonusBalance: string;
+    };
+    /** @enum {string} */
+    TrendGranularity: 'day' | 'week' | 'month';
+    TrendPointDto: {
+      /**
+       * Format: date
+       * @example 2026-07-15
+       */
+      bucket: string;
+      /** @example 12400.00 */
+      totalIn: string;
+      /** @example 8100.00 */
+      totalOut: string;
+      /** @example 4300.00 */
+      balance: string;
+      /** @example 46 */
+      transactionCount: number;
+    };
+    TrendResponseDto: {
+      granularity: components['schemas']['TrendGranularity'];
+      /** @description Gap-filled: buckets with no activity are returned as zeros rather than omitted, so a chart shows a flat line instead of joining across the gap. */
+      points: components['schemas']['TrendPointDto'][];
     };
     UpdateCustomerDto: {
       /** @example customer99@example.com */
@@ -2761,28 +2944,6 @@ export interface components {
        */
       generatedAt: string;
     };
-    /** @enum {string} */
-    TrendGranularity: 'day' | 'week' | 'month';
-    TrendPointDto: {
-      /**
-       * Format: date
-       * @example 2026-07-15
-       */
-      bucket: string;
-      /** @example 12400.00 */
-      totalIn: string;
-      /** @example 8100.00 */
-      totalOut: string;
-      /** @example 4300.00 */
-      balance: string;
-      /** @example 46 */
-      transactionCount: number;
-    };
-    TrendResponseDto: {
-      granularity: components['schemas']['TrendGranularity'];
-      /** @description Gap-filled: buckets with no activity are returned as zeros rather than omitted, so a chart shows a flat line instead of joining across the gap. */
-      points: components['schemas']['TrendPointDto'][];
-    };
     CustomerDashboardDto: {
       /** @example 1250.00 */
       balance: string;
@@ -3410,6 +3571,54 @@ export interface operations {
       };
     };
   };
+  AuthController_changeOwnPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ChangeOwnPasswordDto'];
+      };
+    };
+    responses: {
+      /** @description Password changed and sessions revoked */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['Object'];
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid team access token
+       */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
   AuthController_meTeam: {
     parameters: {
       query?: never;
@@ -3726,6 +3935,103 @@ export interface operations {
       };
       /** @description Uniqueness or state conflict */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffController_updateProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateStaffDto'];
+      };
+    };
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['StaffResponseDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Uniqueness or state conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffController_resetOwnPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ResetStaffPasswordDto'];
+      };
+    };
+    responses: {
+      /** @description Password updated and sessions revoked */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['Object'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
         headers: {
           [name: string]: unknown;
         };
@@ -4358,6 +4664,108 @@ export interface operations {
       };
     };
   };
+  CustomersController_previewImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Rows parsed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['ImportPreviewResponseDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  CustomersController_commitImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CommitImportDto'];
+      };
+    };
+    responses: {
+      /** @description Customers imported */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['CommitImportResponseDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Authenticated, but the role lacks this capability */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
   CustomersController_findOne: {
     parameters: {
       query?: never;
@@ -4506,6 +4914,75 @@ export interface operations {
       };
       /** @description Uniqueness or state conflict */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  CustomersController_getTrends: {
+    parameters: {
+      query?: {
+        /** @description Master only. Narrow to one manager chain. */
+        managerId?: string;
+        /** @description Master, or a manager's own runner. */
+        runnerId?: string;
+        /**
+         * @description Bucket size.
+         *
+         *     Allowed values:
+         *     - `day` — one point per day
+         *     - `week` — one point per ISO week
+         *     - `month` — one point per calendar month
+         */
+        granularity?: components['schemas']['TrendGranularity'];
+        /** @description How far back to go, in days. */
+        lastNDays?: number;
+        dateFrom?: string;
+        dateTo?: string;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['TrendResponseDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
         headers: {
           [name: string]: unknown;
         };

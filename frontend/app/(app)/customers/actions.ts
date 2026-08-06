@@ -2,10 +2,16 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { apiMutate } from '@/lib/api';
+import { apiMutate, apiUpload } from '@/lib/api';
 import { runAction } from '@/lib/run-action';
 import type { ActionResult } from '@/lib/action-result';
-import type { Customer, CustomerStatus } from '@/lib/types';
+import type {
+  CommitImportResult,
+  Customer,
+  CustomerStatus,
+  ImportPreview,
+  ImportRow,
+} from '@/lib/types';
 
 /**
  * Customer mutations.
@@ -133,6 +139,51 @@ export async function updateCustomer(
   if (result.ok) {
     revalidatePath('/customers');
     revalidatePath(`/customers/${id}`);
+  }
+
+  return result;
+}
+
+/**
+ * Parses a spreadsheet and reports what would happen. Writes nothing.
+ *
+ * Runs as a server action rather than through a relayed upload route: the
+ * action already executes on the server, where the session cookie is
+ * readable, so the file can go straight into a FormData and out to the API
+ * without a hop through a route handler.
+ */
+export async function previewCustomerImport(file: File): Promise<ActionResult<ImportPreview>> {
+  return runAction(() => {
+    const formData = new FormData();
+    formData.set('file', file);
+    return apiUpload<ImportPreview>('/team/customers/import/preview', formData);
+  }, 'File parsed.');
+}
+
+/**
+ * Writes the rows the operator confirmed, all in one transaction.
+ *
+ * Takes rows rather than the file again, so what is written is what was
+ * actually reviewed on screen.
+ */
+export async function commitCustomerImport(
+  rows: ImportRow[],
+  password: string,
+  ownerStaffId?: string,
+): Promise<ActionResult<CommitImportResult>> {
+  const result = await runAction(
+    () =>
+      apiMutate<CommitImportResult>('/team/customers/import', 'POST', {
+        rows,
+        password,
+        ...(ownerStaffId ? { ownerStaffId } : {}),
+      }),
+    'Customers imported.',
+  );
+
+  if (result.ok) {
+    revalidatePath('/customers');
+    revalidatePath('/dashboard');
   }
 
   return result;

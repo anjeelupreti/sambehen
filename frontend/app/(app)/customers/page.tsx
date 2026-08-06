@@ -4,6 +4,7 @@ import { BuildingIcon, GlobeIcon } from 'lucide-react';
 
 import { ClickableRow } from '@/components/clickable-row';
 import { CustomerActions } from '@/components/customer-actions';
+import { ImportCustomersModal } from '@/components/customers/import-customers-modal';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
@@ -126,6 +127,7 @@ export default async function CustomersPage({
         </div>
         <div className="flex items-center gap-2">
           <ExportButton exportKey="customers" />
+          {actor ? <ImportCustomersModal actorRole={actor.role} owners={owners} /> : null}
           {actor ? <NewCustomerModal actorRole={actor.role} owners={owners} /> : null}
         </div>
       </header>
