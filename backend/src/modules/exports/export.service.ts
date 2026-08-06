@@ -96,6 +96,14 @@ export class ExportService {
     const extension = format === ExportFormat.CSV ? 'csv' : 'xlsx';
     const filename = `${definition.filename}_${stamp}.${extension}`;
 
+    // Fetched before any header is set. A definition's own upfront checks —
+    // email-recipients requiring a campaignId, say — throw from inside
+    // `fetch`, and once a header has been written the response can only
+    // ever end up 200: Express cannot rewrite the status after that point.
+    // Without this, a rejected export would stream out as an empty but
+    // technically valid file instead of the 422 it actually is.
+    const firstBatch = await definition.fetch(actor, filters, { offset: 0, limit: BATCH_SIZE });
+
     // Headers are set before the first row: once the body starts streaming
     // it is too late to change status or content type, which is also why
     // any error must be raised before this point.
@@ -112,9 +120,9 @@ export class ExportService {
     const batches = async function* (this: ExportService): AsyncGenerator<ExportRow[]> {
       let offset = 0;
       let fetched = 0;
+      let batch = firstBatch;
 
       for (;;) {
-        const batch = await definition.fetch(actor, filters, { offset, limit: BATCH_SIZE });
         if (batch.length === 0) return;
 
         fetched += batch.length;
@@ -130,6 +138,7 @@ export class ExportService {
         yield batch;
         if (batch.length < BATCH_SIZE) return;
         offset += BATCH_SIZE;
+        batch = await definition.fetch(actor, filters, { offset, limit: BATCH_SIZE });
       }
     }.call(this);
 

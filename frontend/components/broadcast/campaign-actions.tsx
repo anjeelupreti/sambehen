@@ -5,6 +5,7 @@ import { BanIcon, ListChecksIcon, MoreHorizontalIcon } from 'lucide-react';
 
 import { cancelCampaign, loadCampaignRecipients } from '@/app/(app)/broadcast/actions';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { ExportButton } from '@/components/export-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -91,12 +92,15 @@ export function CampaignActions({
 
       <Dialog open={recipients !== null} onOpenChange={() => setRecipients(null)}>
         <DialogContent className="max-h-[80svh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Recipients</DialogTitle>
-            <DialogDescription>
-              Per-address outcome for “{subject}”. A failure here is one address, not the whole
-              campaign.
-            </DialogDescription>
+          <DialogHeader className="flex-row items-start justify-between gap-3 space-y-0">
+            <div>
+              <DialogTitle>Recipients</DialogTitle>
+              <DialogDescription>
+                Per-address outcome for “{subject}”. A failure here is one address, not the whole
+                campaign.
+              </DialogDescription>
+            </div>
+            <ExportButton exportKey="email-recipients" params={{ campaignId }} />
           </DialogHeader>
 
           {recipients && recipients.length > 0 ? (

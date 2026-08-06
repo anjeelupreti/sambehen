@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { CampaignActions } from '@/components/broadcast/campaign-actions';
 import { ComposeBroadcastModal } from '@/components/broadcast/compose-broadcast-modal';
+import { ExportButton } from '@/components/export-button';
 import { PaginationControls } from '@/components/pagination-controls';
 import { StatCard } from '@/components/stat-card';
 import { Badge } from '@/components/ui/badge';
@@ -82,7 +83,10 @@ export default async function BroadcastPage({
             only way to reach a group — and customers read it in their inbox, not in the portal.
           </p>
         </div>
-        <ComposeBroadcastModal />
+        <div className="flex items-center gap-2">
+          <ExportButton exportKey="email-campaigns" />
+          <ComposeBroadcastModal />
+        </div>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

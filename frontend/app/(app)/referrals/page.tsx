@@ -217,7 +217,10 @@ function ProgramsSection({ programs }: { programs: Program[] }) {
               What each side earns, and for how long. Issue codes to customers from here.
             </p>
           </div>
-          <ReferralProgramModal />
+          <div className="flex items-center gap-2">
+            <ExportButton exportKey="referral-programs" />
+            <ReferralProgramModal />
+          </div>
         </div>
 
         {programs.length === 0 ? (

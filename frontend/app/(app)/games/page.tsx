@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ExportButton } from '@/components/export-button';
 import { GameActions } from '@/components/game-actions';
 import { NewGameModal } from '@/components/forms/new-game-modal';
 import { apiList } from '@/lib/api';
@@ -72,7 +73,10 @@ export default async function GamesPage({
               : 'Read-only. Only a master can change the catalogue.'}
           </p>
         </div>
-        {actor ? <NewGameModal actorRole={actor.role} /> : null}
+        <div className="flex items-center gap-2">
+          <ExportButton exportKey="games" />
+          {actor ? <NewGameModal actorRole={actor.role} /> : null}
+        </div>
       </header>
 
       <Card className="gap-0 py-0">

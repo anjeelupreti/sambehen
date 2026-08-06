@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
+import { ExportButton } from '@/components/export-button';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
 import { PaginationControls } from '@/components/pagination-controls';
@@ -76,11 +77,14 @@ export default async function AuditLogsPage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Audit trail</h1>
-        <p className="text-muted-foreground text-sm">
-          Append-only record of every state-changing action. Master only, and unscoped by design.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Audit trail</h1>
+          <p className="text-muted-foreground text-sm">
+            Append-only record of every state-changing action. Master only, and unscoped by design.
+          </p>
+        </div>
+        <ExportButton exportKey="audit-logs" />
       </header>
 
       {summary ? (

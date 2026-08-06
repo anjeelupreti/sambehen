@@ -201,7 +201,10 @@ function VipCriteriaSection({ criteria }: { criteria: VipCriteria[] }) {
               activity.
             </p>
           </div>
-          <VipCriteriaModal />
+          <div className="flex items-center gap-2">
+            <ExportButton exportKey="vip-criteria" />
+            <VipCriteriaModal />
+          </div>
         </div>
 
         {criteria.length === 0 ? (

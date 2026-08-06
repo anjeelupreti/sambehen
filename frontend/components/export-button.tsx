@@ -36,7 +36,18 @@ type ExportKey =
  * The filters currently on screen travel with the request, so the file
  * matches the list the user is looking at rather than the whole table.
  */
-export function ExportButton({ exportKey }: { exportKey: ExportKey }) {
+export function ExportButton({
+  exportKey,
+  params,
+}: {
+  exportKey: ExportKey;
+  /**
+   * Fixed query params to send instead of the page's own filters — for an
+   * export scoped to something the URL does not carry, like a single
+   * campaign's recipients.
+   */
+  params?: Record<string, string>;
+}) {
   const [exporting, setExporting] = useState(false);
   const searchParams = useSearchParams();
 
@@ -44,7 +55,7 @@ export function ExportButton({ exportKey }: { exportKey: ExportKey }) {
     setExporting(true);
 
     try {
-      const query = searchParams.toString();
+      const query = params ? new URLSearchParams(params).toString() : searchParams.toString();
       const response = await fetch(`/api/exports/${exportKey}${query ? `?${query}` : ''}`);
 
       if (!response.ok) {

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
+import { ExportButton } from '@/components/export-button';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
 import { SortableHeader } from '@/components/filters/sortable-header';
@@ -84,11 +85,14 @@ export default async function SpinWinnersPage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Spins</h1>
-        <p className="text-muted-foreground text-sm">
-          Events run against an active VIP criteria, and the winners they produced.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Spins</h1>
+          <p className="text-muted-foreground text-sm">
+            Events run against an active VIP criteria, and the winners they produced.
+          </p>
+        </div>
+        <ExportButton exportKey="spin-winners" />
       </header>
 
       <SpinEventsSection events={events} canManage={actor?.role === 'master'} />
@@ -212,11 +216,14 @@ function SpinEventsSection({ events, canManage }: { events: SpinEvent[]; canMana
               Each runs against an active VIP criteria, which decides who is eligible.
             </p>
           </div>
-          {canManage ? (
-            <Button asChild size="sm">
-              <Link href="/spin-events/new">New event</Link>
-            </Button>
-          ) : null}
+          <div className="flex items-center gap-2">
+            <ExportButton exportKey="spin-events" />
+            {canManage ? (
+              <Button asChild size="sm">
+                <Link href="/spin-events/new">New event</Link>
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         {events.length === 0 ? (
