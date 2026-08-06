@@ -1,7 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { MessageSquareIcon, XIcon, SendIcon, UserIcon, ArrowLeftIcon } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import {
+  ArrowLeftIcon,
+  Maximize2Icon,
+  MessageSquareIcon,
+  RadioIcon,
+  SendIcon,
+  UserIcon,
+  WifiOffIcon,
+  XIcon,
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
@@ -14,9 +24,22 @@ import {
   markAsRead,
   sendMessage,
 } from '@/app/(app)/messages/actions';
+import { useMessagingSocket, type LiveMessage } from '@/hooks/use-messaging-socket';
 import { cn } from '@/lib/utils';
 import type { Conversation, Message } from '@/lib/types';
 
+/**
+ * The chat bubble. Same inbox and threads as the full `/messages` page —
+ * this is the compact surface for staying on top of things without leaving
+ * whatever page you're on, with a link out to the full page for anyone who
+ * wants filters or more room.
+ *
+ * Arrivals come over the socket, not a poll: `useMessagingSocket` is the
+ * same hook the full page uses, so a message shows up here the instant it
+ * shows up there. The 30s fetch is a fallback for while the socket is
+ * reconnecting, not the primary path — it stands down once the connection
+ * is live.
+ */
 export function MessagesFab({ role: _role }: { role: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -24,63 +47,98 @@ export function MessagesFab({ role: _role }: { role: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Fetch conversations (inbox)
+  const activeIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (isOpen && !activeCustomer) {
-      getConversations()
-        .then((data) => {
-          setConversations(data);
-          setUnreadCount(data.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0));
-        })
-        .catch(console.error);
-    }
-  }, [isOpen, activeCustomer]);
+    activeIdRef.current = activeCustomer?.id ?? null;
+  }, [activeCustomer]);
 
-  // Periodically fetch unread counts even if closed (every 30s)
+  const refresh = useCallback(() => {
+    getConversations()
+      .then(setConversations)
+      .catch(() => {});
+  }, []);
+
+  // Seeds the list once on mount — the socket only reports what arrives
+  // *after* it connects, not what was already unread.
   useEffect(() => {
-    const fetchUnread = () => {
-      getConversations()
-        .then((data) => {
-          setUnreadCount(data.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0));
-          if (isOpen && !activeCustomer) setConversations(data);
-        })
-        .catch(() => {});
-    };
-    const interval = setInterval(fetchUnread, 30000);
+    refresh();
+  }, [refresh]);
+
+  const handleIncoming = useCallback(
+    (message: LiveMessage) => {
+      setConversations((current) => {
+        const known = current.some((c) => c.id === message.conversationId);
+        // A brand new conversation carries no username or preview over the
+        // socket, so it is fetched properly rather than rendered half-empty.
+        if (!known) {
+          refresh();
+          return current;
+        }
+
+        return current.map((conversation) =>
+          conversation.id === message.conversationId
+            ? {
+                ...conversation,
+                lastMessagePreview: message.body,
+                lastMessageAt: message.createdAt,
+                messageCount: conversation.messageCount + 1,
+                unreadCount:
+                  conversation.id === activeIdRef.current
+                    ? conversation.unreadCount
+                    : conversation.unreadCount + 1,
+                awaitingReply: message.senderType === 'customer',
+              }
+            : conversation,
+        );
+      });
+
+      if (message.conversationId === activeIdRef.current) {
+        setMessages((current) =>
+          current.some((existing) => existing.id === message.id) ? current : [...current, message],
+        );
+      }
+    },
+    [refresh],
+  );
+
+  const { state } = useMessagingSocket(handleIncoming);
+
+  // Fallback only: while the socket is not live, nothing pushes updates, so
+  // this covers reconnect gaps. Once `state === 'live'` the socket is the
+  // only source — polling on top of it would just re-sort the list under
+  // someone mid-read for no reason.
+  useEffect(() => {
+    if (state === 'live') return;
+    const interval = setInterval(refresh, 30000);
     return () => clearInterval(interval);
-  }, [isOpen, activeCustomer]);
+  }, [state, refresh]);
 
-  // Fetch messages for a specific conversation
   useEffect(() => {
     if (activeCustomer) {
-      // Keyed on the conversation id: the messages and read endpoints take
-      // a conversation, not a customer. Passing the customer id returns
-      // nothing and reads as an empty thread.
       getMessages(activeCustomer.id)
         .then((thread) => {
-          // Already oldest-first: the action reverses the API's newest-first
-          // order once, so reversing again here would flip it back.
           setMessages(thread);
 
           if (activeCustomer.unreadCount > 0) {
             void markAsRead(activeCustomer.id);
-            setUnreadCount((prev) => Math.max(0, prev - activeCustomer.unreadCount));
+            setConversations((current) =>
+              current.map((c) => (c.id === activeCustomer.id ? { ...c, unreadCount: 0 } : c)),
+            );
           }
         })
         .catch(console.error);
     }
   }, [activeCustomer]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const unreadCount = conversations.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,13 +146,12 @@ export function MessagesFab({ role: _role }: { role: string }) {
 
     try {
       setIsSending(true);
-      // Sending is keyed on the customer — it creates the thread on first
-      // contact. The action returns a result envelope, not the message, so
-      // a failure keeps the typed text instead of clearing the box.
       const result = await sendMessage(activeCustomer.customerId, newMessage.trim());
 
       if (result.ok && result.data) {
-        setMessages((prev) => [...prev, result.data as Message]);
+        setMessages((prev) =>
+          prev.some((m) => m.id === result.data!.id) ? prev : [...prev, result.data as Message],
+        );
         setNewMessage('');
       } else if (!result.ok) {
         console.error('Failed to send message', result.message);
@@ -113,31 +170,46 @@ export function MessagesFab({ role: _role }: { role: string }) {
           {/* Header */}
           <div className="bg-primary text-primary-foreground p-3 flex items-center justify-between shadow-sm">
             {activeCustomer ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-8 text-primary-foreground hover:bg-primary/90 hover:text-white"
+                  className="size-8 shrink-0 text-primary-foreground hover:bg-primary/90 hover:text-white"
                   onClick={() => setActiveCustomer(null)}
                 >
                   <ArrowLeftIcon className="size-4" />
                 </Button>
-                <div className="font-semibold">{activeCustomer.customerUsername}</div>
+                <div className="font-semibold truncate">{activeCustomer.customerUsername}</div>
               </div>
             ) : (
               <div className="font-semibold flex items-center gap-2 pl-2">
                 <MessageSquareIcon className="size-4" />
                 Inbox
+                <ConnectionDot state={state} />
               </div>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 text-primary-foreground hover:bg-primary/90 hover:text-white"
-              onClick={() => setIsOpen(false)}
-            >
-              <XIcon className="size-4" />
-            </Button>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="size-8 text-primary-foreground hover:bg-primary/90 hover:text-white"
+                aria-label="Open full messages page"
+                title="Open full page"
+              >
+                <Link href="/messages">
+                  <Maximize2Icon className="size-4" />
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 text-primary-foreground hover:bg-primary/90 hover:text-white"
+                onClick={() => setIsOpen(false)}
+              >
+                <XIcon className="size-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Content */}
@@ -153,7 +225,7 @@ export function MessagesFab({ role: _role }: { role: string }) {
                   ) : (
                     conversations.map((conv) => (
                       <button
-                        key={conv.customerId}
+                        key={conv.id}
                         onClick={() => setActiveCustomer(conv)}
                         className="w-full flex items-start gap-3 p-3 text-left hover:bg-accent rounded-md transition-colors"
                       >
@@ -280,5 +352,21 @@ export function MessagesFab({ role: _role }: { role: string }) {
         )}
       </Button>
     </div>
+  );
+}
+
+/** A one-glyph version of the full page's connection badge — there's no room for the label here. */
+function ConnectionDot({ state }: { state: 'connecting' | 'live' | 'offline' }) {
+  if (state === 'live') {
+    return <RadioIcon className="size-3 text-green-300" aria-label="Live" />;
+  }
+  if (state === 'connecting') {
+    return <span className="sr-only">Connecting…</span>;
+  }
+  return (
+    <WifiOffIcon
+      className="size-3 text-primary-foreground/70"
+      aria-label="Not live — new messages will not appear until you refresh"
+    />
   );
 }
