@@ -20,6 +20,7 @@ const EMPTY = {
   city: '',
   country: '',
   notes: '',
+  referralCode: '',
 };
 
 export interface AssignableOwner {
@@ -95,6 +96,7 @@ export function NewCustomerModal({
             city: form.city.trim() || undefined,
             country: form.country.trim() || undefined,
             notes: form.notes.trim() || undefined,
+            referralCode: form.referralCode.trim() || undefined,
           });
           if (result.ok) close(false);
         }}
@@ -201,6 +203,16 @@ export function NewCustomerModal({
           value={form.notes}
           onChange={(v) => set('notes', v)}
           error={fieldErrors.notes}
+        />
+
+        <TextField
+          name="referralCode"
+          label="Referral code"
+          maxLength={32}
+          value={form.referralCode}
+          onChange={(v) => set('referralCode', v)}
+          error={fieldErrors.referralCode}
+          hint="If they came in through a referral link. An unusable code is ignored rather than blocking the create."
         />
       </FormModal>
     </>

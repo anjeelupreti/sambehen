@@ -53,9 +53,17 @@ const CUSTOMER_ACTOR_COOKIE = 'sambehen_customer_actor';
  * `/unsubscribe` is here because it is reached from an email footer by
  * someone who has no session and cannot be asked to sign in — requiring
  * one would make the opt-out link useless, which is the opposite of what
- * an opt-out is for.
+ * an opt-out is for. `/r` is the same story for a referral link: whoever
+ * clicks it has no account yet, which is the entire point.
  */
-const PUBLIC_PATHS = ['/login', '/logout', '/customer/login', '/customer/logout', '/unsubscribe'];
+const PUBLIC_PATHS = [
+  '/login',
+  '/logout',
+  '/customer/login',
+  '/customer/logout',
+  '/unsubscribe',
+  '/r',
+];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));

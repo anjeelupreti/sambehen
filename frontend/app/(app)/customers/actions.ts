@@ -81,6 +81,8 @@ export interface NewCustomerInput {
   city?: string;
   country?: string;
   notes?: string;
+  /** Code or link slug they arrived through. An unusable one is ignored by the API rather than blocking the create. */
+  referralCode?: string;
 }
 
 /**
@@ -106,6 +108,7 @@ export async function createCustomer(input: NewCustomerInput): Promise<ActionRes
         ...(input.city ? { city: input.city } : {}),
         ...(input.country ? { country: input.country } : {}),
         ...(input.notes ? { notes: input.notes } : {}),
+        ...(input.referralCode ? { referralCode: input.referralCode } : {}),
       }),
     'Customer created.',
   );
