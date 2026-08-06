@@ -9,8 +9,11 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { StaffRole } from '@common/constants/app.constants';
 import { TeamAuth } from '@common/decorators/composite-auth.decorator';
 import { CurrentStaff } from '@common/decorators/auth.decorators';
@@ -27,6 +30,13 @@ import {
 import { ICurrentStaff } from '@common/interfaces/auth.interface';
 import { IPaginatedResult } from '@common/interfaces/pagination.interface';
 import { CustomersService } from './customers.service';
+import { CustomerImportService } from './customer-import.service';
+import { ValidationException } from '@common/exceptions/business.exception';
+import {
+  CommitImportDto,
+  CommitImportResponseDto,
+  ImportPreviewResponseDto,
+} from './dto/import.dto';
 import {
   CreateCustomerDto,
   UpdateCustomerDto,
@@ -56,7 +66,10 @@ import {
 @Controller('team/customers')
 @TeamAuth()
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) {}
+  constructor(
+    private readonly customersService: CustomersService,
+    private readonly customerImportService: CustomerImportService,
+  ) {}
 
   @Post()
   @ResponseMessage('Customer created successfully')
@@ -72,6 +85,61 @@ export class CustomersController {
     @Body() dto: CreateCustomerDto,
   ): Promise<CustomerResponseDto> {
     return this.customersService.create(actor, dto);
+  }
+
+  @Post('import/preview')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @ResponseMessage('File parsed')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Parse and validate an import file without writing anything',
+    description: [
+      'Returns the rows that would be created and, separately, every row that',
+      'cannot be — each with its own reason. Nothing is written.',
+      '',
+      'This exists so a bulk import is reviewable before it happens. A',
+      'spreadsheet of several hundred customers is where a mis-mapped column',
+      'does real damage, and writing on upload means the damage is only',
+      'discovered afterwards.',
+      '',
+      'The sheet needs `email` and `username` columns; `fullName`, `phone`,',
+      '`city` and `country` are optional. Header matching ignores case,',
+      'spacing and common wordings.',
+    ].join(' '),
+  })
+  @ApiOkData(ImportPreviewResponseDto, 'Rows parsed')
+  @ApiErrors(401, 422)
+  previewImport(@UploadedFile() file: Express.Multer.File): Promise<ImportPreviewResponseDto> {
+    if (!file) {
+      throw new ValidationException([
+        { field: 'file', constraint: 'required', message: 'Attach a .xlsx file' },
+      ]);
+    }
+    return this.customerImportService.preview(file.buffer);
+  }
+
+  @Post('import')
+  @ResponseMessage('Customers imported')
+  @ApiOperation({
+    summary: 'Create the confirmed rows in one transaction',
+    description: [
+      'All or nothing. A file whose two-hundredth row collides with an',
+      'existing username must not leave 199 customers behind — there is no',
+      'sensible way to resume a half-finished import.',
+      '',
+      'Takes the rows returned by the preview rather than the file again, so',
+      'what is written is what the operator reviewed. Collisions are',
+      're-checked here because preview may have run minutes ago.',
+    ].join(' '),
+  })
+  @ApiCreatedData(CommitImportResponseDto, 'Customers imported')
+  @ApiErrors(401, 403, 404, 422)
+  commitImport(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Body() dto: CommitImportDto,
+  ): Promise<CommitImportResponseDto> {
+    return this.customerImportService.commit(actor, dto);
   }
 
   @Get()
