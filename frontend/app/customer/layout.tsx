@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { LayoutDashboardIcon, LogOutIcon, MessageSquareIcon } from 'lucide-react';
+import { LayoutDashboardIcon, LogOutIcon, MessageSquareIcon, UserIcon } from 'lucide-react';
 
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,12 @@ export default async function CustomerLayout({ children }: { children: React.Rea
               <Link href="/customer/messages">
                 <MessageSquareIcon className="size-4" />
                 <span className="hidden sm:inline">Messages</span>
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/customer/profile">
+                <UserIcon className="size-4" />
+                <span className="hidden sm:inline">Profile</span>
               </Link>
             </Button>
 
