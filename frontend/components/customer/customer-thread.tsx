@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { RadioIcon, SendIcon, WifiOffIcon } from 'lucide-react';
 import { io, type Socket } from 'socket.io-client';
 
-import { getCustomerSocketToken, sendMyMessage } from '@/app/customer/messages/actions';
+import { getCustomerSocketToken, sendMyMessage } from '@/app/customer/(portal)/messages/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAction } from '@/hooks/use-action';
