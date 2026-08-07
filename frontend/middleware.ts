@@ -69,6 +69,45 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
+/*
+ * Pages a runner (or, for audit logs, anyone but a master) cannot open.
+ * Matches the API's own role guard and what the sidebar already hides —
+ * this is presentation catching up to the rule, not a new one.
+ *
+ * These three used to be `if (actor.role === 'runner') notFound()` inside
+ * each page. That check ran too late: `(app)/loading.tsx` wraps every page
+ * under it in a Suspense boundary, so the loading shell — status 200 — had
+ * already gone out by the time a page-level notFound() resolved, and the
+ * status could not change after that. Checked here instead, before any of
+ * that tree even starts rendering, the rewrite below lands on the *root*
+ * not-found — outside `(app)` entirely — with a real 404.
+ */
+const ROLE_RESTRICTED: { prefix: string; allow: readonly string[] }[] = [
+  { prefix: '/audit-logs', allow: ['master'] },
+  { prefix: '/staff', allow: ['master', 'manager'] },
+  { prefix: '/broadcast', allow: ['master', 'manager'] },
+];
+
+/** Parses just enough of the actor cookie to read a role, trusting nothing else in it. */
+function actorRole(raw: string | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { role?: unknown };
+    return typeof parsed.role === 'string' ? parsed.role : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A cookie that fails to parse is treated as no role — restricted pages deny rather than guess. */
+function roleForbidden(pathname: string, role: string | null): boolean {
+  const restriction = ROLE_RESTRICTED.find(
+    (entry) => pathname === entry.prefix || pathname.startsWith(`${entry.prefix}/`),
+  );
+  if (!restriction) return false;
+  return role === null || !restriction.allow.includes(role);
+}
+
 /** Drops every session cookie on the response that is about to be sent. */
 function clearSession(response: NextResponse): NextResponse {
   for (const name of [ACCESS_COOKIE, REFRESH_COOKIE, ACTOR_COOKIE]) {
@@ -278,11 +317,21 @@ export async function middleware(request: NextRequest) {
   // reach a layout that redirects to /login — which this middleware would
   // then bounce straight back, a second loop with a different cause. A
   // session missing any part of itself is treated as no session.
-  if (hasUsableAccess && actor) return NextResponse.next();
+  //
+  // A role-forbidden request is allowed through in the sense that it is not
+  // sent to /login — it is signed in, just not for this page — but it is
+  // rewritten to a path nothing serves, landing on the root not-found with
+  // a genuine 404 rather than the staff page it asked for.
+  const allowedResponse = () =>
+    roleForbidden(pathname, actorRole(actor))
+      ? NextResponse.rewrite(new URL('/__forbidden', request.url))
+      : NextResponse.next();
+
+  if (hasUsableAccess && actor) return allowedResponse();
 
   if (refreshToken && actor) {
     const tokens = await refresh(refreshToken);
-    if (tokens) return applyTokens(NextResponse.next(), tokens);
+    if (tokens) return applyTokens(allowedResponse(), tokens);
   }
 
   // No way to get a working token. Send them to sign in with the session

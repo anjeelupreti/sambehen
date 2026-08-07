@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { ExportButton } from '@/components/export-button';
@@ -20,7 +19,6 @@ import {
 } from '@/components/ui/table';
 import { apiList } from '@/lib/api';
 import { formatCount, formatDateTime } from '@/lib/money';
-import { getActor } from '@/lib/session';
 import type { AuditLog, AuditLogSummary } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Audit trail' };
@@ -46,12 +44,6 @@ export default async function AuditLogsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const actor = await getActor();
-
-  // Master-only and deliberately unscoped: the trail exists to be read by
-  // someone outside the chain being audited.
-  if (actor?.role !== 'master') notFound();
-
   const params = await searchParams;
   const first = (key: string) => {
     const value = params[key];

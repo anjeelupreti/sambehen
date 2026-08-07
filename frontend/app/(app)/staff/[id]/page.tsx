@@ -19,18 +19,12 @@ import {
 } from '@/components/ui/table';
 import { ApiError, apiGet, apiList } from '@/lib/api';
 import { formatCount, formatDate } from '@/lib/money';
-import { getActor } from '@/lib/session';
 import type { Customer, CustomerSummary, Staff } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Staff member' };
 
 export default async function StaffDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-
-  const actor = await getActor();
-  // A runner has nobody beneath them, so the whole area is closed to them —
-  // the same answer the list page gives.
-  if (actor?.role === 'runner') notFound();
 
   let member: Staff;
   try {

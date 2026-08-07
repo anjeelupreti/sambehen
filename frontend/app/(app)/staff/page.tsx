@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 
 import { ClickableRow } from '@/components/clickable-row';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
@@ -53,11 +52,6 @@ export default async function StaffPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const actor = await getActor();
-
-  // A runner has no staff below them, and the API refuses the route
-  // outright. Rendering "not found" keeps the UI consistent with how every
-  // other denial reads.
-  if (actor?.role === 'runner') notFound();
 
   const params = await searchParams;
   const first = (key: string) => {

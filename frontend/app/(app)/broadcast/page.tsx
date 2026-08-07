@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 
 import { CampaignActions } from '@/components/broadcast/campaign-actions';
 import { ComposeBroadcastModal } from '@/components/broadcast/compose-broadcast-modal';
@@ -18,7 +17,6 @@ import {
 } from '@/components/ui/table';
 import { apiList } from '@/lib/api';
 import { formatCount, formatDateTime } from '@/lib/money';
-import { getActor } from '@/lib/session';
 import type { components } from '@/lib/api-schema';
 
 type Campaign = components['schemas']['CampaignResponseDto'];
@@ -47,12 +45,6 @@ export default async function BroadcastPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const actor = await getActor();
-
-  // Master and manager only, matching the API. A runner sent here gets the
-  // same "not found" every other denial gives.
-  if (!actor || actor.role === 'runner') notFound();
-
   const params = await searchParams;
   const first = (key: string) => {
     const value = params[key];
