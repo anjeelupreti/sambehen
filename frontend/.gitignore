@@ -6,6 +6,9 @@ next-env.d.ts
 # Vercel
 .vercel
 
+# Uploaded game images — written at runtime by app/api/upload, not source.
+/public/uploads/
+
 # Local env files. .env.example is tracked; anything with real values is not.
 .env
 .env.local
