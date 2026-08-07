@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CrownIcon, GiftIcon, MessageSquareIcon, TrophyIcon } from 'lucide-react';
+import { CrownIcon, MessageSquareIcon, TrophyIcon } from 'lucide-react';
 
 import { Money } from '@/components/money';
+import { ReferralCodeCard } from '@/components/customer/referral-code-card';
 import { StatCard } from '@/components/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -127,26 +128,7 @@ export default async function CustomerOverviewPage() {
         </Card>
       </div>
 
-      {referral?.code ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <GiftIcon className="size-4" />
-              Your referral code
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <code className="bg-muted tabular inline-block rounded-md px-3 py-2 text-sm">
-              {referral.code}
-            </code>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Figure label="Referred" value={formatCount(referral.totalReferred)} />
-              <Figure label="Rewarded" value={formatCount(referral.totalRewarded)} />
-              <Figure label="Earned" value={<Money value={referral.totalEarned} />} />
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
+      <ReferralCodeCard referral={referral} />
 
       <Card className="gap-0 py-0">
         <CardHeader className="py-4">
@@ -190,15 +172,6 @@ export default async function CustomerOverviewPage() {
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function Figure({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-muted-foreground text-xs">{label}</p>
-      <p className="font-medium">{value}</p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Loader2Icon, TriangleAlertIcon, UploadIcon } from 'lucide-react';
+import { DownloadIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 
 import { commitCustomerImport, previewCustomerImport } from '@/app/(app)/customers/actions';
 import type { AssignableOwner } from '@/components/forms/new-customer-modal';
@@ -110,7 +110,7 @@ export function ImportCustomersModal({
   return (
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <UploadIcon className="size-4" />
+        <DownloadIcon className="size-4" />
         Import
       </Button>
 

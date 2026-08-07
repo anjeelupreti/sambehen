@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { DownloadIcon, Loader2Icon } from 'lucide-react';
+import { Loader2Icon, UploadIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -92,7 +92,7 @@ export function ExportButton({
       {exporting ? (
         <Loader2Icon className="size-4 animate-spin" />
       ) : (
-        <DownloadIcon className="size-4" />
+        <UploadIcon className="size-4" />
       )}
       {exporting ? 'Preparing…' : 'Export'}
     </Button>
