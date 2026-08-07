@@ -16,19 +16,27 @@
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
+  /*
+   * The theme customizer's "Default" swatch has always shown indigo, but
+   * nothing here ever produced it — a bare click on "New customer",
+   * a focus ring, an active nav row, all rendered in flat near-black
+   * instead. Every other preset (rose/emerald/violet/orange) gets real
+   * chroma; this is that same treatment made the actual default rather
+   * than a promise the swatch made and the tokens never kept.
+   */
+  --primary: oklch(0.45 0.18 264);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
   --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
+  --accent: oklch(0.955 0.006 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
+  --border: oklch(0.88 0.006 286.32);
+  --input: oklch(0.88 0.006 286.32);
+  --ring: oklch(0.65 0.18 264);
 
   /*
    * Money direction. Debit is money in and credit is money out, so these
@@ -42,23 +50,26 @@
 .dark {
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
+  /* Stepped further from --background than before (0.21 -> 0.235) — at
+     0.21 a card barely separated from the page behind it, which is a big
+     part of why the whole app read as one flat, dim surface. */
+  --card: oklch(0.235 0.006 285.885);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
+  --popover: oklch(0.235 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
+  --primary: oklch(0.75 0.16 264);
+  --primary-foreground: oklch(0.2 0.05 264);
+  --secondary: oklch(0.285 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
+  --muted: oklch(0.285 0.006 286.033);
   --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
+  --accent: oklch(0.31 0.008 286.033);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 17%);
+  --ring: oklch(0.75 0.16 264);
 
   /*
    * Re-stepped for dark rather than lightened from the light values: at
