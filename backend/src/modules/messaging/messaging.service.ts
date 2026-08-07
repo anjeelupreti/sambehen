@@ -11,6 +11,7 @@ import { ErrorCode } from '@common/constants/error-codes';
 import {
   BusinessException,
   ResourceNotFoundException,
+  ValidationException,
 } from '@common/exceptions/business.exception';
 import { IPaginatedResult } from '@common/interfaces/pagination.interface';
 import { ICurrentStaff } from '@common/interfaces/auth.interface';
@@ -32,6 +33,7 @@ import {
   ConversationResponseDto,
   ConversationSummaryDto,
   MessageResponseDto,
+  MessageAttachmentDto,
   UnreadCountDto,
 } from './dto/messaging.dto';
 
@@ -297,6 +299,7 @@ export class MessagingService {
         senderStaffId: messages.senderStaffId,
         senderStaffUsername: staffUsers.username,
         body: messages.body,
+        attachments: messages.attachments,
         createdAt: messages.createdAt,
       })
       .from(messages)
@@ -337,6 +340,7 @@ export class MessagingService {
       senderType: MessageSenderType.STAFF,
       senderStaffId: actor.id,
       body: dto.body,
+      attachments: dto.attachments,
       staffUsername: actor.username,
     });
   }
@@ -349,6 +353,7 @@ export class MessagingService {
       senderType: MessageSenderType.CUSTOMER,
       senderCustomerId: customerId,
       body: dto.body,
+      attachments: dto.attachments,
     });
   }
 
@@ -409,6 +414,7 @@ export class MessagingService {
         conversationId: messages.conversationId,
         senderType: messages.senderType,
         body: messages.body,
+        attachments: messages.attachments,
         createdAt: messages.createdAt,
       })
       .from(messages)
@@ -465,10 +471,21 @@ export class MessagingService {
       senderStaffId?: string;
       senderCustomerId?: string;
       body: string;
+      attachments?: MessageAttachmentDto[];
       staffUsername?: string;
     },
   ): Promise<MessageResponseDto> {
+    if (!input.body.trim() && !input.attachments?.length) {
+      throw new ValidationException([
+        { field: 'body', constraint: 'isNotEmpty', message: 'Write something or attach a file' },
+      ]);
+    }
+
     const now = new Date();
+    // A message with no text still needs something for the inbox preview.
+    const preview = input.body.trim()
+      ? input.body.slice(0, 200)
+      : `📎 ${input.attachments!.length} attachment${input.attachments!.length === 1 ? '' : 's'}`;
 
     const created = await this.db.transaction(async (tx) => {
       const [message] = await tx
@@ -479,6 +496,7 @@ export class MessagingService {
           senderStaffId: input.senderStaffId,
           senderCustomerId: input.senderCustomerId,
           body: input.body,
+          attachments: input.attachments ?? null,
           deliveredAt: now,
         })
         .returning();
@@ -487,7 +505,7 @@ export class MessagingService {
         .update(conversations)
         .set({
           lastMessageAt: now,
-          lastMessagePreview: input.body.slice(0, 200),
+          lastMessagePreview: preview,
           messageCount: sql`${conversations.messageCount} + 1`,
           ...(input.senderType === MessageSenderType.CUSTOMER
             ? { lastCustomerMessageAt: now }
@@ -510,6 +528,7 @@ export class MessagingService {
       senderStaffId: created.senderStaffId,
       senderStaffUsername: input.staffUsername ?? null,
       body: created.body,
+      attachments: created.attachments as MessageAttachmentDto[] | null,
       createdAt: created.createdAt,
     };
 

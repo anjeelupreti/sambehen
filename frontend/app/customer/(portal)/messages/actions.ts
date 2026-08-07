@@ -6,7 +6,7 @@ import { customerGet, customerMutate } from '@/lib/customer-api';
 import { getCustomerAccessToken } from '@/lib/customer-session';
 import { runAction } from '@/lib/run-action';
 import type { ActionResult } from '@/lib/action-result';
-import type { Message } from '@/lib/types';
+import type { Message, MessageAttachment } from '@/lib/types';
 
 /**
  * The customer side of messaging.
@@ -29,9 +29,16 @@ export async function loadMyMessages(): Promise<Message[]> {
   }
 }
 
-export async function sendMyMessage(body: string): Promise<ActionResult<Message>> {
+export async function sendMyMessage(
+  body: string,
+  attachments?: MessageAttachment[],
+): Promise<ActionResult<Message>> {
   const result = await runAction(
-    () => customerMutate<Message>('/me/messages', 'POST', { body }),
+    () =>
+      customerMutate<Message>('/me/messages', 'POST', {
+        body,
+        ...(attachments?.length ? { attachments } : {}),
+      }),
     'Message sent.',
   );
 

@@ -108,6 +108,7 @@ export type SpinWinnerSummary = Schemas['SpinWinnerSummaryDto'];
 export type Conversation = Schemas['ConversationResponseDto'];
 export type ConversationSummary = Schemas['ConversationSummaryDto'];
 export type Message = Schemas['MessageResponseDto'];
+export type MessageAttachment = Schemas['MessageAttachmentDto'];
 
 /* ── Audit ────────────────────────────────────────────────────────────── */
 

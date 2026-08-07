@@ -7,9 +7,11 @@ import {
   IsBoolean,
   IsInt,
   IsIn,
+  IsArray,
+  ArrayMaxSize,
+  ValidateNested,
   Min,
   Max,
-  MinLength,
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -21,12 +23,58 @@ export const CONVERSATION_SORT_FIELDS = ['lastMessageAt', 'messageCount', 'creat
 /** Longest single message. Generous, but bounded so one send cannot be unbounded. */
 export const MAX_MESSAGE_LENGTH = 4000;
 
-export class SendMessageDto {
-  @ApiProperty({ maxLength: MAX_MESSAGE_LENGTH, example: 'Your withdrawal has been processed.' })
+/** A message carries at most this many files — a wall of attachments is its own conversation. */
+export const MAX_MESSAGE_ATTACHMENTS = 10;
+
+/**
+ * A file already sitting behind a URL, not the bytes themselves.
+ *
+ * Messages only ever carry a *reference*: the upload happens separately
+ * (its own endpoint, its own size and type checks) and this is what gets
+ * attached to a specific message afterwards. Accepting bytes here would
+ * mean validating a file upload inside a JSON body, and the two concerns
+ * — "is this a safe file" and "which message does it belong to" — are
+ * easier to get right kept apart.
+ */
+export class MessageAttachmentDto {
+  @ApiProperty({ description: 'Where the file is served from — relative or absolute.' })
   @IsString()
-  @MinLength(1)
+  @MaxLength(2000)
+  url!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(255)
+  filename!: string;
+
+  @ApiProperty({ example: 'image/png' })
+  @IsString()
+  @MaxLength(127)
+  mimeType!: string;
+
+  @ApiProperty({ description: 'Bytes.' })
+  @IsInt()
+  @Min(0)
+  size!: number;
+}
+
+export class SendMessageDto {
+  @ApiProperty({
+    maxLength: MAX_MESSAGE_LENGTH,
+    example: 'Your withdrawal has been processed.',
+    description: 'May be empty only if at least one attachment is present.',
+  })
+  @IsString()
   @MaxLength(MAX_MESSAGE_LENGTH)
   body!: string;
+
+  @ApiPropertyOptional({ type: [MessageAttachmentDto], maxItems: MAX_MESSAGE_ATTACHMENTS })
+  @IsArray()
+  @ArrayMaxSize(MAX_MESSAGE_ATTACHMENTS)
+  @ValidateNested({ each: true })
+  @Type(() => MessageAttachmentDto)
+  @IsOptional()
+  attachments?: MessageAttachmentDto[];
 }
 
 /** Staff sending to a customer who may not have a thread yet. */
@@ -150,6 +198,9 @@ export class MessageResponseDto {
 
   @ApiProperty()
   body!: string;
+
+  @ApiPropertyOptional({ type: [MessageAttachmentDto], nullable: true })
+  attachments?: MessageAttachmentDto[] | null;
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;

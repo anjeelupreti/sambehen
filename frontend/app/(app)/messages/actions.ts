@@ -6,7 +6,7 @@ import { apiGet, apiList, apiMutate } from '@/lib/api';
 import { runAction } from '@/lib/run-action';
 import { getAccessToken } from '@/lib/session';
 import type { ActionResult } from '@/lib/action-result';
-import type { Conversation, Message } from '@/lib/types';
+import type { Conversation, Message, MessageAttachment } from '@/lib/types';
 
 /**
  * Server actions for messaging.
@@ -93,9 +93,15 @@ export async function markConversationRead(conversationId: string): Promise<Acti
 export async function sendMessage(
   customerId: string,
   body: string,
+  attachments?: MessageAttachment[],
 ): Promise<ActionResult<Message>> {
   const result = await runAction(
-    () => apiMutate<Message>('/team/conversations/messages', 'POST', { customerId, body }),
+    () =>
+      apiMutate<Message>('/team/conversations/messages', 'POST', {
+        customerId,
+        body,
+        ...(attachments?.length ? { attachments } : {}),
+      }),
     'Message sent.',
   );
 

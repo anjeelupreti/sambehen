@@ -2754,6 +2754,15 @@ export interface components {
     };
     /** @enum {string} */
     MessageSenderType: 'customer' | 'staff' | 'system';
+    MessageAttachmentDto: {
+      /** @description Where the file is served from. */
+      url: string;
+      filename: string;
+      /** @example image/png */
+      mimeType: string;
+      /** @description Bytes. */
+      size: number;
+    };
     MessageResponseDto: {
       /** Format: uuid */
       id: string;
@@ -2767,12 +2776,17 @@ export interface components {
       senderStaffId?: string | null;
       senderStaffUsername?: string | null;
       body: string;
+      attachments?: components['schemas']['MessageAttachmentDto'][] | null;
       /** Format: date-time */
       createdAt: string;
     };
     StartConversationDto: {
-      /** @example Your withdrawal has been processed. */
+      /**
+       * @description May be empty only if at least one attachment is present.
+       * @example Your withdrawal has been processed.
+       */
       body: string;
+      attachments?: components['schemas']['MessageAttachmentDto'][];
       /** Format: uuid */
       customerId: string;
     };
@@ -2788,8 +2802,12 @@ export interface components {
       unreadCount: number;
     };
     SendMessageDto: {
-      /** @example Your withdrawal has been processed. */
+      /**
+       * @description May be empty only if at least one attachment is present.
+       * @example Your withdrawal has been processed.
+       */
       body: string;
+      attachments?: components['schemas']['MessageAttachmentDto'][];
     };
     NetPositionDto: {
       /**

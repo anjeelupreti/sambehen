@@ -1,21 +1,35 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeftIcon, RadioIcon, SendIcon, WifiOffIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeftIcon, RadioIcon, SearchIcon, WifiOffIcon } from 'lucide-react';
 
 import { loadMessages, markConversationRead, sendMessage } from '@/app/(app)/messages/actions';
+import { MessageAttachments } from '@/components/messaging/message-attachments';
+import { MessageComposer } from '@/components/messaging/message-composer';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAction } from '@/hooks/use-action';
 import { useMessagingSocket, type LiveMessage } from '@/hooks/use-messaging-socket';
 import { formatDateTime } from '@/lib/money';
 import type { Conversation, Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || '?';
+
 /**
- * The messaging surface.
+ * The messaging surface: search, the people, the conversation. Nothing
+ * else — a filter bar and a row of stat tiles used to sit above this, but
+ * a page for reading and replying to messages isn't a report, and search
+ * belongs next to the list it searches rather than as a page-level filter
+ * that reloads the route.
  *
  * Threads live beside the list on desktop and replace it below `md` — a
  * two-pane layout on a phone gives neither pane enough room to be usable.
@@ -26,18 +40,29 @@ import { cn } from '@/lib/utils';
  */
 export function MessagingView({ initialConversations }: { initialConversations: Conversation[] }) {
   const [conversations, setConversations] = useState(initialConversations);
+  const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingThread, setLoadingThread] = useState(false);
-  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
 
-  const send = useAction(sendMessage);
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // The server component re-renders on revalidation; adopt its list without
   // discarding a thread the user is reading.
   useEffect(() => setConversations(initialConversations), [initialConversations]);
+
+  const visible = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return conversations;
+    return conversations.filter(
+      (c) =>
+        c.customerUsername?.toLowerCase().includes(query) ||
+        c.customerFullName?.toLowerCase().includes(query) ||
+        c.lastMessagePreview?.toLowerCase().includes(query),
+    );
+  }, [conversations, search]);
 
   const handleIncoming = useCallback(
     (message: LiveMessage) => {
@@ -91,77 +116,80 @@ export function MessagingView({ initialConversations }: { initialConversations: 
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const submit = async () => {
-    if (!selected || !draft.trim()) return;
-
-    const body = draft.trim();
-    setDraft('');
-    const result = await send.run(selected.customerId, body);
-
-    if (result.ok && result.data) {
-      setMessages((current) =>
-        current.some((existing) => existing.id === result.data!.id)
-          ? current
-          : [...current, result.data!],
-      );
-    } else {
-      // Give the text back rather than losing what they wrote.
-      setDraft(body);
-    }
-  };
-
   return (
-    <div className="grid h-[calc(100svh-9rem)] overflow-hidden rounded-xl border md:grid-cols-[320px_1fr]">
+    <div className="grid h-[calc(100svh-8rem)] overflow-hidden rounded-xl border md:grid-cols-[320px_1fr]">
       <aside
         className={cn('flex min-h-0 flex-col border-r', selectedId ? 'hidden md:flex' : 'flex')}
       >
-        <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
-          <span className="text-sm font-medium">Conversations</span>
-          <ConnectionBadge state={state} />
+        <div className="space-y-2 border-b p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold">Messages</span>
+            <ConnectionBadge state={state} />
+          </div>
+          <div className="relative">
+            <SearchIcon className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search people or messages…"
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
+          {visible.length === 0 ? (
             <p className="text-muted-foreground p-4 text-center text-sm">
-              No conversations match these filters.
+              {search ? 'No one matches that search.' : 'No conversations yet.'}
             </p>
           ) : (
-            conversations.map((conversation) => (
+            visible.map((conversation) => (
               <button
                 key={conversation.id}
                 type="button"
                 onClick={() => void open(conversation)}
                 className={cn(
-                  'hover:bg-accent/50 w-full border-b px-3 py-2.5 text-left transition-colors',
+                  'hover:bg-accent/50 flex w-full items-start gap-2.5 border-b px-3 py-2.5 text-left transition-colors',
                   conversation.id === selectedId && 'bg-accent',
                 )}
               >
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate text-sm font-medium">
-                    {conversation.customerUsername}
-                  </span>
-                  {conversation.unreadCount > 0 ? (
-                    <Badge className="tabular h-5 px-1.5">{conversation.unreadCount}</Badge>
+                <Avatar className="mt-0.5 size-9 shrink-0">
+                  <AvatarFallback className="text-xs">
+                    {initials(
+                      conversation.customerFullName || conversation.customerUsername || '?',
+                    )}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="truncate text-sm font-medium">
+                      {conversation.customerUsername}
+                    </span>
+                    {conversation.unreadCount > 0 ? (
+                      <Badge className="tabular h-5 px-1.5">{conversation.unreadCount}</Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-muted-foreground truncate text-xs">
+                    {conversation.lastMessagePreview ?? 'No messages yet.'}
+                  </p>
+                  {conversation.awaitingReply ? (
+                    <Badge variant="outline" className="mt-1 h-5 px-1.5 text-[10px]">
+                      awaiting reply
+                    </Badge>
                   ) : null}
                 </div>
-                <p className="text-muted-foreground truncate text-xs">
-                  {conversation.lastMessagePreview ?? 'No messages yet.'}
-                </p>
-                {conversation.awaitingReply ? (
-                  <Badge variant="outline" className="mt-1 h-5 px-1.5 text-[10px]">
-                    awaiting reply
-                  </Badge>
-                ) : null}
               </button>
             ))
           )}
         </div>
       </aside>
 
-      <section className={cn('flex min-h-0 flex-col', selectedId ? 'flex' : 'hidden md:flex')}>
+      <section
+        className={cn('bg-muted/20 flex min-h-0 flex-col', selectedId ? 'flex' : 'hidden md:flex')}
+      >
         {selected ? (
           <>
-            <header className="flex items-center gap-2 border-b px-3 py-2">
+            <header className="bg-background flex items-center gap-2 border-b px-3 py-2.5">
               <Button
                 variant="ghost"
                 size="icon"
@@ -171,6 +199,11 @@ export function MessagingView({ initialConversations }: { initialConversations: 
               >
                 <ArrowLeftIcon className="size-4" />
               </Button>
+              <Avatar className="size-8">
+                <AvatarFallback className="text-xs">
+                  {initials(selected.customerFullName || selected.customerUsername || '?')}
+                </AvatarFallback>
+              </Avatar>
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{selected.customerUsername}</p>
                 {selected.customerFullName ? (
@@ -198,25 +231,26 @@ export function MessagingView({ initialConversations }: { initialConversations: 
               <div ref={bottomRef} />
             </div>
 
-            <form
-              className="flex items-center gap-2 border-t p-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void submit();
+            <MessageComposer
+              uploadUrl="/api/messages/attachments"
+              placeholder={`Reply to ${selected.customerUsername}…`}
+              sending={sending}
+              onSend={async (body, attachments) => {
+                setSending(true);
+                const result = await sendMessage(selected.customerId, body, attachments);
+                setSending(false);
+
+                if (result.ok && result.data) {
+                  setMessages((current) =>
+                    current.some((existing) => existing.id === result.data!.id)
+                      ? current
+                      : [...current, result.data!],
+                  );
+                  return true;
+                }
+                return false;
               }}
-            >
-              <Input
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder={`Reply to ${selected.customerUsername}…`}
-                aria-label="Message"
-                disabled={send.pending}
-              />
-              <Button type="submit" size="icon" disabled={send.pending || !draft.trim()}>
-                <SendIcon className="size-4" />
-                <span className="sr-only">Send</span>
-              </Button>
-            </form>
+            />
           </>
         ) : (
           <div className="text-muted-foreground flex h-full items-center justify-center p-8 text-sm">
@@ -230,19 +264,26 @@ export function MessagingView({ initialConversations }: { initialConversations: 
 
 function Bubble({ message }: { message: Message }) {
   const fromCustomer = message.senderType === 'customer';
+  const hasAttachments = Boolean(message.attachments?.length);
+  const hasBody = message.body.trim().length > 0;
 
   return (
     <div className={cn('flex', fromCustomer ? 'justify-start' : 'justify-end')}>
       <div
         className={cn(
-          'max-w-[80%] rounded-lg px-3 py-2',
-          fromCustomer ? 'bg-muted' : 'bg-primary text-primary-foreground',
+          'max-w-[80%] space-y-1.5 rounded-2xl px-3.5 py-2.5 shadow-sm',
+          fromCustomer
+            ? 'bg-background rounded-bl-sm'
+            : 'bg-primary text-primary-foreground rounded-br-sm',
         )}
       >
-        <p className="text-sm whitespace-pre-wrap">{message.body}</p>
+        {hasBody ? <p className="text-sm whitespace-pre-wrap">{message.body}</p> : null}
+        {hasAttachments ? (
+          <MessageAttachments attachments={message.attachments!} fromSelf={!fromCustomer} />
+        ) : null}
         <p
           className={cn(
-            'mt-1 text-[10px]',
+            'text-[10px]',
             fromCustomer ? 'text-muted-foreground' : 'text-primary-foreground/70',
           )}
         >

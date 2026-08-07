@@ -1,13 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RadioIcon, SendIcon, WifiOffIcon } from 'lucide-react';
+import { RadioIcon, WifiOffIcon } from 'lucide-react';
 import { io, type Socket } from 'socket.io-client';
 
 import { getCustomerSocketToken, sendMyMessage } from '@/app/customer/(portal)/messages/actions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useAction } from '@/hooks/use-action';
+import { MessageAttachments } from '@/components/messaging/message-attachments';
+import { MessageComposer } from '@/components/messaging/message-composer';
 import { formatDateTime } from '@/lib/money';
 import type { Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -24,10 +23,9 @@ import { cn } from '@/lib/utils';
  */
 export function CustomerThread({ initialMessages }: { initialMessages: Message[] }) {
   const [messages, setMessages] = useState(initialMessages);
-  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
   const [live, setLive] = useState<'connecting' | 'live' | 'offline'>('connecting');
   const bottomRef = useRef<HTMLDivElement>(null);
-  const send = useAction(sendMyMessage);
 
   const handleIncoming = useCallback((message: Message) => {
     setMessages((current) =>
@@ -83,21 +81,6 @@ export function CustomerThread({ initialMessages }: { initialMessages: Message[]
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const submit = async () => {
-    const body = draft.trim();
-    if (!body) return;
-
-    setDraft('');
-    const result = await send.run(body);
-
-    if (result.ok && result.data) {
-      handleIncoming(result.data);
-    } else {
-      // Give the text back rather than losing what they wrote.
-      setDraft(body);
-    }
-  };
-
   return (
     <div className="flex h-[calc(100svh-14rem)] flex-col overflow-hidden rounded-xl border">
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
@@ -128,18 +111,24 @@ export function CustomerThread({ initialMessages }: { initialMessages: Message[]
         ) : (
           messages.map((message) => {
             const mine = message.senderType === 'customer';
+            const hasBody = message.body.trim().length > 0;
+            const hasAttachments = Boolean(message.attachments?.length);
+
             return (
               <div key={message.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
                 <div
                   className={cn(
-                    'max-w-[80%] rounded-lg px-3 py-2',
+                    'max-w-[80%] space-y-1.5 rounded-lg px-3 py-2',
                     mine ? 'bg-primary text-primary-foreground' : 'bg-muted',
                   )}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.body}</p>
+                  {hasBody ? <p className="text-sm whitespace-pre-wrap">{message.body}</p> : null}
+                  {hasAttachments ? (
+                    <MessageAttachments attachments={message.attachments!} fromSelf={mine} />
+                  ) : null}
                   <p
                     className={cn(
-                      'mt-1 text-[10px]',
+                      'text-[10px]',
                       mine ? 'text-primary-foreground/70' : 'text-muted-foreground',
                     )}
                   >
@@ -153,25 +142,22 @@ export function CustomerThread({ initialMessages }: { initialMessages: Message[]
         <div ref={bottomRef} />
       </div>
 
-      <form
-        className="flex items-center gap-2 border-t p-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void submit();
+      <MessageComposer
+        uploadUrl="/customer/messages/attachments"
+        placeholder="Write a message…"
+        sending={sending}
+        onSend={async (body, attachments) => {
+          setSending(true);
+          const result = await sendMyMessage(body, attachments);
+          setSending(false);
+
+          if (result.ok && result.data) {
+            handleIncoming(result.data);
+            return true;
+          }
+          return false;
         }}
-      >
-        <Input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="Write a message…"
-          aria-label="Message"
-          disabled={send.pending}
-        />
-        <Button type="submit" size="icon" disabled={send.pending || !draft.trim()}>
-          <SendIcon className="size-4" />
-          <span className="sr-only">Send</span>
-        </Button>
-      </form>
+      />
     </div>
   );
 }
