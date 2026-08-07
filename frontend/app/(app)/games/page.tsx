@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
+import { ClickableRow } from '@/components/clickable-row';
 import { FilterBar } from '@/components/filters/filter-bar';
 import { FilterSelect } from '@/components/filters/filter-select';
 import { SortableHeader } from '@/components/filters/sortable-header';
@@ -113,9 +115,11 @@ export default async function GamesPage({
                 </TableRow>
               ) : (
                 data.map((game) => (
-                  <TableRow key={game.id}>
+                  <ClickableRow key={game.id} href={`/games/${game.id}`}>
                     <TableCell>
-                      <span className="font-medium">{game.name}</span>
+                      <Link href={`/games/${game.id}`} className="font-medium hover:underline">
+                        {game.name}
+                      </Link>
                       {game.description ? (
                         <p className="text-muted-foreground max-w-md truncate text-xs">
                           {game.description}
@@ -141,7 +145,7 @@ export default async function GamesPage({
                     <TableCell className="text-right">
                       <GameActions game={game} actorRole={actor?.role} />
                     </TableCell>
-                  </TableRow>
+                  </ClickableRow>
                 ))
               )}
             </TableBody>

@@ -1,17 +1,23 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ArrowLeftIcon } from 'lucide-react';
+
 import { apiGet } from '@/lib/api';
+import { formatDate } from '@/lib/money';
 import type { Game } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
-// `params` is a Promise in Next 15 — the code already awaited it, but the
-// type said otherwise, so the route's generated types did not type-check.
+export const metadata: Metadata = { title: 'Game' };
+
 export default async function GameDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   let game: Game;
   try {
-    // Await params as per Next.js 15+ App Router rules
-    const resolvedParams = await params;
-    game = await apiGet<Game>(`/team/games/${resolvedParams.id}`);
+    game = await apiGet<Game>(`/team/games/${id}`);
   } catch {
     // A 404 here may mean the game does not exist, or is outside the
     // caller's scope. The API makes those indistinguishable on purpose.
@@ -19,15 +25,27 @@ export default async function GameDetailsPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Game Details</h2>
+    <div className="space-y-6">
+      <div>
+        <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
+          <Link href="/games">
+            <ArrowLeftIcon className="size-4" />
+            All games
+          </Link>
+        </Button>
+
+        <header>
+          <h1 className="truncate text-2xl font-semibold tracking-tight">{game.name}</h1>
+          <p className="text-muted-foreground text-sm">
+            The catalogue transactions record against.
+          </p>
+        </header>
       </div>
 
       <div className="grid gap-4 md:grid-cols-7 lg:grid-cols-7">
         <Card className="col-span-4 md:col-span-5">
           <CardHeader>
-            <CardTitle>{game.name}</CardTitle>
+            <CardTitle>Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -49,7 +67,7 @@ export default async function GameDetailsPage({ params }: { params: Promise<{ id
               </div>
               <div>
                 <span className="text-sm font-medium text-muted-foreground">Created At</span>
-                <p className="mt-1 text-sm">{new Date(game.createdAt).toLocaleDateString()}</p>
+                <p className="mt-1 text-sm">{formatDate(game.createdAt)}</p>
               </div>
             </div>
             <div>

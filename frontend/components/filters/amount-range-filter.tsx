@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { formatMoney } from '@/lib/money';
+import { Slider } from '@/components/ui/slider';
+import { formatMoney, toPlotValue } from '@/lib/money';
 
 /**
  * Min/max amount filter.
@@ -19,8 +20,20 @@ import { formatMoney } from '@/lib/money';
  *
  * The API accepts a positive decimal only, so anything else is held back
  * rather than sent and bounced as a 422 the user cannot act on.
+ *
+ * The slider is a coarse companion to the text inputs, not a replacement —
+ * `toPlotValue` is the one sanctioned path from a money string to a number
+ * (see lib/money.ts), used here for thumb position exactly as it is for a
+ * chart coordinate. It is capped at $1,500, comfortably above what this
+ * platform's transactions actually reach; a figure beyond that is still
+ * reachable by typing it, just not by dragging.
  */
 const DECIMAL = /^\d+(\.\d{1,2})?$/;
+const SLIDER_MIN = 0;
+const SLIDER_MAX = 1500;
+const SLIDER_STEP = 10;
+
+const clamp = (value: number, lo: number, hi: number) => Math.min(Math.max(value, lo), hi);
 
 export function AmountRangeFilter() {
   const { get, setMany } = useFilterParams();
@@ -43,6 +56,11 @@ export function AmountRangeFilter() {
       : Number(draftMin) <= Number(draftMax);
 
   const canApply = minValid && maxValid && ordered;
+
+  const sliderValue: [number, number] = [
+    draftMin && minValid ? clamp(toPlotValue(draftMin), SLIDER_MIN, SLIDER_MAX) : SLIDER_MIN,
+    draftMax && maxValid ? clamp(toPlotValue(draftMax), SLIDER_MIN, SLIDER_MAX) : SLIDER_MAX,
+  ];
 
   return (
     <Popover>
@@ -86,6 +104,23 @@ export function AmountRangeFilter() {
               aria-invalid={!maxValid}
               onChange={(event) => setDraftMax(event.target.value)}
             />
+          </div>
+        </div>
+
+        <div className="space-y-2 px-1">
+          <Slider
+            min={SLIDER_MIN}
+            max={SLIDER_MAX}
+            step={SLIDER_STEP}
+            value={sliderValue}
+            onValueChange={([lo, hi]) => {
+              setDraftMin(lo <= SLIDER_MIN ? '' : lo.toFixed(2));
+              setDraftMax(hi >= SLIDER_MAX ? '' : hi.toFixed(2));
+            }}
+          />
+          <div className="text-muted-foreground flex justify-between text-[10px] tabular">
+            <span>{formatMoney(String(SLIDER_MIN))}</span>
+            <span>{formatMoney(String(SLIDER_MAX))}+</span>
           </div>
         </div>
 
