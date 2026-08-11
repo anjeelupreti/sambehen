@@ -9,14 +9,18 @@
 Staff-facing web client for the [Sambehen API](../backend). Next.js App
 Router, React Server Components, Tailwind v4 and shadcn/ui.
 
-> **Status: the staff app is complete and verified against a running API.**
-> Dashboard (with charts), customers, transactions, messages, VIPs, spins,
-> games, staff and the audit trail are all built, with filters, sortable
-> columns, write actions and live messaging over Socket.IO.
+> **Status: both the staff app and the customer portal are complete and
+> verified against a running API.** Dashboard (with charts), customers
+> (including bulk import and export), transactions, VIPs, spin events and
+> winners, games, staff, the audit trail, referrals, broadcast email
+> campaigns, and live messaging over Socket.IO with attachments — all
+> built, with filters, sortable columns and write actions throughout. The
+> customer portal has its own sign-in, cookie namespace and session realm
+> (`sambehen_customer_*`, signed with a different secret than staff), a
+> dashboard, a profile page, and the same live messaging thread.
 >
-> Two things are deliberately unfinished and are listed in
-> [§ What's not built](#whats-not-built): **email campaigns**, and the
-> **customer portal**, which has a sign-in page but nothing behind it.
+> Still absent: automated frontend tests. Everything here is verified by
+> hand against a running API, not by a test suite.
 >
 > Types are **generated** from the API's OpenAPI document — see
 > [§ Types are generated](#types-are-generated). Do not hand-write them.
@@ -96,35 +100,30 @@ cd frontend
 npm install
 
 cp .env.example .env.local     # API_URL must point at the backend
-npm run dev                    # http://localhost:3001
+npm run dev                    # http://localhost:3000
 ```
 
-The backend defaults to port 3000, so run this on another port:
-
-```bash
-npm run dev -- -p 3001
-```
+The backend runs on port 3001 by default (`APP_PORT` in `backend/.env`) —
+`.env.local`'s `API_URL` and `NEXT_PUBLIC_WS_URL` should point there. If
+3000 or 3001 are already taken by something else on your machine, change
+the relevant port and update both `.env` files to match; nothing here is
+hard-coded to a specific port number.
 
 Sign in with a seeded account (`npm run db:seed` in the backend) —
-`master@sambehen.local` / `Password123!`.
+`master` / `Password123!` for staff at `/login`, or `customer1` /
+`Password123!` for the customer portal at `/customer/login`. Full roster
+in the [root README](../README.md#users-and-logins).
 
-### Verify before trusting it
-
-This scaffold has never been installed. Run these first and expect to fix
-things:
+### Before shipping a change
 
 ```bash
-npm install
-npm run type-check    # hand-written types vs the real OpenAPI document
+npm run type-check
 npm run lint
 npm run build
 ```
 
-The likeliest breakages are pinned dependency versions drifting from what
-resolves today, and the response shapes in [lib/types.ts](lib/types.ts) —
-those were typed by hand from the backend DTOs, not generated. Regenerate
-the source of truth with `npm run docs:openapi` in the backend and
-reconcile any drift.
+If a backend DTO changed, regenerate the types first —
+`npm run types:api` — rather than editing `lib/api-schema.d.ts` by hand.
 
 ### Environment
 
@@ -147,22 +146,32 @@ deliberately not public.
 app/
 ├── layout.tsx, globals.css        # shadcn tokens, money direction colours
 ├── page.tsx                       # redirects by session state
-├── login/                         # Server Action auth, httpOnly cookies
-└── (app)/                         # signed-in shell — session required
-    ├── layout.tsx                 # sidebar, role badge, sign out
-    ├── error.tsx                  # says "not found", never "forbidden"
-    ├── dashboard/                 # scoped metrics, top games
-    ├── customers/                 # scoped list, search, pagination
-    └── transactions/              # debit / credit / corrections
+├── login/, logout/                # staff Server Action auth, httpOnly cookies
+├── r/[slug]/                      # public referral landing page
+├── unsubscribe/[customerId]/[token]/  # public email opt-out
+├── api/exports/[key]/, api/messages/attachments/  # streamed downloads, uploads
+├── customer/
+│   ├── login/, logout/            # customer realm — separate cookies, separate secret
+│   └── (portal)/                  # signed-in customer shell
+│       ├── page.tsx               # dashboard: balance, VIP, referral link, wins
+│       ├── profile/, messages/
+└── (app)/                         # signed-in staff shell — session required
+    ├── layout.tsx                 # sidebar (role-filtered), theme, sign out
+    ├── not-found.tsx              # says "not found", never "forbidden"
+    ├── dashboard/, customers/, transactions/, vips/, spin-winners/
+    ├── spin-events/new/, games/, staff/, audit-logs/
+    ├── referrals/, broadcast/, messages/
 components/
 ├── ui/                            # shadcn primitives
 ├── money.tsx                      # the only correct way to render money
-├── stat-card.tsx  app-sidebar.tsx  pagination-controls.tsx  search-field.tsx
+├── messaging/                     # shared composer/attachments (page + FAB + portal)
+├── messages-fab.tsx               # the floating chat bubble
 lib/
-├── api.ts                         # envelope unwrapping, ApiError
-├── session.ts                     # httpOnly cookie session, server-only
+├── api.ts, customer-api.ts        # envelope unwrapping, ApiError — one per realm
+├── session.ts, customer-session.ts  # httpOnly cookie session, server-only
 ├── money.ts                       # formatting; never arithmetic
-└── types.ts                       # hand-typed from the OpenAPI document
+└── types.ts                       # generated aliases over api-schema.d.ts
+middleware.ts                      # session refresh, realm gating, role gating
 ```
 
 ### Adding a shadcn component
@@ -245,30 +254,24 @@ carries only the traced dependencies.
 
 ## What's not built
 
-Nothing in the navigation 404s. These two areas have no page, and are
-therefore **not advertised** in the sidebar — add the nav entry in the same
-commit as the page, never before it.
+Nothing in the navigation 404s — every page reachable from the sidebar or a
+row link exists and works. What's still missing:
 
-| Area                | Endpoint                | Notes                                                |
-| ------------------- | ----------------------- | ---------------------------------------------------- |
-| **Email campaigns** | `/team/email/campaigns` | Audience preview before send                         |
-| **Customer portal** | `/me/*`                 | See below — a sign-in page exists, nothing behind it |
+- **Automated frontend tests.** The backend has a Jest unit suite; the
+  frontend has none. Everything here has been verified by hand against a
+  running API instead.
+- **A supporting index for free-text search.** Every search box matches
+  with `ILIKE '%term%'`, which cannot use a normal index — fine at low
+  data volumes, will slow down as real data accumulates. See the [root
+  README's Known limitations](../README.md#known-limitations).
+- **SMTP is not configured for send** in this environment. Campaigns and
+  notifications queue but do not deliver without real credentials in
+  `backend/.env`.
 
-### The customer portal is a stub, and currently misleading
-
-`/customer/login` exists and calls the right endpoint
-(`/auth/customer/login`), but it then writes the **staff** session cookies
-and redirects to the **staff** dashboard. The two realms are signed with
-different secrets, so a customer landing there has a token every team route
-rejects — and, because both realms share one cookie namespace, signing in as
-a customer clobbers any staff session in the same browser.
-
-The API side is complete (`/me/dashboard`, `/me/profile`, `/me/messages`,
-`/me/vip-status`, `/me/referral`). What is missing is a portal to land on
-and a separate cookie namespace to land with. Until one is built, the link
-from the staff sign-in page leads somewhere that does not work.
-
-Also still absent: tests.
+The customer portal (`/customer/login`, dashboard, profile, messages) has
+its own cookie namespace (`sambehen_customer_*`) and its own JWT secret,
+entirely separate from the staff realm — signing into one never disturbs
+the other in the same browser.
 
 ### Types are generated
 

@@ -7,7 +7,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-010101?logo=socketdotio&logoColor=white)
-![Jest](https://img.shields.io/badge/tests-108-success?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/tests-87-success?logo=jest&logoColor=white)
 
 Backend for a staffed data entry operation: a team records customer
 activity, and the system derives everything else from it — spending totals,
@@ -19,7 +19,7 @@ dashboards.
 OpenAPI (`npm run docs:openapi`, 69 paths / 91 operations) and browsable at
 `/api/docs`.
 
-> **Status:** all 11 build phases complete and merged. 75 unit tests and 33
+> **Status:** all 11 build phases complete and merged. 87 unit tests and 33
 > cross-tenant e2e tests, the latter against a real database. See
 > [§ Project status](#project-status) for what is deliberately not done yet.
 
@@ -150,8 +150,8 @@ npm run db:seed
 npm run start:dev
 ```
 
-Swagger: <http://localhost:3000/api/docs> — paste the **raw** token into
-Authorize, with no `Bearer ` prefix.
+Swagger: <http://localhost:3001/api/docs> (port from `APP_PORT` in `.env`)
+— paste the **raw** token into Authorize, with no `Bearer ` prefix.
 
 Seeded accounts all use `Password123!`:
 
@@ -208,7 +208,7 @@ demonstrates nothing.
 ## Testing
 
 ```bash
-npm test          # 75 unit tests
+npm test          # 87 unit tests
 npm run test:e2e  # 33 cross-tenant tests over real HTTP
 ```
 
