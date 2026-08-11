@@ -36,6 +36,16 @@ export const PgPoolProvider: Provider = {
       max: configService.get<number>('database.poolMax'),
     });
 
+    // node-postgres's own docs warn about this: an *idle* client can still
+    // emit 'error' (a dropped connection, the server restarting under it),
+    // and Pool is an EventEmitter — with no listener, that error event
+    // throws and takes the entire Node process down, not just the one
+    // request that was using the connection. A dropped connection should
+    // cost a failed query and a log line, not the whole API.
+    pool.on('error', (error) => {
+      logger.error(`Idle database client error: ${error.message}`, error.stack);
+    });
+
     // Verify connection eagerly: a bad DSN should fail at boot, loudly,
     // rather than on the first request that happens to need the database.
     try {
