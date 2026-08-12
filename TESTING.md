@@ -7,8 +7,8 @@ This branch is pushed to `origin/feat/frontend-nextjs-shadcn` and not yet merged
 
 Both servers are already running locally:
 
-- Frontend: **http://localhost:3000**
-- Backend: **http://localhost:3001/api/v1** (Swagger at `/api/docs`)
+- Frontend: **http://localhost:3001**
+- Backend: **http://localhost:3003/api/v1** (Swagger at `/api/docs`)
 
 If either isn't responding, restart from a terminal:
 
@@ -31,7 +31,7 @@ reuses existing accounts rather than duplicating them).
 
 Every seeded account uses the same password: **`Password123!`**
 
-**Staff** (sign in at http://localhost:3000/login, username or email):
+**Staff** (sign in at http://localhost:3001/login, username or email):
 
 | Username | Role | Sees |
 |---|---|---|
@@ -39,7 +39,7 @@ Every seeded account uses the same password: **`Password123!`**
 | `manager1`, `manager2` | Manager | Their own runners and customers; not staff/audit-logs across other chains |
 | `runner11`, `runner12`, `runner21`, `runner22` | Runner | Their own customers only; no Staff, Broadcast, Audit trail, or Messages-across-manager |
 
-**Customers** (sign in at http://localhost:3000/customer/login):
+**Customers** (sign in at http://localhost:3001/customer/login):
 
 `customer1` through `customer24` — spread across the runners/managers above, a mix
 of active/inactive/suspended so status filters have something to show.
@@ -80,7 +80,7 @@ of active/inactive/suspended so status filters have something to show.
 
 ### Referrals
 - [ ] As `master`: create a referral program, issue codes to a few customers
-- [ ] Open one issued referral link (`http://localhost:3000/r/<slug>`) in an incognito/private window — no sign-in, shows the program's offer and the code
+- [ ] Open one issued referral link (`http://localhost:3001/r/<slug>`) in an incognito/private window — no sign-in, shows the program's offer and the code
 - [ ] Create a new customer and paste that code into the "Referral code" field — confirm the referral shows up as `pending` in the ledger
 
 ### Messaging
