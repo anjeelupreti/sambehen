@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BuildingIcon, GlobeIcon } from 'lucide-react';
+import { BuildingIcon, DownloadIcon, GlobeIcon } from 'lucide-react';
 
 import { ClickableRow } from '@/components/clickable-row';
 import { CustomerActions } from '@/components/customer-actions';
@@ -17,6 +17,7 @@ import { ExportButton } from '@/components/export-button';
 import { SearchField } from '@/components/search-field';
 import { StatCard } from '@/components/stat-card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -126,8 +127,14 @@ export default async function CustomersPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ExportButton exportKey="customers" />
+          <Button variant="outline" size="sm" asChild>
+            <a href="/customer-import-sample.xlsx" download>
+              <DownloadIcon className="size-4" />
+              Sample
+            </a>
+          </Button>
           {actor ? <ImportCustomersModal actorRole={actor.role} owners={owners} /> : null}
+          <ExportButton exportKey="customers" />
           {actor ? <NewCustomerModal actorRole={actor.role} owners={owners} /> : null}
         </div>
       </header>
