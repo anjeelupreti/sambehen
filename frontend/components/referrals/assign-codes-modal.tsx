@@ -79,6 +79,12 @@ export function AssignCodesModal({
     });
   };
 
+  const selectableIds = candidates.filter((c) => !alreadyIssued.has(c.id)).map((c) => c.id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+
+  const selectAll = () => setSelected((current) => new Set([...current, ...selectableIds]));
+  const clearSelection = () => setSelected(new Set());
+
   const close = (next: boolean) => {
     setOpen(next);
     if (!next) {
@@ -135,7 +141,31 @@ export function AssignCodesModal({
         <div className="rounded-md border">
           <div className="text-muted-foreground flex items-center justify-between border-b px-3 py-2 text-xs">
             <span>{searching ? 'Searching…' : `${candidates.length} shown`}</span>
-            {selected.size > 0 ? <Badge variant="secondary">{selected.size} selected</Badge> : null}
+            <div className="flex items-center gap-2">
+              {selected.size > 0 ? (
+                <Badge variant="secondary">{selected.size} selected</Badge>
+              ) : null}
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                disabled={selectableIds.length === 0 || allSelected}
+                onClick={selectAll}
+              >
+                Select all
+              </Button>
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                disabled={selected.size === 0}
+                onClick={clearSelection}
+              >
+                Clear
+              </Button>
+            </div>
           </div>
 
           {candidates.length === 0 ? (
@@ -204,6 +234,43 @@ export function AssignCodesModal({
           <p className="text-muted-foreground text-xs">
             Select at least one customer. Existing code holders are shown with their code.
           </p>
+        ) : null}
+
+        {existing.length > 0 ? (
+          <div className="rounded-md border">
+            <div className="text-muted-foreground border-b px-3 py-2 text-xs">
+              Already issued under this program ({existing.length})
+            </div>
+            <ul className="max-h-40 divide-y overflow-y-auto">
+              {existing.map((code) => (
+                <li key={code.id} className="flex items-center gap-3 px-3 py-2">
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {code.customerUsername ?? '—'}
+                  </span>
+                  <code className="bg-muted tabular rounded px-1.5 py-0.5 text-xs">
+                    {code.code}
+                  </code>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    aria-label={`Copy link for ${code.customerUsername ?? code.code}`}
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(code.referralLink);
+                        toast.success('Referral link copied.');
+                      } catch {
+                        toast.error('Could not copy. Select the text manually.');
+                      }
+                    }}
+                  >
+                    <CopyIcon className="size-3.5" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
       </FormModal>
     </>
