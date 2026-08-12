@@ -1260,6 +1260,100 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/team/staff-conversations/contacts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Staff the actor may open a DM with
+     * @description Scoped by hierarchy: a runner sees their own manager and any master; a manager sees their own runners and any master; a master sees everyone.
+     */
+    get: operations['StaffMessagingController_contacts'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/staff-conversations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Internal inbox: every thread the actor holds, newest first */
+    get: operations['StaffMessagingController_findInbox'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/staff-conversations/{id}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Thread messages, newest first
+     * @description Refused as not-found if the actor is not a participant in this thread.
+     */
+    get: operations['StaffMessagingController_findMessages'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/staff-conversations/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send an internal message
+     * @description Creates the thread on first contact. Refused if the target is outside the hierarchy rule.
+     */
+    post: operations['StaffMessagingController_send'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/staff-conversations/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark a thread read for the current viewer */
+    post: operations['StaffMessagingController_markRead'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/team/dashboard': {
     parameters: {
       query?: never;
@@ -1619,6 +1713,7 @@ export interface components {
         | 'CONVERSATION_NOT_FOUND'
         | 'MESSAGE_EMPTY'
         | 'CONVERSATION_CLOSED'
+        | 'STAFF_CANNOT_MESSAGE'
         | 'EMAIL_CAMPAIGN_NOT_FOUND'
         | 'EMAIL_NO_RECIPIENTS'
         | 'EMAIL_CAMPAIGN_ALREADY_SENT'
@@ -2755,7 +2850,7 @@ export interface components {
     /** @enum {string} */
     MessageSenderType: 'customer' | 'staff' | 'system';
     MessageAttachmentDto: {
-      /** @description Where the file is served from. */
+      /** @description Where the file is served from — relative or absolute. */
       url: string;
       filename: string;
       /** @example image/png */
@@ -2808,6 +2903,58 @@ export interface components {
        */
       body: string;
       attachments?: components['schemas']['MessageAttachmentDto'][];
+    };
+    StaffContactDto: {
+      /** Format: uuid */
+      id: string;
+      username: string;
+      fullName: string | null;
+      role: components['schemas']['StaffRole'];
+    };
+    StaffConversationResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * Format: uuid
+       * @description The other participant, not the viewer.
+       */
+      counterpartId: string;
+      counterpartUsername: string;
+      counterpartFullName: string | null;
+      counterpartRole: components['schemas']['StaffRole'];
+      lastMessagePreview: string | null;
+      /** Format: date-time */
+      lastMessageAt: string | null;
+      messageCount: number;
+      /** @description Unread for the CURRENT VIEWER, not a shared counter. */
+      unreadCount: number;
+    };
+    StaffMessageResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      conversationId: string;
+      /** Format: uuid */
+      senderStaffId: string;
+      senderUsername: string;
+      body: string;
+      attachments?: components['schemas']['MessageAttachmentDto'][] | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    SendStaffMessageDto: {
+      /**
+       * Format: uuid
+       * @description Who the message goes to.
+       */
+      targetStaffId: string;
+      /** @description May be empty only if at least one attachment is present. */
+      body: string;
+      attachments?: components['schemas']['MessageAttachmentDto'][];
+    };
+    StaffMarkReadDto: {
+      /** Format: uuid */
+      lastReadMessageId?: string;
     };
     NetPositionDto: {
       /**
@@ -8118,6 +8265,255 @@ export interface operations {
        *     Missing, expired or invalid customer access token
        */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffMessagingController_contacts: {
+    parameters: {
+      query?: {
+        /** @description Search by username, name or email. */
+        search?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['StaffContactDto'][];
+            meta?: components['schemas']['PaginationMetaDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffMessagingController_findInbox: {
+    parameters: {
+      query?: {
+        page?: number;
+        /** @description Rows per page. Capped at 200. */
+        limit?: number;
+        /** @description Free-text search. Matched case-insensitively across the searchable columns of the resource; LIKE wildcards in the term are escaped. */
+        search?: string;
+        /** @description Column to sort by. Each resource overrides this with its own enumerated list of sortable columns; see the specific endpoint. An unrecognised value falls back to the resource's default ordering rather than sorting by an arbitrary column. */
+        sortBy?: string;
+        /** @description Sort direction. Allowed values: `asc`, `desc`. */
+        sortOrder?: components['schemas']['SortOrder'];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['StaffConversationResponseDto'][];
+            meta?: components['schemas']['PaginationMetaDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffMessagingController_findMessages: {
+    parameters: {
+      query?: {
+        /** @description Return messages older than this one. Use the oldest id from the previous page. */
+        before?: string;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Messages and next cursor */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['Object'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffMessagingController_send: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendStaffMessageDto'];
+      };
+    };
+    responses: {
+      /** @description Message sent */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['StaffMessageResponseDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Authenticated, but the role lacks this capability */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffMessagingController_markRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['StaffMarkReadDto'];
+      };
+    };
+    responses: {
+      /** @description Read state updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['Object'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
         headers: {
           [name: string]: unknown;
         };

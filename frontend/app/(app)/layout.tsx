@@ -59,7 +59,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <main className="min-w-0 flex-1 p-4 sm:p-6">{children}</main>
       </div>
 
-      <MessagesFab role={actor.role} />
+      <MessagesFab role={actor.role} actorId={actor.id} />
     </div>
   );
 }

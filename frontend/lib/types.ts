@@ -110,6 +110,11 @@ export type ConversationSummary = Schemas['ConversationSummaryDto'];
 export type Message = Schemas['MessageResponseDto'];
 export type MessageAttachment = Schemas['MessageAttachmentDto'];
 
+/** Internal staff-to-staff messaging — separate threads from customer conversations. */
+export type StaffContact = Schemas['StaffContactDto'];
+export type StaffConversation = Schemas['StaffConversationResponseDto'];
+export type StaffMessage = Schemas['StaffMessageResponseDto'];
+
 /* ── Audit ────────────────────────────────────────────────────────────── */
 
 export type AuditLog = Schemas['AuditLogDto'];

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 
 import { getSocketToken } from '@/app/(app)/messages/actions';
-import type { Message } from '@/lib/types';
+import type { Message, StaffMessage } from '@/lib/types';
 
 /**
  * A live message carries the conversation and customer it belongs to, which
@@ -14,6 +14,9 @@ import type { Message } from '@/lib/types';
 export interface LiveMessage extends Message {
   customerId?: string;
 }
+
+/** An internal DM arriving live. Already carries its conversationId. */
+export type LiveStaffMessage = StaffMessage;
 
 export type SocketState = 'connecting' | 'live' | 'offline';
 
@@ -29,15 +32,23 @@ export type SocketState = 'connecting' | 'live' | 'offline';
  * to be live while the socket is down is worse than one that admits it —
  * the reader would otherwise take an empty thread as "no new messages".
  */
-export function useMessagingSocket(onMessage: (message: LiveMessage) => void) {
+export function useMessagingSocket(
+  onMessage: (message: LiveMessage) => void,
+  onStaffMessage?: (message: LiveStaffMessage) => void,
+) {
   const [state, setState] = useState<SocketState>('connecting');
   const socketRef = useRef<Socket | null>(null);
 
-  // Kept in a ref so a re-rendered handler does not tear down the socket.
+  // Kept in refs so a re-rendered handler does not tear down the socket.
   const handlerRef = useRef(onMessage);
   useEffect(() => {
     handlerRef.current = onMessage;
   }, [onMessage]);
+
+  const staffHandlerRef = useRef(onStaffMessage);
+  useEffect(() => {
+    staffHandlerRef.current = onStaffMessage;
+  }, [onStaffMessage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +89,9 @@ export function useMessagingSocket(onMessage: (message: LiveMessage) => void) {
       });
 
       socket.on('message:new', (message: LiveMessage) => handlerRef.current(message));
+      socket.on('staffmessage:new', (message: LiveStaffMessage) =>
+        staffHandlerRef.current?.(message),
+      );
     };
 
     void connect();

@@ -185,6 +185,74 @@ export class ScopeService {
   }
 
   /**
+   * Predicate restricting `staff_users` to who the actor may open an
+   * internal DM with — a narrower list than `staffScope`, which also
+   * includes the actor's own subordinates for *visibility* purposes but
+   * says nothing about who a message may be addressed to.
+   *
+   *   MASTER  - everyone but themselves
+   *   MANAGER - their own runners, plus any master
+   *   RUNNER  - their own manager, plus any master
+   *
+   * Deliberately excludes peer managers and unrelated runners: the
+   * hierarchy this walks is the same parentId chain ScopeService uses
+   * everywhere else, not a separate permission list to keep in sync.
+   */
+  staffMessagingScope(actor: ICurrentStaff): SQL {
+    switch (actor.role) {
+      case StaffRole.MASTER:
+        return sql`${staffUsers.id} != ${actor.id}`;
+
+      case StaffRole.MANAGER:
+        return and(
+          sql`${staffUsers.id} != ${actor.id}`,
+          or(eq(staffUsers.parentId, actor.id), eq(staffUsers.role, StaffRole.MASTER)),
+        )!;
+
+      case StaffRole.RUNNER:
+        return and(
+          sql`${staffUsers.id} != ${actor.id}`,
+          or(
+            actor.parentId ? eq(staffUsers.id, actor.parentId) : sql`false`,
+            eq(staffUsers.role, StaffRole.MASTER),
+          ),
+        )!;
+
+      default:
+        return sql`false`;
+    }
+  }
+
+  /**
+   * Asserts the actor may open a DM with this specific staff member.
+   *
+   * Raises 403, not 404: the staff hierarchy is not secret (staffScope
+   * already exposes it), so refusing by capability is the honest answer,
+   * same reasoning as `assertCanManageStaff`.
+   */
+  async assertCanMessageStaff(actor: ICurrentStaff, targetStaffId: string): Promise<void> {
+    if (actor.id === targetStaffId) {
+      throw new CapabilityDeniedException(
+        ErrorCode.STAFF_CANNOT_MESSAGE,
+        'You cannot message yourself',
+      );
+    }
+
+    const rows = await this.db
+      .select({ id: staffUsers.id })
+      .from(staffUsers)
+      .where(and(eq(staffUsers.id, targetStaffId), this.staffMessagingScope(actor)))
+      .limit(1);
+
+    if (rows.length === 0) {
+      throw new CapabilityDeniedException(
+        ErrorCode.STAFF_CANNOT_MESSAGE,
+        'You can only message your own manager, your own runners, or a master',
+      );
+    }
+  }
+
+  /**
    * Asserts the actor may create or modify the target staff account.
    *
    *   MASTER  - anyone but themselves

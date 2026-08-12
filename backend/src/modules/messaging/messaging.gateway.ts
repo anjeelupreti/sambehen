@@ -15,6 +15,7 @@ import { Server, Socket } from 'socket.io';
 import { AuthRealm, StaffRole } from '@common/constants/app.constants';
 import { ITeamJwtPayload, ICustomerJwtPayload } from '@common/interfaces/auth.interface';
 import { MessagingService, MESSAGE_CREATED, MessageCreatedEvent } from './messaging.service';
+import { STAFF_MESSAGE_CREATED, StaffMessageCreatedEvent } from './staff-messaging.service';
 
 /** Identity attached to a socket once its handshake token is verified. */
 interface ISocketPrincipal {
@@ -138,6 +139,21 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       conversationId: event.conversationId,
       customerId: event.customerId,
     });
+  }
+
+  /**
+   * Fans an internal staff message out to both participants.
+   *
+   * Unlike the customer path there is no masters-room broadcast: an
+   * internal DM is between exactly two people, and a master not in the
+   * thread has no more standing to see it live than anyone else who isn't
+   * in it — the same as REST, where `findMessages` 404s for a non-
+   * participant rather than scoping by role.
+   */
+  @OnEvent(STAFF_MESSAGE_CREATED)
+  handleStaffMessageCreated(event: StaffMessageCreatedEvent): void {
+    const rooms = event.participantIds.map((id) => room.staff(id));
+    this.server.to(rooms).emit('staffmessage:new', event.message);
   }
 
   /** Typing indicator, relayed rather than stored. */
