@@ -13,12 +13,19 @@ export interface ISeededStaff {
 /** Development password for every seeded account. Never used in production. */
 export const SEED_PASSWORD = 'Password123!';
 
+/** Stores per manager — deliberately uneven, so a scope bug that leaks a
+ * fixed count (e.g. always 2) looks wrong immediately instead of matching
+ * every manager by coincidence. */
+const STORE_COUNTS = [3, 2, 1];
+
 /**
- * Seeds the staff hierarchy: one master, two managers, two stores each.
+ * Seeds the staff hierarchy: one master, three managers, an uneven number
+ * of stores under each (3/2/1).
  *
- * Two managers with stores apiece is the minimum shape that makes scope
- * bugs visible: with a single manager, a broken predicate that returns
- * everything looks identical to one that returns the right rows.
+ * Three managers with different-sized teams is the shape that makes scope
+ * bugs visible: with one manager, or with every manager the same size, a
+ * broken predicate that returns everything (or returns a fixed slice) can
+ * look identical to one that returns the right rows.
  *
  * Idempotent — existing accounts are reused, so `npm run db:seed` can be
  * re-run against a populated database.
@@ -67,7 +74,7 @@ export async function seedStaff(db: DrizzleDB): Promise<ISeededStaff> {
   const managers: StaffUser[] = [];
   const stores: StaffUser[] = [];
 
-  for (let m = 1; m <= 2; m += 1) {
+  for (let m = 1; m <= STORE_COUNTS.length; m += 1) {
     const manager = await upsert(
       `manager${m}@sambehen.local`,
       `manager${m}`,
@@ -78,7 +85,8 @@ export async function seedStaff(db: DrizzleDB): Promise<ISeededStaff> {
     );
     managers.push(manager);
 
-    for (let r = 1; r <= 2; r += 1) {
+    const storeCount = STORE_COUNTS[m - 1];
+    for (let r = 1; r <= storeCount; r += 1) {
       stores.push(
         await upsert(
           `store${m}${r}@sambehen.local`,

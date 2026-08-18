@@ -7,6 +7,8 @@ import { seedStaff, SEED_PASSWORD } from './staff.seed';
 import { seedCustomers } from './customer.seed';
 import { seedGamesAndTransactions } from './transactions.seed';
 import { seedEngagement } from './engagement.seed';
+import { seedReferrals } from './referrals.seed';
+import { seedMessaging } from './messaging.seed';
 
 /**
  * Database seed store — `npm run db:seed`.
@@ -55,11 +57,28 @@ async function main(): Promise<void> {
       );
       logger.log(`  spins: ${engagement.events} events, ${engagement.winners} winners`);
       logger.log(`  audit: ${engagement.audit} entries`);
+
+      const referrals = await seedReferrals(
+        tx as unknown as DrizzleDB,
+        staff.master.id,
+        seededCustomers,
+      );
+      logger.log(
+        `  referrals: ${referrals.programs} programs, ${referrals.codes} codes, ${referrals.referrals} referrals`,
+      );
+
+      const messaging = await seedMessaging(tx as unknown as DrizzleDB, staff, seededCustomers);
+      logger.log(
+        `  messaging: ${messaging.customerThreads} customer threads, ${messaging.staffThreads} staff threads`,
+      );
     });
 
     logger.log('Seed completed successfully');
     logger.log(`All seeded accounts share the password: ${SEED_PASSWORD}`);
     logger.log('  master@sambehen.local / manager1@sambehen.local / store11@sambehen.local');
+    logger.log(
+      '  Pending approvals waiting for master: newplayer1, newplayer2, newplayer3 (customers?status=pending)',
+    );
   } catch (error) {
     logger.error('Seed failed:', error);
     process.exitCode = 1;

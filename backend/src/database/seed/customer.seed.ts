@@ -7,13 +7,22 @@ import { ISeededStaff, SEED_PASSWORD } from './staff.seed';
 
 const CITIES = ['Kathmandu', 'Pokhara', 'Lalitpur', 'Biratnagar', 'Bhaktapur', 'Birgunj'];
 
+const PENDING_NAMES = [
+  { username: 'newplayer1', fullName: 'Alex Rivera' },
+  { username: 'newplayer2', fullName: 'Sam Chen' },
+  { username: 'newplayer3', fullName: 'Jordan Blake' },
+];
+
 /**
  * Seeds customers spread across the hierarchy.
  *
- * Deliberately mixes ownership so scope tests have something to bite on:
- * most customers belong to stores, a few are owned directly by a manager
- * (storeId null), and statuses and activity dates vary so the
- * active/inactive filters return different sets.
+ * Deliberately mixes ownership and status so scope and filter tests have
+ * something to bite on: most customers belong to stores, a few are owned
+ * directly by a manager (storeId null), statuses and activity dates vary
+ * so the active/inactive/suspended/banned filters each return a
+ * non-trivial set, and a few are self-registered `pending` accounts with
+ * no owner at all — so the master's approval queue (`/customers?status=
+ * pending`) is never empty on a fresh seed.
  *
  * Ownership columns are written the way CustomerAssignmentService would,
  * since the database CHECK constraint enforces their consistency.
@@ -57,10 +66,21 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
     seeded.push(created);
   };
 
-  // Store-owned customers: five per store.
+  // Store-owned customers: five per store. Status cycles through active,
+  // inactive, suspended and banned so every filter has real rows to match,
+  // not just "everything is active".
   for (const store of staff.stores) {
     for (let c = 0; c < 5; c += 1) {
       index += 1;
+      const status =
+        index % 13 === 0
+          ? CustomerStatus.BANNED
+          : index % 11 === 0
+            ? CustomerStatus.SUSPENDED
+            : index % 5 === 0
+              ? CustomerStatus.INACTIVE
+              : CustomerStatus.ACTIVE;
+
       await upsert(
         `customer${index}@example.com`,
         `customer${index}`,
@@ -69,13 +89,7 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
           managerId: store.parentId as string,
           storeId: store.id,
         },
-        // Every fifth account is inactive and every eleventh suspended, so
-        // status filters return non-trivial subsets.
-        index % 5 === 0
-          ? CustomerStatus.INACTIVE
-          : index % 11 === 0
-            ? CustomerStatus.SUSPENDED
-            : CustomerStatus.ACTIVE,
+        status,
         index % 4 === 0 ? 60 : 3,
       );
     }
@@ -94,6 +108,35 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
         index % 3 === 0 ? 45 : 1,
       );
     }
+  }
+
+  // Pending self-registrations: no owner at all yet — `RegisterCustomerDto`
+  // never sets one, and `chk_customers_ownership` forbids setting one while
+  // status is pending. Written directly rather than through
+  // `AuthService.registerCustomer` so seeding stays a pure DB operation
+  // with no HTTP round trip, but the shape matches what that endpoint
+  // actually produces.
+  //
+  // Deliberately NOT added to the returned list: a pending customer has no
+  // owner and cannot sign in, so it should never receive a transaction, a
+  // VIP qualification or a spin win — the seeders further down the chain
+  // only see customers that could plausibly have that activity.
+  for (const { username, fullName } of PENDING_NAMES) {
+    const email = `${username}@example.com`;
+    const existing = await db.select().from(customers).where(eq(customers.email, email)).limit(1);
+    if (existing[0]) continue;
+
+    await db.insert(customers).values({
+      email,
+      username,
+      passwordHash,
+      fullName,
+      status: CustomerStatus.PENDING,
+      ownerStaffId: null,
+      managerId: null,
+      storeId: null,
+      createdByStaffId: null,
+    });
   }
 
   return seeded;
