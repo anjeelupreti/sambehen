@@ -11,7 +11,7 @@ import type { Staff } from '@/lib/types';
 /**
  * Staff mutations.
  *
- * A manager may act on their own runners and nobody else's; the API
+ * A manager may act on their own stores and nobody else's; the API
  * enforces that and returns 404 rather than 403 for a staff member outside
  * the caller's chain, so these actions never need to check the chain
  * themselves.
@@ -30,7 +30,7 @@ export interface NewStaffInput {
   email: string;
   username: string;
   password: string;
-  role: 'manager' | 'runner';
+  role: 'manager' | 'store';
   parentId?: string;
   firstName?: string;
   lastName?: string;
@@ -40,12 +40,12 @@ export interface NewStaffInput {
 /**
  * Creates a staff member.
  *
- * Only two roles can be created: a master makes managers or runners, a
- * manager makes runners under themselves. There is no second master — the
+ * Only two roles can be created: a master makes managers or stores, a
+ * manager makes stores under themselves. There is no second master — the
  * API rejects it, and offering it here would produce a confusing 422.
  *
- * `parentId` is omitted when a manager creates a runner: the API places the
- * runner under the caller, which is the only placement a manager could make
+ * `parentId` is omitted when a manager creates a store: the API places the
+ * store under the caller, which is the only placement a manager could make
  * anyway.
  */
 export async function createStaff(input: NewStaffInput): Promise<ActionResult<Staff>> {

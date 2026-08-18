@@ -37,12 +37,12 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
     throw error;
   }
 
-  // Their book of business. `runnerId` for a runner, `managerId` for a
+  // Their book of business. `storeId` for a store, `managerId` for a
   // manager — the API scopes each to the right side of the chain.
   const customers = await apiList<Customer, CustomerSummary>('/team/customers', {
     query: {
       limit: 10,
-      ...(member.role === 'runner' ? { runnerId: member.id } : { managerId: member.id }),
+      ...(member.role === 'store' ? { storeId: member.id } : { managerId: member.id }),
     },
   });
 
@@ -74,7 +74,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             {fullName ? <p className="text-muted-foreground text-sm">{fullName}</p> : null}
           </div>
 
-          {/* A master can act on anyone; a manager only on their own runners,
+          {/* A master can act on anyone; a manager only on their own stores,
               which is what the API allows too. */}
           {member.role === 'master' ? null : <StaffActions staff={member} hideView />}
         </header>
@@ -122,7 +122,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             <CardTitle className="text-base">Their customers</CardTitle>
             <Button asChild variant="outline" size="sm">
               <Link
-                href={`/customers?${member.role === 'runner' ? 'runnerId' : 'managerId'}=${member.id}`}
+                href={`/customers?${member.role === 'store' ? 'storeId' : 'managerId'}=${member.id}`}
               >
                 View all
               </Link>

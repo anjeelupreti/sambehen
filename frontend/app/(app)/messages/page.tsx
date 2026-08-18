@@ -26,7 +26,7 @@ export default async function MessagesPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Messages</h1>
           <p className="text-muted-foreground text-sm">
-            Customers on one side, your own team on the other — a manager sees their runners&apos;
+            Customers on one side, your own team on the other — a manager sees their stores&apos;
             customer conversations, and which staff member replied is recorded on every message.
           </p>
         </div>

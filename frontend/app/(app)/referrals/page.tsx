@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { AssignCodesModal } from '@/components/referrals/assign-codes-modal';
 import { ReferralProgramModal } from '@/components/referrals/program-modal';
+import { CustomerHoverCard } from '@/components/customer-hover-card';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { ExportButton } from '@/components/export-button';
 import { FilterBar } from '@/components/filters/filter-bar';
@@ -161,20 +162,38 @@ export default async function ReferralsPage({
                 data.map((referral) => (
                   <TableRow key={referral.id}>
                     <TableCell>
-                      <Link
-                        href={`/customers/${referral.referrerCustomerId}`}
-                        className="font-medium hover:underline"
-                      >
-                        {referral.referrerUsername ?? '—'}
-                      </Link>
+                      {referral.referrerUsername ? (
+                        <CustomerHoverCard
+                          customerId={referral.referrerCustomerId}
+                          username={referral.referrerUsername}
+                        >
+                          <Link
+                            href={`/customers/${referral.referrerCustomerId}`}
+                            className="font-medium hover:underline"
+                          >
+                            {referral.referrerUsername}
+                          </Link>
+                        </CustomerHoverCard>
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Link
-                        href={`/customers/${referral.refereeCustomerId}`}
-                        className="font-medium hover:underline"
-                      >
-                        {referral.refereeUsername ?? '—'}
-                      </Link>
+                      {referral.refereeUsername ? (
+                        <CustomerHoverCard
+                          customerId={referral.refereeCustomerId}
+                          username={referral.refereeUsername}
+                        >
+                          <Link
+                            href={`/customers/${referral.refereeCustomerId}`}
+                            className="font-medium hover:underline"
+                          >
+                            {referral.refereeUsername}
+                          </Link>
+                        </CustomerHoverCard>
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {referral.programName}

@@ -19,7 +19,7 @@ interface Match {
  *
  * A free-text uuid field would be unusable and a full dropdown of every
  * customer does not scale past a few hundred, so this searches the scoped
- * list — a runner can only ever find their own customers, because the API
+ * list — a store can only ever find their own customers, because the API
  * applies the same predicate here as everywhere else.
  *
  * Once chosen, the selection is shown as a confirmed row rather than left

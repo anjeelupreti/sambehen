@@ -86,7 +86,7 @@ export async function createCorrection(
 /**
  * Customer lookup for the entry form.
  *
- * Scoped by the API like every other list, so a runner searching here can
+ * Scoped by the API like every other list, so a store searching here can
  * only ever find their own customers. Returns the few fields the picker
  * shows and nothing else.
  */

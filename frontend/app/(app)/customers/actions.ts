@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { apiMutate, apiUpload } from '@/lib/api';
+import { apiGet, apiList, apiMutate, apiUpload } from '@/lib/api';
 import { runAction } from '@/lib/run-action';
 import type { ActionResult } from '@/lib/action-result';
 import type {
@@ -11,6 +11,7 @@ import type {
   CustomerStatus,
   ImportPreview,
   ImportRow,
+  Vip,
 } from '@/lib/types';
 
 /**
@@ -71,8 +72,8 @@ export interface NewCustomerInput {
    *
    * Required for a master: ownership defaults to the caller, and a master
    * sits above the chain rather than in it, so defaulting would fail with
-   * `CUSTOMER_INVALID_OWNER`. A manager may name one of their runners or
-   * omit it to take the customer themselves; a runner's choice is ignored
+   * `CUSTOMER_INVALID_OWNER`. A manager may name one of their stores or
+   * omit it to take the customer themselves; a store's choice is ignored
    * by the API, which always assigns to them.
    */
   ownerStaffId?: string;
@@ -93,7 +94,7 @@ export interface NewCustomerInput {
  * own credentials. That is an API rule this form simply reflects.
  *
  * The new customer is owned by whoever created them unless a specific owner
- * is supplied, which is what a runner adding their own customer expects.
+ * is supplied, which is what a store adding their own customer expects.
  */
 export async function createCustomer(input: NewCustomerInput): Promise<ActionResult<Customer>> {
   const result = await runAction(
@@ -192,6 +193,39 @@ export async function commitCustomerImport(
   return result;
 }
 
+export interface CustomerHoverProfile {
+  customer: Customer;
+  isVip: boolean;
+  vipTier: number | null;
+}
+
+/**
+ * The small profile shown on hover over a customer's name.
+ *
+ * A second request rather than widening `/team/customers` to carry VIP
+ * status: that list is read constantly (every customers page load), while
+ * this is read only when someone actually hovers a name, so the cost
+ * belongs here rather than on every row of every list.
+ *
+ * `activeOnly` — a customer who was VIP in a past window but isn't now
+ * shouldn't wear the crown; standing is about right now.
+ */
+export async function getCustomerHoverProfile(
+  customerId: string,
+): Promise<CustomerHoverProfile | null> {
+  try {
+    const [customer, vips] = await Promise.all([
+      apiGet<Customer>(`/team/customers/${customerId}`),
+      apiList<Vip>('/team/vips', { query: { customerId, activeOnly: true, limit: 1 } }),
+    ]);
+
+    const current = vips.data[0];
+    return { customer, isVip: Boolean(current), vipTier: current?.tier ?? null };
+  } catch {
+    return null;
+  }
+}
+
 export async function reassignCustomer(
   id: string,
   ownerStaffId: string,
@@ -204,6 +238,28 @@ export async function reassignCustomer(
   if (result.ok) {
     revalidatePath('/customers');
     revalidatePath(`/customers/${id}`);
+  }
+
+  return result;
+}
+
+/**
+ * Approves a pending self-registration: assigns an owner and activates the
+ * account in one step. Master only — the API rejects anyone else.
+ */
+export async function approveCustomer(
+  id: string,
+  ownerStaffId: string,
+): Promise<ActionResult<Customer>> {
+  const result = await runAction(
+    () => apiMutate<Customer>(`/team/customers/${id}/approve`, 'PATCH', { ownerStaffId }),
+    'Customer approved.',
+  );
+
+  if (result.ok) {
+    revalidatePath('/customers');
+    revalidatePath(`/customers/${id}`);
+    revalidatePath('/dashboard');
   }
 
   return result;

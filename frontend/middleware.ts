@@ -57,9 +57,11 @@ const CUSTOMER_ACTOR_COOKIE = 'sambehen_customer_actor';
  * clicks it has no account yet, which is the entire point.
  */
 const PUBLIC_PATHS = [
+  '/',
   '/login',
   '/logout',
   '/customer/login',
+  '/customer/register',
   '/customer/logout',
   '/unsubscribe',
   '/r',
@@ -70,11 +72,11 @@ function isPublic(pathname: string): boolean {
 }
 
 /*
- * Pages a runner (or, for audit logs, anyone but a master) cannot open.
+ * Pages a store (or, for audit logs, anyone but a master) cannot open.
  * Matches the API's own role guard and what the sidebar already hides —
  * this is presentation catching up to the rule, not a new one.
  *
- * These three used to be `if (actor.role === 'runner') notFound()` inside
+ * These three used to be `if (actor.role === 'store') notFound()` inside
  * each page. That check ran too late: `(app)/loading.tsx` wraps every page
  * under it in a Suspense boundary, so the loading shell — status 200 — had
  * already gone out by the time a page-level notFound() resolved, and the
@@ -272,8 +274,8 @@ export async function middleware(request: NextRequest) {
     return actor ? clearSession(NextResponse.next()) : NextResponse.next();
   }
 
-  // ── /customer/login ────────────────────────────────────────────────────
-  if (pathname === '/customer/login') {
+  // ── /customer/login, /customer/register ────────────────────────────────
+  if (pathname === '/customer/login' || pathname === '/customer/register') {
     const customerAccess = request.cookies.get(CUSTOMER_ACCESS_COOKIE)?.value;
     if (customerAccess && !expiresSoon(customerAccess)) {
       return NextResponse.redirect(new URL('/customer', request.url));

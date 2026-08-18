@@ -33,15 +33,15 @@ const initials = (name: string) =>
 const ROLE_LABEL: Record<string, string> = {
   master: 'Master',
   manager: 'Manager',
-  runner: 'Runner',
+  store: 'Store',
 };
 
 /**
- * Internal DMs: master, managers and runners messaging each other directly,
+ * Internal DMs: master, managers and stores messaging each other directly,
  * entirely apart from customer conversations. Who shows up in "people" is
  * decided by the server (`/team/staff-conversations/contacts`), not here —
- * a runner only ever sees their own manager and any master, a manager their
- * own runners and any master, a master everyone.
+ * a store only ever sees their own manager and any master, a manager their
+ * own stores and any master, a master everyone.
  *
  * There is no existing thread until the first message is sent, so a
  * contact with no conversation yet is shown alongside real threads rather

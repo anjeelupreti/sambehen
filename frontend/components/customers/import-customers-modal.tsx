@@ -52,7 +52,7 @@ export function ImportCustomersModal({
   const fileInput = useRef<HTMLInputElement>(null);
 
   const needsOwner = actorRole === 'master';
-  const canChooseOwner = actorRole !== 'runner';
+  const canChooseOwner = actorRole !== 'store';
 
   const parse = useAction(previewCustomerImport);
   const commit = useAction(commitCustomerImport);
@@ -256,7 +256,7 @@ export function ImportCustomersModal({
                       value: owner.id,
                       label: `${owner.username} · ${owner.role}`,
                     }))}
-                    placeholder={needsOwner ? 'Choose a manager or runner' : 'Keep for myself'}
+                    placeholder={needsOwner ? 'Choose a manager or store' : 'Keep for myself'}
                     error={commit.fieldErrors.ownerStaffId}
                   />
                 ) : null}

@@ -31,7 +31,7 @@ interface NavItem {
  * Navigation, filtered by role.
  *
  * Hiding a link is presentation, not access control — the API refuses the
- * request regardless of what the sidebar shows. This exists so a runner is
+ * request regardless of what the sidebar shows. This exists so a store is
  * not offered pages that would only ever return 403.
  *
  * Only routes that exist appear here. Email campaigns and exports are still

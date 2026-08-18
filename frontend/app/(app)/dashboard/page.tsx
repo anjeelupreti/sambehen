@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import { ChartCard } from '@/components/charts/chart-card';
 import { GameDotPlot } from '@/components/charts/game-dot-plot';
@@ -6,6 +7,7 @@ import { TrendChart } from '@/components/charts/trend-chart';
 import { TrendControls } from '@/components/charts/trend-controls';
 import { Money } from '@/components/money';
 import { StatCard } from '@/components/stat-card';
+import { UserCheckIcon } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -63,6 +65,22 @@ export default async function DashboardPage({
             : 'Limited to the customers you can see.'}
         </p>
       </header>
+
+      {actor?.role === 'master' && metrics.customers.pendingApproval > 0 ? (
+        <Link
+          href="/customers?status=pending"
+          className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm transition-colors hover:bg-amber-500/15"
+        >
+          <UserCheckIcon className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>
+            <strong className="font-semibold">
+              {formatCount(metrics.customers.pendingApproval)}
+            </strong>{' '}
+            self-registered {metrics.customers.pendingApproval === 1 ? 'customer' : 'customers'}{' '}
+            {metrics.customers.pendingApproval === 1 ? 'is' : 'are'} waiting on your approval.
+          </span>
+        </Link>
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

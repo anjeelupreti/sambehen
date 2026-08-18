@@ -14,7 +14,7 @@ const EMPTY = {
   username: '',
   email: '',
   password: '',
-  role: 'runner' as 'manager' | 'runner',
+  role: 'store' as 'manager' | 'store',
   parentId: '',
   firstName: '',
   lastName: '',
@@ -27,16 +27,16 @@ export interface ParentManager {
 }
 
 /**
- * Creates a manager or a runner.
+ * Creates a manager or a store.
  *
- * A manager can only create runners, and those runners land beneath them —
+ * A manager can only create stores, and those stores land beneath them —
  * so the role control is not offered at all rather than shown and then
  * rejected by the API. Master is never creatable from here.
  *
- * The team is a two-level chain, so **a runner must sit under a manager**.
+ * The team is a two-level chain, so **a store must sit under a manager**.
  * When a master creates one there is no implied parent, and the API answers
  * `STAFF_INVALID_HIERARCHY`; the manager is therefore asked for rather than
- * left to fail. A manager creating a runner is the implied parent already.
+ * left to fail. A manager creating a store is the implied parent already.
  */
 export function NewStaffModal({
   actorRole,
@@ -49,7 +49,7 @@ export function NewStaffModal({
   const [form, setForm] = useState(EMPTY);
   const { run, pending, fieldErrors, clearFieldErrors } = useAction(createStaff);
 
-  const needsParent = actorRole === 'master' && form.role === 'runner';
+  const needsParent = actorRole === 'master' && form.role === 'store';
 
   const set = <K extends keyof typeof EMPTY>(key: K, value: (typeof EMPTY)[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -75,8 +75,8 @@ export function NewStaffModal({
         title="New staff member"
         description={
           actorRole === 'master'
-            ? 'Managers see their own chain; runners see only their own customers.'
-            : 'Runners you create work under you and see only their own customers.'
+            ? 'Managers see their own chain; stores see only their own customers.'
+            : 'Stores you create work under you and see only their own customers.'
         }
         submitLabel="Create staff member"
         pending={pending}
@@ -85,10 +85,10 @@ export function NewStaffModal({
             username: form.username.trim(),
             email: form.email.trim(),
             password: form.password,
-            // A manager can only ever create a runner beneath themselves,
+            // A manager can only ever create a store beneath themselves,
             // so the role is fixed rather than trusted from state.
-            role: actorRole === 'master' ? form.role : 'runner',
-            // Only meaningful for a master placing a runner; in every other
+            role: actorRole === 'master' ? form.role : 'store',
+            // Only meaningful for a master placing a store; in every other
             // case the API derives the parent from the caller.
             parentId: needsParent ? form.parentId || undefined : undefined,
             firstName: form.firstName.trim() || undefined,
@@ -127,10 +127,10 @@ export function NewStaffModal({
             label="Role"
             required
             value={form.role}
-            onChange={(v) => set('role', v as 'manager' | 'runner')}
+            onChange={(v) => set('role', v as 'manager' | 'store')}
             options={[
               { value: 'manager', label: 'Manager — sees their own chain' },
-              { value: 'runner', label: 'Runner — sees only their own customers' },
+              { value: 'store', label: 'Store — sees only their own customers' },
             ]}
             error={fieldErrors.role}
           />
@@ -146,7 +146,7 @@ export function NewStaffModal({
             options={managers.map((manager) => ({ value: manager.id, label: manager.username }))}
             placeholder="Choose a manager"
             error={fieldErrors.parentId}
-            hint="Runners sit under a manager. Their customers are visible to that manager."
+            hint="Stores sit under a manager. Their customers are visible to that manager."
           />
         ) : null}
 

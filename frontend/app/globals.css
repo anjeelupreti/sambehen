@@ -169,6 +169,26 @@
       transform: translate(0px, 0px) scale(1);
     }
   }
+
+  --animate-float: float 6s ease-in-out infinite;
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px) rotate(var(--float-rotate, 0deg));
+    }
+    50% {
+      transform: translateY(-14px) rotate(var(--float-rotate, 0deg));
+    }
+  }
+
+  @keyframes dash-travel {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(300%);
+    }
+  }
 }
 
 @layer base {

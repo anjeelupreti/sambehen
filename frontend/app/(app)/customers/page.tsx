@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BuildingIcon, DownloadIcon, GlobeIcon } from 'lucide-react';
 
+import { ApproveCustomerButton } from '@/components/approve-customer-button';
 import { ClickableRow } from '@/components/clickable-row';
 import { CustomerActions } from '@/components/customer-actions';
+import { CustomerHoverCard } from '@/components/customer-hover-card';
 import { ImportCustomersModal } from '@/components/customers/import-customers-modal';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { FilterBar } from '@/components/filters/filter-bar';
@@ -34,19 +36,23 @@ import type { Customer, CustomerStatus, CustomerSummary, Staff } from '@/lib/typ
 
 export const metadata: Metadata = { title: 'Customers' };
 
-const STATUS_VARIANT: Record<CustomerStatus, 'default' | 'secondary' | 'outline' | 'destructive'> =
-  {
-    active: 'default',
-    inactive: 'secondary',
-    suspended: 'outline',
-    banned: 'destructive',
-  };
+const STATUS_VARIANT: Record<
+  CustomerStatus,
+  'default' | 'secondary' | 'outline' | 'destructive' | 'warning'
+> = {
+  pending: 'warning',
+  active: 'default',
+  inactive: 'secondary',
+  suspended: 'outline',
+  banned: 'destructive',
+};
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
   { value: 'suspended', label: 'Suspended' },
   { value: 'banned', label: 'Banned' },
+  { value: 'pending', label: 'Pending approval' },
 ];
 
 /**
@@ -84,11 +90,11 @@ export default async function CustomersPage({
 
   const actor = await getActor();
 
-  // Who a new customer can be assigned to. A runner is never asked, so the
+  // Who a new customer can be assigned to. A store is never asked, so the
   // list is not fetched for them. Masters and managers see the scoped staff
   // list minus masters, who sit above the chain and cannot own customers.
   const ownersPromise =
-    actor && actor.role !== 'runner'
+    actor && actor.role !== 'store'
       ? apiList<Staff>('/team/staff', { query: { limit: 100, isActive: true } })
       : null;
 
@@ -202,12 +208,18 @@ export default async function CustomersPage({
                 data.map((customer) => (
                   <ClickableRow key={customer.id} href={`/customers/${customer.id}`}>
                     <TableCell>
-                      <Link
-                        href={`/customers/${customer.id}`}
-                        className="font-medium hover:underline"
+                      <CustomerHoverCard
+                        customerId={customer.id}
+                        username={customer.username}
+                        fullName={customer.fullName}
                       >
-                        {customer.username}
-                      </Link>
+                        <Link
+                          href={`/customers/${customer.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {customer.username}
+                        </Link>
+                      </CustomerHoverCard>
                       {customer.fullName ? (
                         <p className="text-muted-foreground text-xs">{customer.fullName}</p>
                       ) : null}
@@ -218,7 +230,7 @@ export default async function CustomersPage({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {customer.runnerUsername ?? customer.managerUsername ?? '—'}
+                      {customer.storeUsername ?? customer.managerUsername ?? '—'}
                     </TableCell>
                     <TableCell className="tabular text-right">
                       {formatCount(customer.totalTransactions)}
@@ -236,7 +248,11 @@ export default async function CustomersPage({
                       {formatDate(customer.lastActivityAt)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <CustomerActions customer={customer} />
+                      {customer.status === 'pending' ? (
+                        <ApproveCustomerButton customerId={customer.id} owners={owners} />
+                      ) : (
+                        <CustomerActions customer={customer} />
+                      )}
                     </TableCell>
                   </ClickableRow>
                 ))

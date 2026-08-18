@@ -30,7 +30,7 @@ export const metadata: Metadata = { title: 'Staff' };
 const ROLE_OPTIONS = [
   { value: 'master', label: 'Master' },
   { value: 'manager', label: 'Manager' },
-  { value: 'runner', label: 'Runner' },
+  { value: 'store', label: 'Store' },
 ];
 
 const STATE_OPTIONS = [
@@ -61,7 +61,7 @@ export default async function StaffPage({
 
   // Parent options for the create form. Fetched separately from the table:
   // reading them off the current page would empty the list the moment
-  // someone filters to runners, leaving a required select with no choices.
+  // someone filters to stores, leaving a required select with no choices.
   const managersPromise =
     actor?.role === 'master'
       ? apiList<Staff>('/team/staff', { query: { role: 'manager', isActive: true, limit: 100 } })
@@ -95,8 +95,8 @@ export default async function StaffPage({
           <h1 className="text-2xl font-semibold tracking-tight">Staff</h1>
           <p className="text-muted-foreground text-sm">
             {actor?.role === 'master'
-              ? 'Every manager and runner.'
-              : 'Your own runners. Other managers and their chains are not visible.'}
+              ? 'Every manager and store.'
+              : 'Your own stores. Other managers and their chains are not visible.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -171,7 +171,7 @@ export default async function StaffPage({
                       </TableCell>
                       <TableCell className="text-right">
                         {/* A master can act on anyone; a manager only on their
-                            own runners, which is also what the API allows. */}
+                            own stores, which is also what the API allows. */}
                         {member.role === 'master' ? null : <StaffActions staff={member} />}
                       </TableCell>
                     </ClickableRow>

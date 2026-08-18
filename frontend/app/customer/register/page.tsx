@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getActor } from '@/lib/session';
-import { CustomerLoginForm } from './customer-login-form';
+import { CustomerRegisterForm } from './customer-register-form';
 
-export const metadata: Metadata = { title: 'Customer Sign in · Sambehen' };
+export const metadata: Metadata = { title: 'Create account · Sambehen' };
 
-export default async function CustomerLoginPage() {
+export default async function CustomerRegisterPage() {
   if (await getActor()) redirect('/dashboard');
 
   return (
@@ -13,23 +13,16 @@ export default async function CustomerLoginPage() {
       <div className="flex flex-col items-center justify-center p-6 sm:p-12 bg-background">
         <div className="w-full max-w-sm space-y-6">
           <div className="flex flex-col space-y-2 text-center lg:text-left">
-            <h1 className="text-2xl font-semibold tracking-tight">Welcome</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
             <p className="text-sm text-muted-foreground">
-              Sign in to your customer account to view your details.
+              A team member reviews every new account before it can sign in.
             </p>
           </div>
-          <CustomerLoginForm />
+          <CustomerRegisterForm />
           <p className="text-center text-xs text-muted-foreground lg:text-left">
-            New here?{' '}
-            <a
-              href="/customer/register"
-              className="underline underline-offset-4 hover:text-primary"
-            >
-              Create an account
-            </a>
-            . Staff members should sign in through the{' '}
-            <a href="/login" className="underline underline-offset-4 hover:text-primary">
-              staff portal
+            Already have an account?{' '}
+            <a href="/customer/login" className="underline underline-offset-4 hover:text-primary">
+              Sign in
             </a>
             .
           </p>
@@ -46,9 +39,7 @@ export default async function CustomerLoginPage() {
         </div>
         <div className="relative z-10 mt-auto text-foreground text-right">
           <blockquote className="space-y-2">
-            <p className="text-lg">
-              &ldquo;Track your transactions and view your account securely.&rdquo;
-            </p>
+            <p className="text-lg">&ldquo;Join and we&apos;ll get you set up in no time.&rdquo;</p>
             <footer className="text-sm text-muted-foreground">Customer Portal</footer>
           </blockquote>
         </div>

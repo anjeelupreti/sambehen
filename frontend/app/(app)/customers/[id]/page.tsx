@@ -36,13 +36,16 @@ export const metadata: Metadata = { title: 'Customer' };
 
 const GRANULARITIES: TrendGranularity[] = ['day', 'week', 'month'];
 
-const STATUS_VARIANT: Record<CustomerStatus, 'default' | 'secondary' | 'outline' | 'destructive'> =
-  {
-    active: 'default',
-    inactive: 'secondary',
-    suspended: 'outline',
-    banned: 'destructive',
-  };
+const STATUS_VARIANT: Record<
+  CustomerStatus,
+  'default' | 'secondary' | 'outline' | 'destructive' | 'warning'
+> = {
+  pending: 'warning',
+  active: 'default',
+  inactive: 'secondary',
+  suspended: 'outline',
+  banned: 'destructive',
+};
 
 export default async function CustomerDetailPage({
   params,
@@ -171,7 +174,7 @@ export default async function CustomerDetailPage({
               />
               <Detail
                 label="Owner"
-                value={customer.runnerUsername ?? customer.managerUsername ?? null}
+                value={customer.storeUsername ?? customer.managerUsername ?? null}
               />
               <Detail label="Registered" value={formatDate(customer.registeredAt)} />
               <Detail label="Last activity" value={formatDate(customer.lastActivityAt)} />

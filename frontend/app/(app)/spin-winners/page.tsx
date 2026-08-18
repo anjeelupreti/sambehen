@@ -160,9 +160,9 @@ export default async function SpinWinnersPage({
                       >
                         {winner.customerUsername}
                       </Link>
-                      {(winner.runnerUsername ?? winner.managerUsername) ? (
+                      {(winner.storeUsername ?? winner.managerUsername) ? (
                         <p className="text-muted-foreground text-xs">
-                          {winner.runnerUsername ?? winner.managerUsername}
+                          {winner.storeUsername ?? winner.managerUsername}
                         </p>
                       ) : null}
                     </TableCell>

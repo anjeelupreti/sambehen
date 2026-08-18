@@ -13,6 +13,9 @@ const badgeVariants = cva(
         secondary: 'border-transparent bg-secondary text-secondary-foreground',
         destructive: 'border-transparent bg-destructive text-destructive-foreground',
         outline: 'text-foreground',
+        // Needs a human to act on it — distinct from suspended/banned
+        // (outline/destructive), which are already-decided end states.
+        warning: 'border-transparent bg-amber-500/15 text-amber-600 dark:text-amber-400',
         // Money direction, matching the tokens in globals.css. Neither is a
         // success or a failure state.
         debit: 'border-transparent bg-debit/10 text-debit',

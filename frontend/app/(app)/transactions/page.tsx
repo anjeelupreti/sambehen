@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { ClickableRow } from '@/components/clickable-row';
 import { AmountRangeFilter } from '@/components/filters/amount-range-filter';
+import { CustomerHoverCard } from '@/components/customer-hover-card';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
 import { ExportButton } from '@/components/export-button';
 import { FilterBar } from '@/components/filters/filter-bar';
@@ -203,9 +204,14 @@ export default async function TransactionsPage({
                     </TableCell>
                     <TableCell className="font-medium">
                       {entry.customerUsername ? (
-                        <Link href={`/customers/${entry.customerId}`} className="hover:underline">
-                          {entry.customerUsername}
-                        </Link>
+                        <CustomerHoverCard
+                          customerId={entry.customerId}
+                          username={entry.customerUsername}
+                        >
+                          <Link href={`/customers/${entry.customerId}`} className="hover:underline">
+                            {entry.customerUsername}
+                          </Link>
+                        </CustomerHoverCard>
                       ) : (
                         '—'
                       )}

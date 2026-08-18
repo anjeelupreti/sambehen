@@ -34,7 +34,7 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Team login (master, manager, runner)
+     * Team login (master, manager, store)
      * @description Accepts an email address or username. Unknown accounts and wrong passwords are reported identically, and take comparable time, so the endpoint cannot be used to enumerate accounts.
      */
     post: operations['AuthController_loginTeam'];
@@ -138,6 +138,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/auth/customer/register': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Customer self-registration
+     * @description Creates a pending account with no owner — a master must approve it and assign a manager or store before it can sign in. Same rate limit as login, since this is another unauthenticated write keyed on a caller-supplied identifier.
+     */
+    post: operations['AuthController_registerCustomer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/auth/customer/login': {
     parameters: {
       query?: never;
@@ -201,7 +221,7 @@ export interface paths {
     };
     /**
      * Claims of the signed-in customer
-     * @description Read-only. Customers cannot modify their own profile or credentials; those changes are made by the master, their manager, or their runner.
+     * @description Read-only. Customers cannot modify their own profile or credentials; those changes are made by the master, their manager, or their store.
      */
     get: operations['AuthController_meCustomer'];
     put?: never;
@@ -221,13 +241,13 @@ export interface paths {
     };
     /**
      * List staff within the actor's scope
-     * @description Master sees all staff; a manager sees themselves and their own runners; a runner sees only themselves.
+     * @description Master sees all staff; a manager sees themselves and their own stores; a store sees only themselves.
      */
     get: operations['StaffController_findAll'];
     put?: never;
     /**
-     * Create a manager or runner
-     * @description A master creates managers, and runners under an explicit manager. A manager creates runners only, always attached to themselves — a supplied parentId is ignored, so a runner cannot be planted in another manager's team.
+     * Create a manager or store
+     * @description A master creates managers, and stores under an explicit manager. A manager creates stores only, always attached to themselves — a supplied parentId is ignored, so a store cannot be planted in another manager's team.
      */
     post: operations['StaffController_create'];
     delete?: never;
@@ -366,8 +386,8 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Move a runner to a different manager
-     * @description Rewrites the denormalised managerId on every customer of that runner, in the same transaction. Master only.
+     * Move a store to a different manager
+     * @description Rewrites the denormalised managerId on every customer of that store, in the same transaction. Master only.
      */
     patch: operations['StaffController_reassign'];
     trace?: never;
@@ -387,7 +407,7 @@ export interface paths {
     put?: never;
     /**
      * Create a customer
-     * @description A runner always creates for themselves — a supplied ownerStaffId is ignored. A manager may assign to themselves or one of their own runners. A master must name an owner, since masters cannot own customers directly.
+     * @description A store always creates for themselves — a supplied ownerStaffId is ignored. A manager may assign to themselves or one of their own stores. A master must name an owner, since masters cannot own customers directly.
      */
     post: operations['CustomersController_create'];
     delete?: never;
@@ -544,6 +564,26 @@ export interface paths {
     patch: operations['CustomersController_reassign'];
     trace?: never;
   };
+  '/api/team/customers/{id}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Approve a pending self-registration
+     * @description Assigns an owner and activates the account in one step. Master only — excluded from the default list, a pending customer only appears when filtering `status=pending`.
+     */
+    patch: operations['CustomersController_approve'];
+    trace?: never;
+  };
   '/api/team/customers/bulk/status': {
     parameters: {
       query?: never;
@@ -593,7 +633,7 @@ export interface paths {
     };
     /**
      * The signed-in customer's own profile
-     * @description Read-only. Profile and credential changes are made by staff on the customer's behalf. Internal ownership fields (owning manager and runner) are omitted, since the customer has no need to see the team structure behind their account.
+     * @description Read-only. Profile and credential changes are made by staff on the customer's behalf. Internal ownership fields (owning manager and store) are omitted, since the customer has no need to see the team structure behind their account.
      */
     get: operations['PortalController_profile'];
     put?: never;
@@ -1088,7 +1128,7 @@ export interface paths {
     };
     /**
      * List spin winners
-     * @description Every recorded win, named and scoped: a runner sees wins by their own customers, a manager sees their chain, a master sees all. Filterable by event, customer, ownership, announcement date and whether the winner was preselected.  The summary totals cover the whole filtered set rather than the current page.
+     * @description Every recorded win, named and scoped: a store sees wins by their own customers, a manager sees their chain, a master sees all. Filterable by event, customer, ownership, announcement date and whether the winner was preselected.  The summary totals cover the whole filtered set rather than the current page.
      */
     get: operations['TeamSpinWinnersController_findAll'];
     put?: never;
@@ -1148,7 +1188,7 @@ export interface paths {
     };
     /**
      * Scoped inbox with per-viewer unread counts
-     * @description Scoped through the owning customer: a runner sees their own customers, a manager their chain, a master everything. `summary` reports totals over the whole filtered set, not the page — "43 unread" is only useful if it means the whole inbox. Filters: unreadOnly, todayOnly, awaitingReply, activeCustomersOnly, status, assignedStaffId, managerId, runnerId, and search across customer details and message bodies.
+     * @description Scoped through the owning customer: a store sees their own customers, a manager their chain, a master everything. `summary` reports totals over the whole filtered set, not the page — "43 unread" is only useful if it means the whole inbox. Filters: unreadOnly, todayOnly, awaitingReply, activeCustomersOnly, status, assignedStaffId, managerId, storeId, and search across customer details and message bodies.
      */
     get: operations['MessagingController_findInbox'];
     put?: never;
@@ -1228,7 +1268,7 @@ export interface paths {
     };
     /**
      * The signed-in customer's message thread
-     * @description One continuous thread with the business. Internal staff attribution is omitted: the customer sees that the business replied, not which runner. The data is still stored, so that presentation choice can change without a migration.
+     * @description One continuous thread with the business. Internal staff attribution is omitted: the customer sees that the business replied, not which store. The data is still stored, so that presentation choice can change without a migration.
      */
     get: operations['CustomerMessagingController_thread'];
     put?: never;
@@ -1269,7 +1309,7 @@ export interface paths {
     };
     /**
      * Staff the actor may open a DM with
-     * @description Scoped by hierarchy: a runner sees their own manager and any master; a manager sees their own runners and any master; a master sees everyone.
+     * @description Scoped by hierarchy: a store sees their own manager and any master; a manager sees their own stores and any master; a master sees everyone.
      */
     get: operations['StaffMessagingController_contacts'];
     put?: never;
@@ -1363,7 +1403,7 @@ export interface paths {
     };
     /**
      * Scoped overview metrics
-     * @description All-time net (in, out, balance), this month with the change against last month, top games by debit and by credit, customer and VIP counts, messaging counters, and a rollup one level below the actor: per-manager for a master, per-runner for a manager, empty for a runner.  Cached briefly per actor. The cache key includes the actor id, so one chain's figures can never be served to another.
+     * @description All-time net (in, out, balance), this month with the change against last month, top games by debit and by credit, customer and VIP counts, messaging counters, and a rollup one level below the actor: per-manager for a master, per-store for a manager, empty for a store.  Cached briefly per actor. The cache key includes the actor id, so one chain's figures can never be served to another.
      */
     get: operations['DashboardController_getDashboard'];
     put?: never;
@@ -1672,6 +1712,7 @@ export interface components {
         | 'AUTH_REFRESH_INVALID'
         | 'AUTH_REFRESH_REUSED'
         | 'AUTH_ACCOUNT_DISABLED'
+        | 'AUTH_ACCOUNT_PENDING_APPROVAL'
         | 'AUTH_PASSWORD_CHANGE_REQUIRED'
         | 'AUTH_FORBIDDEN_ROLE'
         | 'SCOPE_FORBIDDEN'
@@ -1686,6 +1727,7 @@ export interface components {
         | 'CUSTOMER_USERNAME_TAKEN'
         | 'CUSTOMER_SELF_UPDATE_FORBIDDEN'
         | 'CUSTOMER_INVALID_OWNER'
+        | 'CUSTOMER_NOT_PENDING'
         | 'TX_NOT_FOUND'
         | 'TX_AMOUNT_INVALID'
         | 'TX_CORRECTION_EXCEEDS_PARENT'
@@ -1773,7 +1815,7 @@ export interface components {
       correlationId: string;
     };
     /** @enum {string} */
-    StaffRole: 'master' | 'manager' | 'runner';
+    StaffRole: 'master' | 'manager' | 'store';
     StaffProfileDto: {
       /** Format: uuid */
       id: string;
@@ -1830,6 +1872,19 @@ export interface components {
       /** @example NewStrongPass456! */
       newPassword: string;
     };
+    RegisterCustomerDto: {
+      /** @example customer99@example.com */
+      email: string;
+      /** @example customer99 */
+      username: string;
+      /** @example StrongPass123! */
+      password: string;
+      fullName?: string;
+      phone?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+    };
     CustomerProfileDto: {
       /** Format: uuid */
       id: string;
@@ -1873,20 +1928,20 @@ export interface components {
       createdAt: string;
     };
     CreateStaffDto: {
-      /** @example runner1@sambehen.local */
+      /** @example store1@sambehen.local */
       email: string;
-      /** @example runner1 */
+      /** @example store1 */
       username: string;
       /** @example StrongPass123! */
       password: string;
       /**
-       * @description Only manager and runner can be created. A master is provisioned by the seed, since there is exactly one and it has no parent.
+       * @description Only manager and store can be created. A master is provisioned by the seed, since there is exactly one and it has no parent.
        * @enum {string}
        */
-      role: 'manager' | 'runner';
+      role: 'manager' | 'store';
       /**
        * Format: uuid
-       * @description Managing staff member. Required when a master creates a runner. Ignored for a manager creating a runner, which always attaches to that manager.
+       * @description Managing staff member. Required when a master creates a store. Ignored for a manager creating a store, which always attaches to that manager.
        */
       parentId?: string;
       firstName?: string;
@@ -1899,7 +1954,7 @@ export interface components {
       firstName?: string;
       lastName?: string;
       phone?: string;
-      /** @example runner1@sambehen.local */
+      /** @example store1@sambehen.local */
       email?: string;
     };
     ResetStaffPasswordDto: {
@@ -1911,15 +1966,15 @@ export interface components {
        */
       mustChangePassword: boolean;
     };
-    ReassignRunnerDto: {
+    ReassignStoreDto: {
       /**
        * Format: uuid
-       * @description The manager this runner should report to
+       * @description The manager this store should report to
        */
       newManagerId: string;
     };
     /** @enum {string} */
-    CustomerStatus: 'active' | 'inactive' | 'suspended' | 'banned';
+    CustomerStatus: 'pending' | 'active' | 'inactive' | 'suspended' | 'banned';
     CustomerResponseDto: {
       /** Format: uuid */
       id: string;
@@ -1938,16 +1993,19 @@ export interface components {
       balance: string;
       /** @example 50.00 */
       bonusBalance: string;
-      /** Format: uuid */
-      ownerStaffId: string;
+      /**
+       * Format: uuid
+       * @description Null only while `status` is `pending` — nobody has claimed this account yet.
+       */
+      ownerStaffId: string | null;
       /** Format: uuid */
       managerId: string | null;
       /** Format: uuid */
-      runnerId: string | null;
+      storeId: string | null;
       /** @description Owning manager's username */
       managerUsername?: string | null;
-      /** @description Owning runner's username */
-      runnerUsername?: string | null;
+      /** @description Owning store's username */
+      storeUsername?: string | null;
       emailOptOut: boolean;
       /** Format: date-time */
       lastActivityAt: string | null;
@@ -1997,7 +2055,7 @@ export interface components {
       country?: string;
       /**
        * Format: uuid
-       * @description Owning manager or runner. A runner may only assign to themselves, so this is ignored for them. Required when a master creates a customer, since a master cannot own customers directly.
+       * @description Owning manager or store. A store may only assign to themselves, so this is ignored for them. Required when a master creates a customer, since a master cannot own customers directly.
        */
       ownerStaffId?: string;
       notes?: string;
@@ -2044,7 +2102,7 @@ export interface components {
       password: string;
       /**
        * Format: uuid
-       * @description Who owns the imported customers. Required for a master, who sits above the chain; a manager or runner defaults to themselves.
+       * @description Who owns the imported customers. Required for a master, who sits above the chain; a manager or store defaults to themselves.
        */
       ownerStaffId?: string;
     };
@@ -2117,7 +2175,7 @@ export interface components {
     ReassignCustomerDto: {
       /**
        * Format: uuid
-       * @description New owning manager or runner
+       * @description New owning manager or store
        */
       ownerStaffId: string;
     };
@@ -2139,7 +2197,7 @@ export interface components {
       ids: string[];
       /**
        * Format: uuid
-       * @description New owning manager or runner
+       * @description New owning manager or store
        */
       ownerStaffId: string;
     };
@@ -2747,7 +2805,7 @@ export interface components {
       customerFullName: string | null;
       /** @description Owning manager, for a master reading across chains. */
       managerUsername: string | null;
-      runnerUsername: string | null;
+      storeUsername: string | null;
       prizeLabel: string | null;
       /** @example 500.00 */
       prizeAmount: string | null;
@@ -2816,7 +2874,7 @@ export interface components {
       /** Format: uuid */
       managerId: string | null;
       /** Format: uuid */
-      runnerId: string | null;
+      storeId: string | null;
     };
     ConversationSummaryDto: {
       /** @example 128 */
@@ -3018,7 +3076,10 @@ export interface components {
       transactionCount: number;
     };
     CustomerMetricsDto: {
-      /** @example 1240 */
+      /**
+       * @description Excludes pending self-registrations.
+       * @example 1240
+       */
       total: number;
       /**
        * @description Status active and seen within the activity window.
@@ -3032,6 +3093,11 @@ export interface components {
        * @example 37
        */
       newThisMonth: number;
+      /**
+       * @description Self-registered, awaiting a master’s approval. Visible only within a scope that can see them — in practice, only a master, since a pending signup has no manager or store yet.
+       * @example 3
+       */
+      pendingApproval: number;
     };
     VipMetricsDto: {
       /**
@@ -3101,7 +3167,7 @@ export interface components {
       customers: components['schemas']['CustomerMetricsDto'];
       vips: components['schemas']['VipMetricsDto'];
       messaging: components['schemas']['MessagingMetricsDto'];
-      /** @description For a master, one row per manager; for a manager, one row per runner plus their own directly-owned customers; empty for a runner, who is a leaf. */
+      /** @description For a master, one row per manager; for a manager, one row per store plus their own directly-owned customers; empty for a store, who is a leaf. */
       teamRollup: components['schemas']['TeamRollupRowDto'][];
       /**
        * Format: date-time
@@ -3244,9 +3310,9 @@ export interface components {
       managerId?: string;
       /**
        * Format: uuid
-       * @description Master, or a manager's own runner.
+       * @description Master, or a manager's own store.
        */
-      runnerId?: string;
+      storeId?: string;
       /** @description Explicit selection. Still intersected with the actor's scope, so an id from another chain is dropped rather than mailed. */
       customerIds?: string[];
       /**
@@ -3366,9 +3432,9 @@ export interface components {
       managerId?: string;
       /**
        * Format: uuid
-       * @description Master, or a manager's own runner.
+       * @description Master, or a manager's own store.
        */
-      runnerId?: string;
+      storeId?: string;
       /** @description Explicit selection. Still intersected with the actor's scope, so an id from another chain is dropped rather than mailed. */
       customerIds?: string[];
     };
@@ -3810,6 +3876,60 @@ export interface operations {
        *     Missing, expired or invalid team access token
        */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  AuthController_registerCustomer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RegisterCustomerDto'];
+      };
+    };
+    responses: {
+      /** @description Registration received. A team member will review your account shortly. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            /** @example null */
+            data?: Record<string, never> | null;
+          };
+        };
+      };
+      /** @description Uniqueness or state conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
         headers: {
           [name: string]: unknown;
         };
@@ -4608,7 +4728,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['ReassignRunnerDto'];
+        'application/json': components['schemas']['ReassignStoreDto'];
       };
     };
     responses: {
@@ -4703,8 +4823,8 @@ export interface operations {
         activeWindowDays?: number;
         /** @description Master only. A manager supplying another manager's id gets an empty result. */
         managerId?: string;
-        /** @description Master, or a manager narrowing to one of their own runners. */
-        runnerId?: string;
+        /** @description Master, or a manager narrowing to one of their own stores. */
+        storeId?: string;
         city?: string;
         country?: string;
         /** @description Exclude customers who opted out of email */
@@ -5102,8 +5222,8 @@ export interface operations {
       query?: {
         /** @description Master only. Narrow to one manager chain. */
         managerId?: string;
-        /** @description Master, or a manager's own runner. */
-        runnerId?: string;
+        /** @description Master, or a manager's own store. */
+        storeId?: string;
         /**
          * @description Bucket size.
          *
@@ -5319,6 +5439,78 @@ export interface operations {
        * @description Authenticated, but the role lacks this capability
        *
        *     Requires role: master or manager
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  CustomersController_approve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReassignCustomerDto'];
+      };
+    };
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['CustomerResponseDto'];
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid team access token
+       */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /**
+       * @description Authenticated, but the role lacks this capability
+       *
+       *     Requires role: master
        */
       403: {
         headers: {
@@ -5891,8 +6083,8 @@ export interface operations {
         referrerCustomerId?: string;
         /** @description Master only. */
         managerId?: string;
-        /** @description Master, or a manager's own runner. */
-        runnerId?: string;
+        /** @description Master, or a manager's own store. */
+        storeId?: string;
       };
       header?: never;
       path?: never;
@@ -6354,8 +6546,8 @@ export interface operations {
         gameId?: string;
         /** @description Master only */
         managerId?: string;
-        /** @description Master, or a manager's own runner */
-        runnerId?: string;
+        /** @description Master, or a manager's own store */
+        storeId?: string;
         /** @description Staff member who keyed the entry */
         enteredByStaffId?: string;
         /** @description true returns only corrections (credits WITH a parent); false excludes them. */
@@ -7021,6 +7213,8 @@ export interface operations {
         dateTo?: string;
         /** @description Rolling window ending now. Takes precedence over dateFrom/dateTo. */
         lastNDays?: number;
+        /** @description Restrict to one customer. */
+        customerId?: string;
         /** @description Restrict to one criteria. */
         criteriaId?: string;
         tier?: number;
@@ -7028,8 +7222,8 @@ export interface operations {
         activeOnly?: boolean;
         /** @description Master only. */
         managerId?: string;
-        /** @description Master, or a manager's own runner. */
-        runnerId?: string;
+        /** @description Master, or a manager's own store. */
+        storeId?: string;
       };
       header?: never;
       path: {
@@ -7157,6 +7351,8 @@ export interface operations {
         dateTo?: string;
         /** @description Rolling window ending now. Takes precedence over dateFrom/dateTo. */
         lastNDays?: number;
+        /** @description Restrict to one customer. */
+        customerId?: string;
         /** @description Restrict to one criteria. */
         criteriaId?: string;
         tier?: number;
@@ -7164,8 +7360,8 @@ export interface operations {
         activeOnly?: boolean;
         /** @description Master only. */
         managerId?: string;
-        /** @description Master, or a manager's own runner. */
-        runnerId?: string;
+        /** @description Master, or a manager's own store. */
+        storeId?: string;
       };
       header?: never;
       path?: never;
@@ -7719,8 +7915,8 @@ export interface operations {
         isPreselected?: boolean;
         /** @description Master only. */
         managerId?: string;
-        /** @description Master, or a manager's own runner. */
-        runnerId?: string;
+        /** @description Master, or a manager's own store. */
+        storeId?: string;
       };
       header?: never;
       path?: never;
@@ -7909,7 +8105,7 @@ export interface operations {
         /** @description Rolling window ending now. Takes precedence over dateFrom/dateTo. */
         lastNDays?: number;
         status?: components['schemas']['ConversationStatus'];
-        /** @description Only conversations with messages the CURRENT VIEWER has not read. Unread is per viewer: a message read by the runner is still unread for their manager. */
+        /** @description Only conversations with messages the CURRENT VIEWER has not read. Unread is per viewer: a message read by the store is still unread for their manager. */
         unreadOnly?: boolean;
         /** @description Only conversations with activity today. */
         todayOnly?: boolean;
@@ -7920,8 +8116,8 @@ export interface operations {
         assignedStaffId?: string;
         /** @description Master only. */
         managerId?: string;
-        /** @description Master, or a manager's own runner. */
-        runnerId?: string;
+        /** @description Master, or a manager's own store. */
+        storeId?: string;
       };
       header?: never;
       path?: never;
@@ -8528,8 +8724,8 @@ export interface operations {
       query?: {
         /** @description Master only. Narrow to one manager chain. */
         managerId?: string;
-        /** @description Master, or a manager's own runner. */
-        runnerId?: string;
+        /** @description Master, or a manager's own store. */
+        storeId?: string;
       };
       header?: never;
       path?: never;
@@ -8582,8 +8778,8 @@ export interface operations {
       query?: {
         /** @description Master only. Narrow to one manager chain. */
         managerId?: string;
-        /** @description Master, or a manager's own runner. */
-        runnerId?: string;
+        /** @description Master, or a manager's own store. */
+        storeId?: string;
         /**
          * @description Bucket size.
          *

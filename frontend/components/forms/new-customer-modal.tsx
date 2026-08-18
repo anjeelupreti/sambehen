@@ -37,9 +37,9 @@ export interface AssignableOwner {
  * staff above them.
  *
  * Ownership is where the roles differ. Customers hang off a manager or a
- * runner, so a **master must name an owner** — the API defaults ownership
+ * store, so a **master must name an owner** — the API defaults ownership
  * to the caller, and a master is not in the chain. A manager may hand the
- * customer to one of their runners or keep it. A runner is never asked:
+ * customer to one of their stores or keep it. A store is never asked:
  * the API assigns to them regardless.
  */
 export function NewCustomerModal({
@@ -54,7 +54,7 @@ export function NewCustomerModal({
   const { run, pending, fieldErrors, clearFieldErrors } = useAction(createCustomer);
 
   const needsOwner = actorRole === 'master';
-  const canChooseOwner = actorRole !== 'runner';
+  const canChooseOwner = actorRole !== 'store';
 
   const set = <K extends keyof typeof EMPTY>(key: K, value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -80,7 +80,7 @@ export function NewCustomerModal({
         title="New customer"
         description={
           needsOwner
-            ? 'Customers belong to a manager or a runner, so choose who owns this one. They can read their own record but cannot change anything about it, including this password.'
+            ? 'Customers belong to a manager or a store, so choose who owns this one. They can read their own record but cannot change anything about it, including this password.'
             : 'They are assigned to you unless you say otherwise. Customers can read their own record but cannot change anything about it, including this password.'
         }
         submitLabel="Create customer"
@@ -147,7 +147,7 @@ export function NewCustomerModal({
               value: owner.id,
               label: `${owner.username} · ${owner.role}`,
             }))}
-            placeholder={needsOwner ? 'Choose a manager or runner' : 'Keep for myself'}
+            placeholder={needsOwner ? 'Choose a manager or store' : 'Keep for myself'}
             error={fieldErrors.ownerStaffId}
             hint={
               needsOwner

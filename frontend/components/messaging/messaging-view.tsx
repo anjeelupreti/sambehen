@@ -288,7 +288,7 @@ function Bubble({ message }: { message: Message }) {
           )}
         >
           {/* Which staff member replied is recorded and shown up the chain —
-              a manager reading their runner's thread needs to know who
+              a manager reading their store's thread needs to know who
               answered. */}
           {!fromCustomer && message.senderStaffUsername ? `${message.senderStaffUsername} · ` : ''}
           {formatDateTime(message.createdAt)}
