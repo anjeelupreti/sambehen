@@ -12,11 +12,11 @@ changing anything, and why they are the way they are.
 mutation, metric and export composes a predicate from it, in the **data
 layer** — not in a controller check that a new endpoint could forget.
 
-| Actor   | Sees                                                           |
-| ------- | -------------------------------------------------------------- |
-| master  | everything; may narrow by any `managerId` / `runnerId`         |
-| manager | `customers.manager_id = self`; may narrow to their own runners |
-| runner  | `customers.runner_id = self`; no narrowing                     |
+| Actor   | Sees                                                          |
+| ------- | ------------------------------------------------------------- |
+| master  | everything; may narrow by any `managerId` / `storeId`         |
+| manager | `customers.manager_id = self`; may narrow to their own stores |
+| store   | `customers.store_id = self`; no narrowing                     |
 
 Two rules that must survive any refactor:
 
@@ -35,7 +35,7 @@ added later without touching `ScopeService` denies by default.
 ### Ownership denormalisation
 
 `customers` stores ownership three ways: `ownerStaffId` (truth), plus
-`managerId` and `runnerId` (denormalised). That lets scope be one indexed
+`managerId` and `storeId` (denormalised). That lets scope be one indexed
 equality rather than a recursive join, which matters because every list in
 the system composes it.
 
@@ -166,8 +166,8 @@ Two hazards, both of which have bitten this codebase:
 
 ## 6. Per-viewer unread
 
-Unread cannot be a column on a conversation. A runner, their manager and
-the master all read the same thread independently, so a message the runner
+Unread cannot be a column on a conversation. A store, their manager and
+the master all read the same thread independently, so a message the store
 has answered is still unread for the master.
 
 `conversation_read_states` holds one marker per staff member per
@@ -225,9 +225,9 @@ npm run start:dev
 ```
 
 Seeded accounts share the password `Password123!`:
-`master@sambehen.local`, `manager1@sambehen.local`, `runner11@sambehen.local`.
+`master@sambehen.local`, `manager1@sambehen.local`, `store11@sambehen.local`.
 
-The seed creates two managers with two runners each on purpose: with a
+The seed creates two managers with two stores each on purpose: with a
 single manager, a broken scope predicate that returns everything looks
 identical to one that returns the right rows.
 

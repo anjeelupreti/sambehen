@@ -52,7 +52,7 @@ than done silently.
 Role-gated pages call `notFound()`, which renders the "not found" page. The
 HTTP status is still 200 because the layout shell has already been flushed
 by the time the page body runs — that is how streaming SSR works, and it is
-not a gating failure. What matters is verified: a runner sent to `/staff`
+not a gating failure. What matters is verified: a store sent to `/staff`
 sees "not found", and their sidebar never offers the link.
 
 ---

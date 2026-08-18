@@ -7,8 +7,8 @@ This branch is pushed to `origin/feat/frontend-nextjs-shadcn` and not yet merged
 
 Both servers are already running locally:
 
-- Frontend: **http://localhost:3001**
-- Backend: **http://localhost:3003/api/v1** (Swagger at `/api/docs`)
+- Frontend: **http://localhost:3000**
+- Backend: **http://localhost:3001/api/v1** (Swagger at `/api/docs`)
 
 If either isn't responding, restart from a terminal:
 
@@ -36,12 +36,12 @@ Every seeded account uses the same password: **`Password123!`**
 | Username | Role | Sees |
 |---|---|---|
 | `master` | Master | Everything |
-| `manager1`, `manager2` | Manager | Their own runners and customers; not staff/audit-logs across other chains |
-| `runner11`, `runner12`, `runner21`, `runner22` | Runner | Their own customers only; no Staff, Broadcast, Audit trail, or Messages-across-manager |
+| `manager1`, `manager2` | Manager | Their own stores and customers; not staff/audit-logs across other chains |
+| `store11`, `store12`, `store21`, `store22` | Store | Their own customers only; no Staff, Broadcast, Audit trail, or Messages-across-manager |
 
 **Customers** (sign in at http://localhost:3001/customer/login):
 
-`customer1` through `customer24` — spread across the runners/managers above, a mix
+`customer1` through `customer24` — spread across the stores/managers above, a mix
 of active/inactive/suspended so status filters have something to show.
 
 ## What to check
@@ -49,13 +49,13 @@ of active/inactive/suspended so status filters have something to show.
 ### Sign-in and roles
 - [ ] Staff sign-in, sign-out, and session survives a page refresh
 - [ ] Customer sign-in at `/customer/login` (separate from staff — signing into one must not affect the other in the same browser)
-- [ ] As `runner12`: sidebar has no Staff, Broadcast, or Audit trail entries — and typing those URLs directly shows "Not found," not an error
+- [ ] As `store12`: sidebar has no Staff, Broadcast, or Audit trail entries — and typing those URLs directly shows "Not found," not an error
 - [ ] As `manager1`: Staff and Broadcast are visible; Audit trail is not
 - [ ] As `master`: everything is visible
 
 ### Customers
 - [ ] List loads, filters (status, activity, city, country, date range) narrow results, search works
-- [ ] Create a customer — as `master` you must pick an owner; as a manager/runner it defaults to you
+- [ ] Create a customer — as `master` you must pick an owner; as a manager/store it defaults to you
 - [ ] Click into a customer, see their transaction history and trend chart
 - [ ] Change status (suspend/reactivate), reset password
 - [ ] **Import**: Customers page → Import. Upload a spreadsheet with an Email/Username column (and optionally Full Name/Phone/City/Country), confirm the preview shows valid rows ticked and problem rows called out, untick a row, commit, confirm only the ticked rows were created
@@ -83,6 +83,15 @@ of active/inactive/suspended so status filters have something to show.
 - [ ] Open one issued referral link (`http://localhost:3001/r/<slug>`) in an incognito/private window — no sign-in, shows the program's offer and the code
 - [ ] Create a new customer and paste that code into the "Referral code" field — confirm the referral shows up as `pending` in the ledger
 
+### Public welcome page & self-registration
+- [ ] `http://localhost:3001/` with no session shows the marketing welcome page, not a redirect to `/login`
+- [ ] Navbar's Customer/Staff toggle changes where Login/Register point; Register only appears in Customer mode
+- [ ] `/customer/register` — create an account, confirm the "awaiting approval" message, then try `/customer/login` with those credentials and confirm it's refused
+- [ ] As `master`: `/customers?status=pending` shows the new signup with no owner; it's absent from the default (unfiltered) list
+- [ ] Dashboard shows an amber "N self-registered customers are waiting on your approval" banner, linking to the same filtered view
+- [ ] Click "Approve", assign a manager or store — confirm the customer becomes `active` and can now sign in at `/customer/login`
+- [ ] As `manager1`/a store: confirm pending customers never appear in your customer list (they have no owner yet)
+
 ### Messaging
 - [ ] Chat bubble (bottom-right) — open a conversation, send a message
 - [ ] Open the full `/messages` page and confirm the same conversations appear there, with a live indicator
@@ -94,7 +103,7 @@ of active/inactive/suspended so status filters have something to show.
 
 ### Staff
 - [ ] As `master`: create a new staff member, deactivate one
-- [ ] As `manager1`: confirm you only see your own runners, not `manager2`'s
+- [ ] As `manager1`: confirm you only see your own stores, not `manager2`'s
 
 ### Audit trail (master only)
 - [ ] Entries appear for actions you just took elsewhere in this checklist
@@ -112,15 +121,12 @@ of active/inactive/suspended so status filters have something to show.
 
 ## Known open items (not blockers to testing, but don't be surprised)
 
-- **Email is not sending.** The Gmail app password is being rejected by Google on
-  both SMTP ports. Campaigns and notifications will queue but not deliver until a
-  fresh app password is provided.
 - **A 404 on a specific record** (e.g. a customer id that doesn't exist, or belongs
   to another manager's chain) shows the correct "Not found" page but the HTTP
   status code underneath is 200, not 404. Content and access control are both
   correct — a wrong customer id never leaks another chain's data — this only
   matters if you're checking status codes with a tool rather than looking at the
-  page. (Role-restricted *pages* like `/staff` for a runner were fixed to return a
+  page. (Role-restricted *pages* like `/staff` for a store were fixed to return a
   real 404 this session; this remaining case is the same bug for record lookups
   specifically, and needs a bigger structural fix to close.)
 - Nothing from this branch has been merged into `main` yet.

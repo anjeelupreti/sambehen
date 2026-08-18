@@ -29,24 +29,24 @@ OpenAPI (`npm run docs:openapi`, 69 paths / 91 operations) and browsable at
 
 Two separate login gateways:
 
-- **Team** — `master`, `manager`, `runner`. Staff do the data entry.
+- **Team** — `master`, `manager`, `store`. Staff do the data entry.
 - **Customer** — customers can sign in and read their own record, but
   cannot change anything about themselves. Every edit, including their
   password, is made by the staff above them.
 
 The team is a two-level chain. Master sees everything. A manager sees their
-own customers and their runners'. A runner sees only their own. **One
+own customers and their stores'. A store sees only their own. **One
 manager can neither see nor touch another manager's chain**, and the same
-holds between runners.
+holds between stores.
 
-| Capability                                          | master |   manager    |  runner   |
-| --------------------------------------------------- | :----: | :----------: | :-------: |
-| Customers, transactions, messaging                  |  all   |  own chain   | own only  |
-| Create/manage staff                                 |   ✅   | runners only |    ❌     |
-| Games, VIP criteria, spin events, referral programs |   ✅   |     read     |   read    |
-| Email campaigns                                     |   ✅   |      ✅      |    ❌     |
-| Audit trail                                         |   ✅   |      ❌      |    ❌     |
-| Exports                                             |  all   |  own chain   | own chain |
+| Capability                                          | master |   manager   |   store   |
+| --------------------------------------------------- | :----: | :---------: | :-------: |
+| Customers, transactions, messaging                  |  all   |  own chain  | own only  |
+| Create/manage staff                                 |   ✅   | stores only |    ❌     |
+| Games, VIP criteria, spin events, referral programs |   ✅   |    read     |   read    |
+| Email campaigns                                     |   ✅   |     ✅      |    ❌     |
+| Audit trail                                         |   ✅   |     ❌      |    ❌     |
+| Exports                                             |  all   |  own chain  | own chain |
 
 ### Feature map
 
@@ -155,13 +155,13 @@ Swagger: <http://localhost:3001/api/docs> (port from `APP_PORT` in `.env`)
 
 Seeded accounts all use `Password123!`:
 
-| Account                                               | Role    |
-| ----------------------------------------------------- | ------- |
-| `master@sambehen.local`                               | master  |
-| `manager1@sambehen.local`, `manager2@sambehen.local`  | manager |
-| `runner11@sambehen.local` … `runner22@sambehen.local` | runner  |
+| Account                                              | Role    |
+| ---------------------------------------------------- | ------- |
+| `master@sambehen.local`                              | master  |
+| `manager1@sambehen.local`, `manager2@sambehen.local` | manager |
+| `store11@sambehen.local` … `store22@sambehen.local`  | store   |
 
-The seed deliberately builds **two** managers with two runners each. With a
+The seed deliberately builds **two** managers with two stores each. With a
 single manager, a broken scope predicate that returns everything looks
 identical to one that returns the right rows.
 
@@ -169,7 +169,7 @@ identical to one that returns the right rows.
 
 | Area          | Contents                                                                 |
 | ------------- | ------------------------------------------------------------------------ |
-| Staff         | 1 master, 2 managers, 4 runners                                          |
+| Staff         | 1 master, 2 managers, 4 stores                                           |
 | Customers     | 24, spread across both chains, with a mix of statuses                    |
 | Transactions  | Debits, credits and corrections against seeded games                     |
 | VIP criteria  | 3 — two active tiers plus one closed window                              |
@@ -184,7 +184,7 @@ database — so the VIP list agrees with the transaction list instead of
 contradicting it.
 
 And the **audit trail is seeded to be worth reading**: several staff plus a
-customer and a system actor, successes alongside a runner refused another
+customer and a system actor, successes alongside a store refused another
 chain's customer (`404`) and a manager refused the audit trail itself
 (`403`), and one scheduled-job entry with no request behind it — which is
 why `statusCode` is nullable. A trail of nothing but `200`s from one account

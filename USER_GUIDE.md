@@ -37,10 +37,10 @@ Four kinds of signed-in user, two separate sign-in pages:
 - **Master** — sits above the chain, not in it. Sees every customer, every
   manager's team, the audit trail. The only role that defines VIP criteria,
   referral programs, and creates other staff.
-- **Manager** — sees their own runners and every customer those runners
+- **Manager** — sees their own stores and every customer those stores
   (or the manager directly) own. Cannot see another manager's team at all —
   not a restricted view of it, no trace of it exists for them.
-- **Runner** — sees only the customers assigned directly to them.
+- **Store** — sees only the customers assigned directly to them.
 
 **Customer**, at `/customer/login` — signs in to see their own balance,
 activity and referral link, and to message the team. A customer cannot
@@ -148,7 +148,7 @@ This is saved to your browser and applies immediately, no save button.
 ## 5. Dashboard
 
 The landing page after sign-in. Everything on it is scoped to what you can
-see — a runner's dashboard only reflects their own customers.
+see — a store's dashboard only reflects their own customers.
 
 - **Top stat tiles**: customer counts, net balance (all-time and this
   month, with a trend indicator), debit/credit totals.
@@ -191,8 +191,8 @@ ownership.*
 2. Fill in **Username**, **Email**, and a **Password** (you set this —
    customers can't change it themselves).
 3. If you're a **master**, you must choose an **owner** (a manager or
-   runner) — a master sits above the chain and can't own a customer
-   directly. If you're a manager or runner, this is optional and defaults
+   store) — a master sits above the chain and can't own a customer
+   directly. If you're a manager or store, this is optional and defaults
    to you.
 4. Optionally fill in full name, phone, city, country, notes.
 5. If this customer is signing up because someone referred them, paste
@@ -397,14 +397,14 @@ image, code, category, description, and when it was added.
 ## 11. Staff
 
 *Who can: master sees and manages everyone; a manager sees and manages
-only their own runners.*
+only their own stores.*
 
 ### Create a staff member
 
 1. Go to **Staff** in the sidebar and click **New staff**.
 2. Enter **username**, **email**, **password**, **first/last name**.
-3. Choose a **role** — a master can create managers or runners; a manager
-   can only create runners under themselves.
+3. Choose a **role** — a master can create managers or stores; a manager
+   can only create stores under themselves.
 4. Click **Create**.
 
 ### Deactivate or reset a staff member's password
@@ -412,7 +412,7 @@ only their own runners.*
 Row-actions menu (⋯) on the Staff list — same pattern as customers:
 **Deactivate**, or **Reset password** (shown once, copy it immediately).
 
-A master can act on anyone; a manager only on their own runners — this
+A master can act on anyone; a manager only on their own stores — this
 mirrors what the row actions offer, not just what the API allows.
 
 ---
@@ -510,7 +510,7 @@ is available here too.
 
 ## 13. Broadcast (email campaigns)
 
-*Who can: master and manager. A runner doesn't have this in their
+*Who can: master and manager. A store doesn't have this in their
 sidebar.*
 
 Messaging (§14) is one thread per customer; Broadcast is the only way to
@@ -550,8 +550,8 @@ reach many customers with one email.
 
 ## 14. Messaging
 
-*Who can: everyone, within their own scope. A manager sees their runners'
-conversations too; a runner sees only their own.*
+*Who can: everyone, within their own scope. A manager sees their stores'
+conversations too; a store sees only their own.*
 
 There's one continuous thread per customer — not per topic — and it's
 available two ways that share the same data and update live:
@@ -608,10 +608,10 @@ refresh to see the latest.
 *Who can: **master only**. Deliberately unscoped — it exists to be read by
 someone outside whatever chain is being reviewed.*
 
-1. Go to **Audit trail** in the sidebar (not shown to manager or runner).
+1. Go to **Audit trail** in the sidebar (not shown to manager or store).
 2. Every state-changing action in the system appears here: who did it,
    when, from where, and what request it belonged to — including refused
-   attempts (a runner trying another chain's customer, for instance).
+   attempts (a store trying another chain's customer, for instance).
 3. Filter by **actor type**, **action**, **entity**, **correlation ID**, or
    date range — filtering by correlation ID is the way to pull every log
    line tied to one specific request.
@@ -666,7 +666,7 @@ see [§14](#14-messaging).
 
 ## 18. Appendix: who can do what
 
-| Area | Master | Manager | Runner | Customer |
+| Area | Master | Manager | Store | Customer |
 | --- | :---: | :---: | :---: | :---: |
 | Own customers/transactions | ✅ all chains | ✅ own chain | ✅ own only | — |
 | Create/edit customers | ✅ (must set owner) | ✅ | ✅ | ❌ |
@@ -674,7 +674,7 @@ see [§14](#14-messaging).
 | VIP criteria (define) | ✅ | ❌ read-only | ❌ read-only | ❌ |
 | Spin events (create) | ✅ | ❌ read-only | ❌ read-only | ❌ |
 | Games (create/edit) | ✅ | ❌ read-only | ❌ read-only | ❌ |
-| Staff (create/manage) | ✅ everyone | ✅ own runners | ❌ | ❌ |
+| Staff (create/manage) | ✅ everyone | ✅ own stores | ❌ | ❌ |
 | Referral programs (define) | ✅ | ❌ read-only | ❌ read-only | ❌ |
 | Referral codes (issue) | ✅ | ✅ | ✅ | ❌ (receives only) |
 | Broadcast / email campaigns | ✅ | ✅ | ❌ | ❌ |

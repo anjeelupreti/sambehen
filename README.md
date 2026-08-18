@@ -108,15 +108,15 @@ either the username or the email.
 | Username | Role | Sees |
 | --- | --- | --- |
 | `master` | Master | Everything, every chain. Only role that can see the audit trail, define VIP criteria and referral programs, create staff. |
-| `manager1`, `manager2` | Manager | Their own runners and the runners' customers. Can use Staff and Broadcast; cannot see the audit trail or another manager's chain. |
-| `runner11`, `runner12`, `runner21`, `runner22` | Runner | Only their own customers. No Staff, Broadcast, Audit trail, or Messages outside their own customers. |
+| `manager1`, `manager2` | Manager | Their own stores and the stores' customers. Can use Staff and Broadcast; cannot see the audit trail or another manager's chain. |
+| `store11`, `store12`, `store21`, `store22` | Store | Only their own customers. No Staff, Broadcast, Audit trail, or Messages outside their own customers. |
 
-A role-forbidden page (a runner opening `/staff`, for example) returns a
+A role-forbidden page (a store opening `/staff`, for example) returns a
 genuine 404, not a 403 — the app never confirms that a page or record
 exists outside what the signed-in role can see.
 
 **Customers** (http://localhost:3000/customer/login) — `customer1` through
-`customer24`, spread across the runners/managers above with a mix of
+`customer24`, spread across the stores/managers above with a mix of
 active/inactive/suspended status.
 
 Reset to a clean seed at any point with `cd backend && npm run db:seed` —
@@ -158,7 +158,7 @@ Both applications depend on these. Breaking one is a data bug, not a style
 disagreement.
 
 **Scoping is the security boundary.** A manager cannot see another
-manager's chain; a runner sees only their own customers. Enforced in SQL by
+manager's chain; a store sees only their own customers. Enforced in SQL by
 `ScopeService`, composed into every list, mutation, metric and export.
 
 **A row you cannot see returns 404, never 403.** A 403 would confirm the
