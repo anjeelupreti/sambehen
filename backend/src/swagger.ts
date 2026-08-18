@@ -37,7 +37,7 @@ export function createSwaggerDocument(app: INestApplication, config: ConfigServi
         '',
         '## Access control',
         'Two independent realms with separate signing secrets: **team** (master,',
-        'manager, runner) and **customer**. A token from one realm fails signature',
+        'manager, store) and **customer**. A token from one realm fails signature',
         'verification in the other. Beyond role checks, rows are filtered to the',
         "actor's own chain, and requesting a record outside that scope returns",
         "**404, not 403**, so the API never confirms that another chain's record",

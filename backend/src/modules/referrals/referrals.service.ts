@@ -394,7 +394,7 @@ export class ReferralsService {
     // customer that was brought in.
     const scope = await this.scopeService.customerScope(actor, {
       managerId: filters.managerId,
-      runnerId: filters.runnerId,
+      storeId: filters.storeId,
     });
     if (scope) {
       conditions.push(

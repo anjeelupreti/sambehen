@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthRealm, CustomerStatus } from '@common/constants/app.constants';
 import { ErrorCode } from '@common/constants/error-codes';
-import { AuthenticationException } from '@common/exceptions/business.exception';
+import {
+  AuthenticationException,
+  ResourceConflictException,
+} from '@common/exceptions/business.exception';
 import { HashUtil } from '@common/utils/hash.util';
 import { StaffRepository } from '@database/repositories/staff.repository';
 import { CustomerRepository } from '@database/repositories/customer.repository';
@@ -20,6 +23,7 @@ import {
   TokenPairDto,
   ChangeOwnPasswordDto,
 } from './dto/auth.dto';
+import { RegisterCustomerDto } from '@modules/customers/dto/customer.dto';
 
 interface IRequestContext {
   ip?: string;
@@ -86,6 +90,16 @@ export class AuthService {
       throw new AuthenticationException(ErrorCode.AUTH_INVALID_CREDENTIALS, 'Invalid credentials');
     }
 
+    // A self-registered account cannot sign in until a master reviews it
+    // and assigns an owner — there is no manager or store chain yet for
+    // anything the account does to be scoped under.
+    if (customer.status === CustomerStatus.PENDING) {
+      throw new AuthenticationException(
+        ErrorCode.AUTH_ACCOUNT_PENDING_APPROVAL,
+        'Your account is awaiting approval. Please check back soon.',
+      );
+    }
+
     // Suspended and banned accounts are refused; inactive is not, since it
     // only reflects a lapse in activity rather than a deliberate block.
     if (customer.status === CustomerStatus.SUSPENDED || customer.status === CustomerStatus.BANNED) {
@@ -99,6 +113,45 @@ export class AuthService {
     await this.customerRepository.touchLastLogin(customer.id);
 
     return { ...tokens, user: this.toCustomerProfile(customer) };
+  }
+
+  /**
+   * A prospective customer creating their own account.
+   *
+   * Lands as `status = 'pending'` with every ownership column null — no
+   * manager or store has claimed them yet, so they are invisible to
+   * everyone but a master until `CustomersService.approve` assigns one.
+   * No session is issued: a pending account cannot sign in, so there is
+   * nothing to log the caller into yet.
+   */
+  async registerCustomer(dto: RegisterCustomerDto): Promise<void> {
+    if (await this.customerRepository.emailTaken(dto.email)) {
+      throw new ResourceConflictException(
+        ErrorCode.CUSTOMER_EMAIL_TAKEN,
+        'A customer with this email already exists',
+      );
+    }
+    if (await this.customerRepository.usernameTaken(dto.username)) {
+      throw new ResourceConflictException(
+        ErrorCode.CUSTOMER_USERNAME_TAKEN,
+        'A customer with this username already exists',
+      );
+    }
+
+    await this.customerRepository.create({
+      email: dto.email,
+      username: dto.username,
+      passwordHash: await HashUtil.hashPassword(dto.password),
+      fullName: dto.fullName,
+      phone: dto.phone,
+      city: dto.city,
+      state: dto.state,
+      country: dto.country,
+      status: CustomerStatus.PENDING,
+      ownerStaffId: null,
+      managerId: null,
+      storeId: null,
+    });
   }
 
   // ── Refresh ─────────────────────────────────────────────────

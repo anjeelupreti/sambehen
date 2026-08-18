@@ -14,12 +14,12 @@ import { sql } from 'drizzle-orm';
 import { StaffRole } from '@common/constants/app.constants';
 
 /**
- * Business-side accounts: master, manager and runner.
+ * Business-side accounts: master, manager and store.
  *
  * Hierarchy is a self-referencing parent link:
  *   master  -> parentId IS NULL
  *   manager -> parentId references a master
- *   runner  -> parentId references a manager
+ *   store   -> parentId references a manager
  *
  * ScopeService walks this link to decide what an actor may see. The chain
  * is deliberately shallow and fixed at three levels, so visibility can be
@@ -76,16 +76,24 @@ export const staffUsers = pgTable(
     index('idx_staff_users_parent').on(table.parentId),
     index('idx_staff_users_active').on(table.isActive),
 
+    // Staff and contact search (team directory, staff messaging contacts)
+    // matches with a leading-wildcard ILIKE, which needs a trigram index
+    // rather than the btree a plain `index()` would give.
+    index('idx_staff_users_username_trgm').using('gin', table.username.op('gin_trgm_ops')),
+    index('idx_staff_users_first_name_trgm').using('gin', table.firstName.op('gin_trgm_ops')),
+    index('idx_staff_users_last_name_trgm').using('gin', table.lastName.op('gin_trgm_ops')),
+    index('idx_staff_users_email_trgm').using('gin', table.email.op('gin_trgm_ops')),
+
     // The hierarchy invariant is enforced by the database, not only by the
-    // service layer: a master never has a parent, and a manager or runner
-    // always does. A bug that orphaned a runner would silently widen or
+    // service layer: a master never has a parent, and a manager or store
+    // always does. A bug that orphaned a store would silently widen or
     // erase its scope.
     check(
       'chk_staff_hierarchy',
       sql`(${table.role} = 'master' AND ${table.parentId} IS NULL)
-          OR (${table.role} IN ('manager', 'runner') AND ${table.parentId} IS NOT NULL)`,
+          OR (${table.role} IN ('manager', 'store') AND ${table.parentId} IS NOT NULL)`,
     ),
-    check('chk_staff_role', sql`${table.role} IN ('master', 'manager', 'runner')`),
+    check('chk_staff_role', sql`${table.role} IN ('master', 'manager', 'store')`),
     check('chk_staff_not_own_parent', sql`${table.parentId} IS DISTINCT FROM ${table.id}`),
   ],
 );

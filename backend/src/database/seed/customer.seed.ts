@@ -11,8 +11,8 @@ const CITIES = ['Kathmandu', 'Pokhara', 'Lalitpur', 'Biratnagar', 'Bhaktapur', '
  * Seeds customers spread across the hierarchy.
  *
  * Deliberately mixes ownership so scope tests have something to bite on:
- * most customers belong to runners, a few are owned directly by a manager
- * (runnerId null), and statuses and activity dates vary so the
+ * most customers belong to stores, a few are owned directly by a manager
+ * (storeId null), and statuses and activity dates vary so the
  * active/inactive filters return different sets.
  *
  * Ownership columns are written the way CustomerAssignmentService would,
@@ -28,7 +28,7 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
   const upsert = async (
     email: string,
     username: string,
-    ownership: { ownerStaffId: string; managerId: string; runnerId: string | null },
+    ownership: { ownerStaffId: string; managerId: string; storeId: string | null },
     status: CustomerStatus,
     daysSinceActivity: number,
   ): Promise<void> => {
@@ -57,17 +57,17 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
     seeded.push(created);
   };
 
-  // Runner-owned customers: five per runner.
-  for (const runner of staff.runners) {
+  // Store-owned customers: five per store.
+  for (const store of staff.stores) {
     for (let c = 0; c < 5; c += 1) {
       index += 1;
       await upsert(
         `customer${index}@example.com`,
         `customer${index}`,
         {
-          ownerStaffId: runner.id,
-          managerId: runner.parentId as string,
-          runnerId: runner.id,
+          ownerStaffId: store.id,
+          managerId: store.parentId as string,
+          storeId: store.id,
         },
         // Every fifth account is inactive and every eleventh suspended, so
         // status filters return non-trivial subsets.
@@ -81,15 +81,15 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
     }
   }
 
-  // Manager-owned customers, with no runner in the chain. These are the
-  // rows that catch a scope predicate written against runnerId alone.
+  // Manager-owned customers, with no store in the chain. These are the
+  // rows that catch a scope predicate written against storeId alone.
   for (const manager of staff.managers) {
     for (let c = 0; c < 2; c += 1) {
       index += 1;
       await upsert(
         `customer${index}@example.com`,
         `customer${index}`,
-        { ownerStaffId: manager.id, managerId: manager.id, runnerId: null },
+        { ownerStaffId: manager.id, managerId: manager.id, storeId: null },
         CustomerStatus.ACTIVE,
         index % 3 === 0 ? 45 : 1,
       );

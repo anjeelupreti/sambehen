@@ -12,14 +12,14 @@ import { StaffUser } from '@database/schema/staff-users.schema';
 export interface IOwnershipColumns {
   ownerStaffId: string;
   managerId: string;
-  runnerId: string | null;
+  storeId: string | null;
 }
 
 /**
  * Sole writer of the customer ownership columns.
  *
  * `customers` stores ownership three ways — ownerStaffId (truth),
- * managerId and runnerId (denormalised) — so ScopeService can express
+ * managerId and storeId (denormalised) — so ScopeService can express
  * visibility as one indexed equality instead of a recursive join. That
  * denormalisation is only safe while every write goes through here, so
  * services must never set these columns directly.
@@ -34,8 +34,8 @@ export class CustomerAssignmentService {
   /**
    * Derives the three ownership columns from a prospective owner.
    *
-   * A runner contributes both its own id and its manager's; a manager
-   * contributes itself and no runner. A master cannot own customers —
+   * A store contributes both its own id and its manager's; a manager
+   * contributes itself and no store. A master cannot own customers —
    * masters oversee the whole system, and letting one own rows directly
    * would create records that sit outside every manager's chain and so
    * appear in no manager's list.
@@ -51,26 +51,26 @@ export class CustomerAssignmentService {
     }
 
     switch (owner.role) {
-      case StaffRole.RUNNER: {
+      case StaffRole.STORE: {
         if (!owner.parentId) {
           // The hierarchy CHECK makes this unreachable, but an orphaned
-          // runner would silently produce customers no manager can see.
+          // store would silently produce customers no manager can see.
           throw new BusinessException(
             ErrorCode.STAFF_INVALID_HIERARCHY,
-            'This runner is not assigned to a manager',
+            'This store is not assigned to a manager',
           );
         }
-        return { ownerStaffId: owner.id, managerId: owner.parentId, runnerId: owner.id };
+        return { ownerStaffId: owner.id, managerId: owner.parentId, storeId: owner.id };
       }
 
       case StaffRole.MANAGER:
-        return { ownerStaffId: owner.id, managerId: owner.id, runnerId: null };
+        return { ownerStaffId: owner.id, managerId: owner.id, storeId: null };
 
       case StaffRole.MASTER:
       default:
         throw new BusinessException(
           ErrorCode.CUSTOMER_INVALID_OWNER,
-          'Customers must be assigned to a manager or a runner, not to a master',
+          'Customers must be assigned to a manager or a store, not to a master',
         );
     }
   }
@@ -93,28 +93,28 @@ export class CustomerAssignmentService {
   }
 
   /**
-   * Rewrites the denormalised manager id for every customer of a runner
+   * Rewrites the denormalised manager id for every customer of a store
    * that has moved to a different manager.
    *
-   * Without this, the runner's customers would keep pointing at the old
+   * Without this, the store's customers would keep pointing at the old
    * manager: the previous manager would keep seeing them and the new one
    * would not, which is a scope leak in both directions.
    */
-  async recascadeRunnerCustomers(
+  async recascadeStoreCustomers(
     tx: DrizzleDB,
-    runnerId: string,
+    storeId: string,
     newManagerId: string,
   ): Promise<number> {
     const rows = await tx
       .update(customers)
       .set({ managerId: newManagerId })
-      .where(eq(customers.runnerId, runnerId))
+      .where(eq(customers.storeId, storeId))
       .returning({ id: customers.id });
     return rows.length;
   }
 
   /** True when the actor may be assigned customers at all. */
   canOwnCustomers(staff: StaffUser): boolean {
-    return staff.role === StaffRole.MANAGER || staff.role === StaffRole.RUNNER;
+    return staff.role === StaffRole.MANAGER || staff.role === StaffRole.STORE;
   }
 }

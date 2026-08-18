@@ -81,7 +81,7 @@ export class StaffRepository extends BaseRepository<typeof staffUsers> {
     return this.findAll(conditions);
   }
 
-  /** Ids of a manager's runners, used to validate runner filters. */
+  /** Ids of a manager's stores, used to validate store filters. */
   async findChildIds(parentId: string): Promise<string[]> {
     const rows = await this.db
       .select({ id: staffUsers.id })

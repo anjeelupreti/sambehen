@@ -16,7 +16,7 @@ export interface ITeamJwtPayload extends IJwtBasePayload {
   realm: AuthRealm.TEAM;
   username: string;
   role: StaffRole;
-  /** Managing staff id: master -> null, manager -> master, runner -> manager. */
+  /** Managing staff id: master -> null, manager -> master, store -> manager. */
   parentId: string | null;
 }
 

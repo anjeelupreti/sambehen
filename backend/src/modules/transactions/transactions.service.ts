@@ -80,7 +80,7 @@ export class TransactionsService {
     // transaction exactly when they can see the customer it belongs to.
     const customerScope = await this.scopeService.customerScope(actor, {
       managerId: filters.managerId,
-      runnerId: filters.runnerId,
+      storeId: filters.storeId,
     });
 
     if (customerScope) {
@@ -133,19 +133,25 @@ export class TransactionsService {
   ): Promise<IPaginatedResult<TransactionResponseDto, TransactionSummaryDto>> {
     const conditions = await this.buildListConditions(actor, filters);
 
-    const result = await this.transactionRepository.findPaginated(filters, {
-      conditions,
-      searchColumns: this.transactionRepository.searchColumns,
-      sortableColumns: this.transactionRepository.sortableColumns,
-      defaultSort: { column: transactions.occurredAt, order: SortOrder.DESC },
-    });
+    // `totals` aggregates over the same WHERE clause, not the page's rows,
+    // so it depends only on `conditions` and can run alongside the page
+    // query rather than after it.
+    const [result, summary] = await Promise.all([
+      this.transactionRepository.findPaginated(filters, {
+        conditions,
+        searchColumns: this.transactionRepository.searchColumns,
+        sortableColumns: this.transactionRepository.sortableColumns,
+        defaultSort: { column: transactions.occurredAt, order: SortOrder.DESC },
+      }),
+      this.transactionRepository.totals(conditions),
+    ]);
 
     const labels = await this.resolveLabels(result.data);
 
     return {
       data: result.data.map((row) => this.toResponse(row, labels)),
       meta: result.meta,
-      summary: await this.transactionRepository.totals(conditions),
+      summary,
     };
   }
 
@@ -373,10 +379,10 @@ export class TransactionsService {
     id: string,
     dto: UpdateTransactionDto,
   ): Promise<TransactionResponseDto> {
-    if (actor.role === StaffRole.RUNNER) {
+    if (actor.role === StaffRole.STORE) {
       throw new CapabilityDeniedException(
         ErrorCode.AUTH_FORBIDDEN_ROLE,
-        'Runners cannot edit transactions. Record a correction instead.',
+        'Stores cannot edit transactions. Record a correction instead.',
       );
     }
 

@@ -15,7 +15,7 @@ import { ICurrentStaff } from '@common/interfaces/auth.interface';
 /** Optional ownership narrowing a caller may request on a list. */
 export interface IScopeFilters {
   managerId?: string;
-  runnerId?: string;
+  storeId?: string;
 }
 
 /**
@@ -27,10 +27,10 @@ export interface IScopeFilters {
  * rather than by a check a controller could forget.
  *
  * Visibility rules:
- *   MASTER  - everything; may narrow by any managerId / runnerId
- *   MANAGER - customers.manager_id = self; may narrow by runnerId, but
- *             only to a runner that is actually theirs
- *   RUNNER  - customers.runner_id = self; no narrowing
+ *   MASTER  - everything; may narrow by any managerId / storeId
+ *   MANAGER - customers.manager_id = self; may narrow by storeId, but
+ *             only to a store that is actually theirs
+ *   STORE   - customers.store_id = self; no narrowing
  *
  * Two deliberate choices worth knowing before changing anything here:
  *
@@ -67,8 +67,8 @@ export class ScopeService {
       case StaffRole.MANAGER:
         return this.managerCustomerScope(actor, filters);
 
-      case StaffRole.RUNNER:
-        return this.runnerCustomerScope(actor, filters);
+      case StaffRole.STORE:
+        return this.storeCustomerScope(actor, filters);
 
       default:
         // Unreachable while StaffRole is exhaustive, but an unknown role
@@ -80,7 +80,7 @@ export class ScopeService {
   private masterCustomerScope(filters: IScopeFilters): SQL | undefined {
     const predicates: SQL[] = [];
     if (filters.managerId) predicates.push(eq(customers.managerId, filters.managerId));
-    if (filters.runnerId) predicates.push(eq(customers.runnerId, filters.runnerId));
+    if (filters.storeId) predicates.push(eq(customers.storeId, filters.storeId));
     return predicates.length > 0 ? and(...predicates) : undefined;
   }
 
@@ -96,35 +96,35 @@ export class ScopeService {
 
     const predicates: SQL[] = [eq(customers.managerId, actor.id)];
 
-    if (filters.runnerId) {
-      // Validate the runner actually reports to this manager. Without
+    if (filters.storeId) {
+      // Validate the store actually reports to this manager. Without
       // this, the AND below would still be safe, but the caller would get
       // a confusing empty list instead of a clear denial.
-      await this.assertRunnerBelongsTo(actor.id, filters.runnerId);
-      predicates.push(eq(customers.runnerId, filters.runnerId));
+      await this.assertStoreBelongsTo(actor.id, filters.storeId);
+      predicates.push(eq(customers.storeId, filters.storeId));
     }
 
     return and(...predicates);
   }
 
-  private runnerCustomerScope(actor: ICurrentStaff, filters: IScopeFilters): SQL {
-    // A runner is a leaf: any ownership filter that is not themselves is
+  private storeCustomerScope(actor: ICurrentStaff, filters: IScopeFilters): SQL {
+    // A store is a leaf: any ownership filter that is not themselves is
     // a denial, not a narrowing.
     if (
-      (filters.runnerId && filters.runnerId !== actor.id) ||
+      (filters.storeId && filters.storeId !== actor.id) ||
       (filters.managerId && filters.managerId !== actor.parentId)
     ) {
       return sql`false`;
     }
-    return eq(customers.runnerId, actor.id);
+    return eq(customers.storeId, actor.id);
   }
 
   /**
    * Predicate restricting `staff_users` to the accounts the actor may see.
    *
    *   MASTER  - all staff
-   *   MANAGER - themselves and their own runners
-   *   RUNNER  - themselves only
+   *   MANAGER - themselves and their own stores
+   *   STORE   - themselves only
    */
   staffScope(actor: ICurrentStaff): SQL | undefined {
     switch (actor.role) {
@@ -134,7 +134,7 @@ export class ScopeService {
       case StaffRole.MANAGER:
         return or(eq(staffUsers.id, actor.id), eq(staffUsers.parentId, actor.id));
 
-      case StaffRole.RUNNER:
+      case StaffRole.STORE:
         return eq(staffUsers.id, actor.id);
 
       default:
@@ -191,10 +191,10 @@ export class ScopeService {
    * says nothing about who a message may be addressed to.
    *
    *   MASTER  - everyone but themselves
-   *   MANAGER - their own runners, plus any master
-   *   RUNNER  - their own manager, plus any master
+   *   MANAGER - their own stores, plus any master
+   *   STORE   - their own manager, plus any master
    *
-   * Deliberately excludes peer managers and unrelated runners: the
+   * Deliberately excludes peer managers and unrelated stores: the
    * hierarchy this walks is the same parentId chain ScopeService uses
    * everywhere else, not a separate permission list to keep in sync.
    */
@@ -209,7 +209,7 @@ export class ScopeService {
           or(eq(staffUsers.parentId, actor.id), eq(staffUsers.role, StaffRole.MASTER)),
         )!;
 
-      case StaffRole.RUNNER:
+      case StaffRole.STORE:
         return and(
           sql`${staffUsers.id} != ${actor.id}`,
           or(
@@ -247,7 +247,7 @@ export class ScopeService {
     if (rows.length === 0) {
       throw new CapabilityDeniedException(
         ErrorCode.STAFF_CANNOT_MESSAGE,
-        'You can only message your own manager, your own runners, or a master',
+        'You can only message your own manager, your own stores, or a master',
       );
     }
   }
@@ -256,8 +256,8 @@ export class ScopeService {
    * Asserts the actor may create or modify the target staff account.
    *
    *   MASTER  - anyone but themselves
-   *   MANAGER - their own runners only
-   *   RUNNER  - nobody
+   *   MANAGER - their own stores only
+   *   STORE   - nobody
    *
    * Unlike customer access this raises 403: the staff hierarchy is not
    * secret, and refusing by capability is the honest answer.
@@ -277,7 +277,7 @@ export class ScopeService {
       if (!target || target.parentId !== actor.id) {
         throw new CapabilityDeniedException(
           ErrorCode.STAFF_CANNOT_MANAGE_PEER,
-          'You can only manage runners that report to you',
+          'You can only manage stores that report to you',
         );
       }
       return;
@@ -285,7 +285,7 @@ export class ScopeService {
 
     throw new CapabilityDeniedException(
       ErrorCode.AUTH_FORBIDDEN_ROLE,
-      'Runners cannot manage staff accounts',
+      'Stores cannot manage staff accounts',
     );
   }
 
@@ -299,10 +299,10 @@ export class ScopeService {
       case StaffRole.MASTER:
         return null;
       case StaffRole.MANAGER: {
-        const runnerIds = await this.staffRepository.findChildIds(actor.id);
-        return [actor.id, ...runnerIds];
+        const storeIds = await this.staffRepository.findChildIds(actor.id);
+        return [actor.id, ...storeIds];
       }
-      case StaffRole.RUNNER:
+      case StaffRole.STORE:
         return [actor.id];
       default:
         return [];
@@ -317,14 +317,14 @@ export class ScopeService {
     return inArray(column, ids);
   }
 
-  /** Throws unless the runner reports to the given manager. */
-  private async assertRunnerBelongsTo(managerId: string, runnerId: string): Promise<void> {
-    const runner = await this.staffRepository.findById(runnerId);
+  /** Throws unless the store reports to the given manager. */
+  private async assertStoreBelongsTo(managerId: string, storeId: string): Promise<void> {
+    const store = await this.staffRepository.findById(storeId);
 
-    if (!runner || runner.parentId !== managerId || runner.role !== StaffRole.RUNNER) {
+    if (!store || store.parentId !== managerId || store.role !== StaffRole.STORE) {
       throw new ResourceNotFoundException(
         ErrorCode.STAFF_NOT_FOUND,
-        'Runner not found in your team',
+        'Store not found in your team',
       );
     }
   }

@@ -46,7 +46,7 @@ export class MessageCreatedEvent {
     readonly conversationId: string,
     readonly customerId: string,
     readonly managerId: string | null,
-    readonly runnerId: string | null,
+    readonly storeId: string | null,
   ) {}
 }
 
@@ -63,9 +63,9 @@ export class MessagingService {
    * Unread count for one specific viewer.
    *
    * Counts customer messages newer than that viewer's read marker. This
-   * cannot be a column on the conversation: a runner, their manager and
+   * cannot be a column on the conversation: a store, their manager and
    * the master all read the same thread independently, so a message the
-   * runner has seen is still unread for the master.
+   * store has seen is still unread for the master.
    *
    * A viewer with no marker has read nothing, so every customer message
    * counts — which is the correct behaviour for a manager opening an
@@ -98,7 +98,7 @@ export class MessagingService {
     // Conversations are scoped through their customer.
     const scope = await this.scopeService.customerScope(actor, {
       managerId: filters.managerId,
-      runnerId: filters.runnerId,
+      storeId: filters.storeId,
     });
     if (scope) conditions.push(scope);
 
@@ -178,7 +178,7 @@ export class MessagingService {
                  OR ${conversations.lastCustomerMessageAt} > ${conversations.lastStaffMessageAt})
           )`,
           managerId: customers.managerId,
-          runnerId: customers.runnerId,
+          storeId: customers.storeId,
         })
         .from(conversations)
         .innerJoin(customers, eq(conversations.customerId, customers.id))
@@ -427,7 +427,7 @@ export class MessagingService {
 
     // Internal staff attribution is deliberately absent from this
     // projection: the customer sees "the business" replied, not which
-    // runner. The data is still stored, so the choice can be revisited
+    // store. The data is still stored, so the choice can be revisited
     // without a migration.
     return {
       data: data as MessageResponseDto[],
@@ -535,7 +535,7 @@ export class MessagingService {
     // Emitted after commit so a socket listener never broadcasts a message
     // that later rolls back.
     const [owner] = await this.db
-      .select({ managerId: customers.managerId, runnerId: customers.runnerId })
+      .select({ managerId: customers.managerId, storeId: customers.storeId })
       .from(customers)
       .where(eq(customers.id, conversation.customerId))
       .limit(1);
@@ -547,7 +547,7 @@ export class MessagingService {
         conversation.id,
         conversation.customerId,
         owner?.managerId ?? null,
-        owner?.runnerId ?? null,
+        owner?.storeId ?? null,
       ),
     );
 
@@ -614,13 +614,13 @@ export class MessagingService {
   /** Staff who should receive a live update for a conversation. */
   async recipientsFor(
     customerId: string,
-  ): Promise<{ managerId: string | null; runnerId: string | null }> {
+  ): Promise<{ managerId: string | null; storeId: string | null }> {
     const [row] = await this.db
-      .select({ managerId: customers.managerId, runnerId: customers.runnerId })
+      .select({ managerId: customers.managerId, storeId: customers.storeId })
       .from(customers)
       .where(eq(customers.id, customerId))
       .limit(1);
 
-    return { managerId: row?.managerId ?? null, runnerId: row?.runnerId ?? null };
+    return { managerId: row?.managerId ?? null, storeId: row?.storeId ?? null };
   }
 }

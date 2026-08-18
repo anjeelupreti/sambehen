@@ -55,7 +55,7 @@ import {
  *
  * Customers cannot modify their own profile, credentials or status — every
  * write lives here and is audit-logged. Row visibility comes from
- * ScopeService, so a runner sees only their own customers and a manager
+ * ScopeService, so a store sees only their own customers and a manager
  * only their chain, regardless of what they request.
  *
  * As in StaffController, auditing is owned by the service layer, which can
@@ -76,7 +76,7 @@ export class CustomersController {
   @ApiOperation({
     summary: 'Create a customer',
     description:
-      'A runner always creates for themselves — a supplied ownerStaffId is ignored. A manager may assign to themselves or one of their own runners. A master must name an owner, since masters cannot own customers directly.',
+      'A store always creates for themselves — a supplied ownerStaffId is ignored. A manager may assign to themselves or one of their own stores. A master must name an owner, since masters cannot own customers directly.',
   })
   @ApiCreatedData(CustomerResponseDto, 'Customer created')
   @ApiErrors(401, 403, 404, 409, 422)
@@ -263,6 +263,25 @@ export class CustomersController {
     @Body() dto: ReassignCustomerDto,
   ): Promise<CustomerResponseDto> {
     return this.customersService.reassign(actor, id, dto);
+  }
+
+  @Patch(':id/approve')
+  @TeamAuth(StaffRole.MASTER)
+  @ResponseMessage('Customer approved')
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOperation({
+    summary: 'Approve a pending self-registration',
+    description:
+      'Assigns an owner and activates the account in one step. Master only — excluded from the default list, a pending customer only appears when filtering `status=pending`.',
+  })
+  @ApiOkData(CustomerResponseDto)
+  @ApiErrors(401, 403, 404, 422)
+  approve(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReassignCustomerDto,
+  ): Promise<CustomerResponseDto> {
+    return this.customersService.approve(actor, id, dto);
   }
 
   @Post('bulk/status')

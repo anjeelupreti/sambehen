@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { and, eq, gte, inArray, isNull, sql, SQL, count, sum } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNull, ne, sql, SQL, count, sum } from 'drizzle-orm';
 import { AuthRealm, CustomerStatus, SortOrder, StaffRole } from '@common/constants/app.constants';
 import { ErrorCode } from '@common/constants/error-codes';
 import {
+  BusinessException,
+  CapabilityDeniedException,
   ResourceConflictException,
   ResourceNotFoundException,
 } from '@common/exceptions/business.exception';
@@ -64,11 +66,19 @@ export class CustomersService {
     // The scope predicate comes first and is never optional.
     const scope = await this.scopeService.customerScope(actor, {
       managerId: filters.managerId,
-      runnerId: filters.runnerId,
+      storeId: filters.storeId,
     });
     if (scope) conditions.push(scope);
 
-    if (filters.status) conditions.push(eq(customers.status, filters.status));
+    if (filters.status) {
+      conditions.push(eq(customers.status, filters.status));
+    } else {
+      // Pending self-registrations have no owner and nothing else about
+      // them behaves like a real customer yet — they only belong in the
+      // main list once a master explicitly asks with `status=pending`,
+      // not mixed into an unfiltered view with a blank Owner column.
+      conditions.push(ne(customers.status, CustomerStatus.PENDING));
+    }
     if (filters.city) conditions.push(eq(customers.city, filters.city));
     if (filters.country) conditions.push(eq(customers.country, filters.country));
     if (filters.emailOptOut !== undefined) {
@@ -106,12 +116,18 @@ export class CustomersService {
   ): Promise<IPaginatedResult<CustomerResponseDto, CustomerListSummaryDto>> {
     const conditions = await this.buildListConditions(actor, filters);
 
-    const result = await this.customerRepository.findPaginated(filters, {
-      conditions,
-      searchColumns: this.customerRepository.searchColumns,
-      sortableColumns: this.customerRepository.sortableColumns,
-      defaultSort: { column: customers.createdAt, order: SortOrder.DESC },
-    });
+    // The summary aggregates over the same WHERE clause, not the page's
+    // rows, so it depends only on `conditions`/`filters` and can run
+    // alongside the page query rather than after it.
+    const [result, summary] = await Promise.all([
+      this.customerRepository.findPaginated(filters, {
+        conditions,
+        searchColumns: this.customerRepository.searchColumns,
+        sortableColumns: this.customerRepository.sortableColumns,
+        defaultSort: { column: customers.createdAt, order: SortOrder.DESC },
+      }),
+      this.summarise(conditions, filters),
+    ]);
 
     // Owner names and money aggregates are resolved for the page only, so
     // the list query stays a plain indexed scan rather than a wide join.
@@ -123,7 +139,7 @@ export class CustomersService {
     return {
       data: result.data.map((row) => this.toResponse(row, ownerNames, totals.get(row.id))),
       meta: result.meta,
-      summary: await this.summarise(conditions, filters),
+      summary,
     };
   }
 
@@ -249,12 +265,11 @@ export class CustomersService {
   }
 
   async create(actor: ICurrentStaff, dto: CreateCustomerDto): Promise<CustomerResponseDto> {
-    // A runner can only ever create customers for themselves, so the
+    // A store can only ever create customers for themselves, so the
     // supplied ownerStaffId is ignored rather than validated.
-    const ownerStaffId =
-      actor.role === StaffRole.RUNNER ? actor.id : (dto.ownerStaffId ?? actor.id);
+    const ownerStaffId = actor.role === StaffRole.STORE ? actor.id : (dto.ownerStaffId ?? actor.id);
 
-    // A manager assigning to a runner must own that runner; reuse the same
+    // A manager assigning to a store must own that store; reuse the same
     // check the staff module uses rather than re-deriving it here.
     if (ownerStaffId !== actor.id) {
       await this.assertCanAssignTo(actor, ownerStaffId);
@@ -370,6 +385,25 @@ export class CustomersService {
     dto: ChangeCustomerStatusDto,
   ): Promise<CustomerResponseDto> {
     const existing = await this.requireScoped(actor, id);
+
+    // `chk_customers_ownership` requires all three ownership columns null
+    // while pending and all three set otherwise — this endpoint never
+    // touches ownership, so it cannot legally move a row into or out of
+    // pending. Approving (which assigns an owner in the same write) is the
+    // only supported way out of pending.
+    if (dto.status === CustomerStatus.PENDING) {
+      throw new BusinessException(
+        ErrorCode.CUSTOMER_PENDING_REQUIRES_APPROVAL,
+        'A customer cannot be set back to pending',
+      );
+    }
+    if (existing.status === CustomerStatus.PENDING) {
+      throw new BusinessException(
+        ErrorCode.CUSTOMER_PENDING_REQUIRES_APPROVAL,
+        'This customer is awaiting approval — use the approve action, which assigns an owner at the same time',
+      );
+    }
+
     const updated = await this.customerRepository.update(id, { status: dto.status });
 
     // Suspension and banning must end access immediately, not whenever the
@@ -418,9 +452,62 @@ export class CustomersService {
       {
         ownerStaffId: existing.ownerStaffId,
         managerId: existing.managerId,
-        runnerId: existing.runnerId,
+        storeId: existing.storeId,
       },
       { ownerStaffId: dto.ownerStaffId },
+    );
+
+    const updated = await this.customerRepository.findById(id);
+    return this.toResponse(updated as Customer);
+  }
+
+  /**
+   * Approves a pending self-registration: assigns an owner and activates
+   * the account in one step, since a pending customer cannot hold a valid
+   * ownership shape any other way — `chk_customers_ownership` requires
+   * either all three ownership columns null (pending) or all three set
+   * (everything else), so there is no intermediate "active, unowned" state
+   * to pass through.
+   *
+   * Master only. A pending customer has no manager or store yet, so there
+   * is no chain for anyone else to act within — the same reason
+   * `requireScoped` still finds it here: a master's scope has no
+   * restriction, while every other role's predicate keys off a managerId
+   * or storeId this row does not have.
+   */
+  async approve(
+    actor: ICurrentStaff,
+    id: string,
+    dto: ReassignCustomerDto,
+  ): Promise<CustomerResponseDto> {
+    if (actor.role !== StaffRole.MASTER) {
+      throw new CapabilityDeniedException(
+        ErrorCode.AUTH_FORBIDDEN_ROLE,
+        'Only a master can approve a pending registration',
+      );
+    }
+
+    const existing = await this.requireScoped(actor, id);
+    if (existing.status !== CustomerStatus.PENDING) {
+      throw new BusinessException(
+        ErrorCode.CUSTOMER_NOT_PENDING,
+        'This customer is not awaiting approval',
+      );
+    }
+
+    const ownership = await this.assignmentService.resolveOwnership(dto.ownerStaffId);
+
+    await this.db
+      .update(customers)
+      .set({ ...ownership, status: CustomerStatus.ACTIVE })
+      .where(eq(customers.id, id));
+
+    await this.audit(
+      actor,
+      'customer.approve',
+      id,
+      { status: existing.status },
+      { status: CustomerStatus.ACTIVE, ownerStaffId: dto.ownerStaffId },
     );
 
     const updated = await this.customerRepository.findById(id);
@@ -451,6 +538,13 @@ export class CustomersService {
     ids: string[],
     status: CustomerStatus,
   ): Promise<{ updated: number; skipped: number }> {
+    if (status === CustomerStatus.PENDING) {
+      throw new BusinessException(
+        ErrorCode.CUSTOMER_PENDING_REQUIRES_APPROVAL,
+        'A customer cannot be set back to pending',
+      );
+    }
+
     const permitted = await this.intersectWithScope(actor, ids);
 
     if (permitted.length > 0) {
@@ -504,9 +598,21 @@ export class CustomersService {
   // ── Internals ───────────────────────────────────────────────
 
   /** Narrows caller-supplied ids to those actually inside the actor's scope. */
+  /**
+   * Also excludes pending customers, shared by every bulk operation
+   * (status change, reassign): both write only part of the ownership/status
+   * shape a pending row requires atomically — status change never touches
+   * ownership, reassign never touches status — so neither can move a row
+   * into or out of pending without violating `chk_customers_ownership`.
+   * `approve` is the only write built to do both at once.
+   */
   private async intersectWithScope(actor: ICurrentStaff, ids: string[]): Promise<string[]> {
     const scope = await this.scopeService.customerScope(actor);
-    const conditions: SQL[] = [inArray(customers.id, ids), isNull(customers.deletedAt)];
+    const conditions: SQL[] = [
+      inArray(customers.id, ids),
+      isNull(customers.deletedAt),
+      ne(customers.status, CustomerStatus.PENDING),
+    ];
     if (scope) conditions.push(scope);
 
     const rows = await this.db
@@ -557,7 +663,7 @@ export class CustomersService {
   private async resolveOwnerNames(rows: Customer[]): Promise<Map<string, string>> {
     const ids = [
       ...new Set(
-        rows.flatMap((row) => [row.managerId, row.runnerId].filter((id): id is string => !!id)),
+        rows.flatMap((row) => [row.managerId, row.storeId].filter((id): id is string => !!id)),
       ),
     ];
     if (ids.length === 0) return new Map();
@@ -611,9 +717,9 @@ export class CustomersService {
       bonusBalance: customer.bonusBalance,
       ownerStaffId: customer.ownerStaffId,
       managerId: customer.managerId,
-      runnerId: customer.runnerId,
+      storeId: customer.storeId,
       managerUsername: customer.managerId ? (ownerNames?.get(customer.managerId) ?? null) : null,
-      runnerUsername: customer.runnerId ? (ownerNames?.get(customer.runnerId) ?? null) : null,
+      storeUsername: customer.storeId ? (ownerNames?.get(customer.storeId) ?? null) : null,
       emailOptOut: customer.emailOptOut,
       lastActivityAt: customer.lastActivityAt,
       lastLoginAt: customer.lastLoginAt,

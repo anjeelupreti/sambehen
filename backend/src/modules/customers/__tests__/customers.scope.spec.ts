@@ -19,7 +19,7 @@ import { CustomerFilterDto } from '../dto/customer.dto';
 const MASTER_ID = '11111111-1111-4111-8111-111111111111';
 const MANAGER_A = '22222222-2222-4222-8222-222222222222';
 const MANAGER_B = '33333333-3333-4333-8333-333333333333';
-const RUNNER_A1 = '44444444-4444-4444-8444-444444444444';
+const STORE_A1 = '44444444-4444-4444-8444-444444444444';
 
 const staff = (role: StaffRole, id: string, parentId: string | null): ICurrentStaff => ({
   id,
@@ -32,7 +32,7 @@ const staff = (role: StaffRole, id: string, parentId: string | null): ICurrentSt
 
 const master = staff(StaffRole.MASTER, MASTER_ID, null);
 const managerA = staff(StaffRole.MANAGER, MANAGER_A, MASTER_ID);
-const runnerA1 = staff(StaffRole.RUNNER, RUNNER_A1, MANAGER_A);
+const storeA1 = staff(StaffRole.STORE, STORE_A1, MANAGER_A);
 
 const dialect = new PgDialect();
 const renderAll = (conditions: SQL[]): string =>
@@ -88,7 +88,7 @@ describe('CustomersService — scope composition', () => {
 
     expect(scopeService.customerScope).toHaveBeenCalledWith(managerA, {
       managerId: undefined,
-      runnerId: undefined,
+      storeId: undefined,
     });
     expect(conditions.length).toBeGreaterThanOrEqual(2); // soft-delete + scope
   });
@@ -98,7 +98,7 @@ describe('CustomersService — scope composition', () => {
 
     const filters = new CustomerFilterDto();
     filters.managerId = MANAGER_B;
-    filters.runnerId = RUNNER_A1;
+    filters.storeId = STORE_A1;
 
     await service.buildListConditions(master, filters);
 
@@ -106,7 +106,7 @@ describe('CustomersService — scope composition', () => {
     // whether the actor is allowed to narrow that way.
     expect(scopeService.customerScope).toHaveBeenCalledWith(master, {
       managerId: MANAGER_B,
-      runnerId: RUNNER_A1,
+      storeId: STORE_A1,
     });
   });
 
@@ -135,7 +135,7 @@ describe('CustomersService — scope composition', () => {
       const filters = new CustomerFilterDto();
       filters.isActive = true;
 
-      const sql = renderAll(await service.buildListConditions(runnerA1, filters));
+      const sql = renderAll(await service.buildListConditions(storeA1, filters));
 
       // Both halves must be present: status alone would call a dormant
       // account active, and recency alone would include suspended ones.
@@ -147,7 +147,7 @@ describe('CustomersService — scope composition', () => {
       const filters = new CustomerFilterDto();
       filters.isActive = false;
 
-      const sql = renderAll(await service.buildListConditions(runnerA1, filters));
+      const sql = renderAll(await service.buildListConditions(storeA1, filters));
 
       // A customer who has never been active must appear in the inactive
       // list; without the null check they would fall out of both.
@@ -155,7 +155,7 @@ describe('CustomersService — scope composition', () => {
     });
 
     it('is omitted entirely when the filter is absent', async () => {
-      const sql = renderAll(await service.buildListConditions(runnerA1, new CustomerFilterDto()));
+      const sql = renderAll(await service.buildListConditions(storeA1, new CustomerFilterDto()));
 
       expect(sql).not.toContain('last_activity_at');
     });

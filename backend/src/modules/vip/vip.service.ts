@@ -199,7 +199,7 @@ export class VipService {
   /**
    * VIPs across every criteria and time frame.
    *
-   * Scoped through the owning customer, so a runner sees only their own
+   * Scoped through the owning customer, so a store sees only their own
    * customers' qualifications. `activeOnly` narrows to windows containing
    * today — the current VIPs — while omitting it gives the historical
    * picture the spec asks for.
@@ -212,10 +212,11 @@ export class VipService {
 
     const scope = await this.scopeService.customerScope(actor, {
       managerId: filters.managerId,
-      runnerId: filters.runnerId,
+      storeId: filters.storeId,
     });
     if (scope) conditions.push(scope);
 
+    if (filters.customerId) conditions.push(eq(vipQualifications.customerId, filters.customerId));
     if (filters.criteriaId) conditions.push(eq(vipQualifications.criteriaId, filters.criteriaId));
     if (filters.tier) conditions.push(eq(vipCriteria.tier, filters.tier));
     if (filters.activeOnly) {

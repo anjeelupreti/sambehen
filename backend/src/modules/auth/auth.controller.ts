@@ -20,6 +20,7 @@ import {
   StaffProfileDto,
   CustomerProfileDto,
 } from './dto/auth.dto';
+import { RegisterCustomerDto } from '@modules/customers/dto/customer.dto';
 
 /**
  * Separate login gateways for the two realms.
@@ -46,7 +47,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @ResponseMessage('Signed in successfully')
   @ApiOperation({
-    summary: 'Team login (master, manager, runner)',
+    summary: 'Team login (master, manager, store)',
     description:
       'Accepts an email address or username. Unknown accounts and wrong passwords are reported identically, and take comparable time, so the endpoint cannot be used to enumerate accounts.',
   })
@@ -139,6 +140,23 @@ export class AuthController {
 
   // ── Customer gateway ────────────────────────────────────────
 
+  @Post('customer/register')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ResponseMessage('Registration received')
+  @ApiOperation({
+    summary: 'Customer self-registration',
+    description:
+      'Creates a pending account with no owner — a master must approve it and assign a manager or store before it can sign in. Same rate limit as login, since this is another unauthenticated write keyed on a caller-supplied identifier.',
+  })
+  @ApiOkMessage('Registration received. A team member will review your account shortly.')
+  @ApiErrors(409, 422, 429)
+  async registerCustomer(@Body() dto: RegisterCustomerDto): Promise<null> {
+    await this.authService.registerCustomer(dto);
+    return null;
+  }
+
   @Post('customer/login')
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -184,7 +202,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Claims of the signed-in customer',
     description:
-      'Read-only. Customers cannot modify their own profile or credentials; those changes are made by the master, their manager, or their runner.',
+      'Read-only. Customers cannot modify their own profile or credentials; those changes are made by the master, their manager, or their store.',
   })
   @ApiOkData(CustomerProfileDto)
   @ApiErrors(401)

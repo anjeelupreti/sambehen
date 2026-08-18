@@ -246,8 +246,7 @@ export class CustomerImportService {
    * past — the check that matters is the one at write time.
    */
   async commit(actor: ICurrentStaff, dto: CommitImportDto): Promise<CommitImportResponseDto> {
-    const ownerStaffId =
-      actor.role === StaffRole.RUNNER ? actor.id : (dto.ownerStaffId ?? actor.id);
+    const ownerStaffId = actor.role === StaffRole.STORE ? actor.id : (dto.ownerStaffId ?? actor.id);
 
     const ownership = await this.assignmentService.resolveOwnership(ownerStaffId);
     const passwordHash = await HashUtil.hashPassword(dto.password);

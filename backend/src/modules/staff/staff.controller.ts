@@ -30,7 +30,7 @@ import {
   CreateStaffDto,
   UpdateStaffDto,
   ResetStaffPasswordDto,
-  ReassignRunnerDto,
+  ReassignStoreDto,
   StaffFilterDto,
   StaffResponseDto,
 } from './dto/staff.dto';
@@ -41,7 +41,7 @@ import {
  * Role checks here answer "may this role perform this action". Which rows
  * an actor may see or touch is decided by ScopeService in the service
  * layer, so a manager listing staff sees only themselves and their own
- * runners regardless of what they request.
+ * stores regardless of what they request.
  *
  * Auditing note: these routes carry no @Auditable decorator. StaffService
  * already records every mutation with before/after state, and adding the
@@ -59,9 +59,9 @@ export class StaffController {
   @TeamAuth(StaffRole.MASTER, StaffRole.MANAGER)
   @ResponseMessage('Staff member created successfully')
   @ApiOperation({
-    summary: 'Create a manager or runner',
+    summary: 'Create a manager or store',
     description:
-      "A master creates managers, and runners under an explicit manager. A manager creates runners only, always attached to themselves — a supplied parentId is ignored, so a runner cannot be planted in another manager's team.",
+      "A master creates managers, and stores under an explicit manager. A manager creates stores only, always attached to themselves — a supplied parentId is ignored, so a store cannot be planted in another manager's team.",
   })
   @ApiCreatedData(StaffResponseDto, 'Staff member created')
   @ApiErrors(401, 403, 409, 422)
@@ -77,7 +77,7 @@ export class StaffController {
   @ApiOperation({
     summary: "List staff within the actor's scope",
     description:
-      'Master sees all staff; a manager sees themselves and their own runners; a runner sees only themselves.',
+      'Master sees all staff; a manager sees themselves and their own stores; a store sees only themselves.',
   })
   @ApiOkList(StaffResponseDto)
   @ApiErrors(401, 422)
@@ -198,21 +198,21 @@ export class StaffController {
 
   @Patch(':id/reassign')
   @TeamAuth(StaffRole.MASTER)
-  @ResponseMessage('Runner reassigned successfully')
+  @ResponseMessage('Store reassigned successfully')
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOperation({
-    summary: 'Move a runner to a different manager',
+    summary: 'Move a store to a different manager',
     description:
-      'Rewrites the denormalised managerId on every customer of that runner, in the same transaction. Master only.',
+      'Rewrites the denormalised managerId on every customer of that store, in the same transaction. Master only.',
   })
   @ApiOkData(StaffResponseDto)
   @ApiErrors(401, 403, 404, 422)
   reassign(
     @CurrentStaff() actor: ICurrentStaff,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: ReassignRunnerDto,
+    @Body() dto: ReassignStoreDto,
   ): Promise<StaffResponseDto> {
-    return this.staffService.reassignRunner(actor, id, dto);
+    return this.staffService.reassignStore(actor, id, dto);
   }
 
   @Delete(':id')

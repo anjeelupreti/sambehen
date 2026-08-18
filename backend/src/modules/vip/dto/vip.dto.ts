@@ -185,6 +185,11 @@ export class VipCriteriaFilterDto extends BaseFilterDto {
 }
 
 export class VipFilterDto extends BaseFilterDto {
+  @ApiPropertyOptional({ format: 'uuid', description: 'Restrict to one customer.' })
+  @IsUUID('4')
+  @IsOptional()
+  customerId?: string;
+
   @ApiPropertyOptional({ format: 'uuid', description: 'Restrict to one criteria.' })
   @IsUUID('4')
   @IsOptional()
@@ -210,10 +215,10 @@ export class VipFilterDto extends BaseFilterDto {
   @IsOptional()
   managerId?: string;
 
-  @ApiPropertyOptional({ format: 'uuid', description: "Master, or a manager's own runner." })
+  @ApiPropertyOptional({ format: 'uuid', description: "Master, or a manager's own store." })
   @IsUUID('4')
   @IsOptional()
-  runnerId?: string;
+  storeId?: string;
 
   @ApiPropertyOptional({
     enum: VIP_SORT_FIELDS,

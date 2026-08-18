@@ -52,7 +52,7 @@ export class DashboardService {
   /**
    * The full staff dashboard.
    *
-   * Every figure is scoped: a runner sees their own customers, a manager
+   * Every figure is scoped: a store sees their own customers, a manager
    * their chain, a master the business. The scope predicate is resolved
    * once and reused across all the aggregates, so no metric can be
    * computed against a different visibility than its neighbours.
@@ -239,19 +239,24 @@ export class DashboardService {
 
     const [row] = await this.db
       .select({
-        total: count(),
+        // Pending self-registrations are counted separately below; they
+        // are not yet "a customer" in any sense these figures track — no
+        // owner, no activity, nothing that active/inactive distinguishes.
+        total: sql<number>`COUNT(*) FILTER (WHERE ${customers.status} != ${CustomerStatus.PENDING})`,
         active: sql<number>`COUNT(*) FILTER (
           WHERE ${customers.status} = ${CustomerStatus.ACTIVE}
             AND ${customers.lastActivityAt} >= ${cutoff}
         )`,
         inactive: sql<number>`COUNT(*) FILTER (
-          WHERE ${customers.status} <> ${CustomerStatus.ACTIVE}
-             OR ${customers.lastActivityAt} IS NULL
-             OR ${customers.lastActivityAt} < ${cutoff}
+          WHERE ${customers.status} NOT IN (${CustomerStatus.ACTIVE}, ${CustomerStatus.PENDING})
+             OR (${customers.status} = ${CustomerStatus.ACTIVE}
+                 AND (${customers.lastActivityAt} IS NULL OR ${customers.lastActivityAt} < ${cutoff}))
         )`,
         newThisMonth: sql<number>`COUNT(*) FILTER (
           WHERE ${customers.registeredAt} >= date_trunc('month', CURRENT_DATE)
+            AND ${customers.status} != ${CustomerStatus.PENDING}
         )`,
+        pendingApproval: sql<number>`COUNT(*) FILTER (WHERE ${customers.status} = ${CustomerStatus.PENDING})`,
       })
       .from(customers)
       .where(and(...conditions));
@@ -261,6 +266,7 @@ export class DashboardService {
       active: Number(row?.active ?? 0),
       inactive: Number(row?.inactive ?? 0),
       newThisMonth: Number(row?.newThisMonth ?? 0),
+      pendingApproval: Number(row?.pendingApproval ?? 0),
     };
   }
 
@@ -336,14 +342,14 @@ export class DashboardService {
   /**
    * Breakdown one level below the actor.
    *
-   * A master sees per-manager totals, a manager sees per-runner. A runner
+   * A master sees per-manager totals, a manager sees per-store. A store
    * is a leaf and gets an empty array rather than a row for themselves,
    * which would just restate the headline figures.
    */
   private async teamRollup(actor: ICurrentStaff): Promise<TeamRollupRowDto[]> {
-    if (actor.role === StaffRole.RUNNER) return [];
+    if (actor.role === StaffRole.STORE) return [];
 
-    const childRole = actor.role === StaffRole.MASTER ? StaffRole.MANAGER : StaffRole.RUNNER;
+    const childRole = actor.role === StaffRole.MASTER ? StaffRole.MANAGER : StaffRole.STORE;
 
     const children = await this.db
       .select({ id: staffUsers.id, username: staffUsers.username, role: staffUsers.role })
@@ -358,10 +364,10 @@ export class DashboardService {
 
     if (children.length === 0) return [];
 
-    // A manager's row aggregates their whole chain; a runner's row covers
+    // A manager's row aggregates their whole chain; a store's row covers
     // only the customers they own directly.
     const ownershipColumn =
-      childRole === StaffRole.MANAGER ? customers.managerId : customers.runnerId;
+      childRole === StaffRole.MANAGER ? customers.managerId : customers.storeId;
 
     const rows = await this.db
       .select({

@@ -33,8 +33,8 @@ import {
  * rather than customer ownership), and no reason for a customer thread and
  * an internal one to ever be confused with each other.
  *
- * Who may message whom: a runner may reach their own manager or any
- * master; a manager may reach their own runners or any master; a master
+ * Who may message whom: a store may reach their own manager or any
+ * master; a manager may reach their own stores or any master; a master
  * may reach anyone. Either side may open the conversation — there is no
  * "senior speaks first" gate here, unlike the customer-facing flow.
  */
@@ -49,7 +49,7 @@ export class StaffMessagingController {
   @ApiOperation({
     summary: 'Staff the actor may open a DM with',
     description:
-      'Scoped by hierarchy: a runner sees their own manager and any master; a manager sees their own runners and any master; a master sees everyone.',
+      'Scoped by hierarchy: a store sees their own manager and any master; a manager sees their own stores and any master; a master sees everyone.',
   })
   @ApiOkList(StaffContactDto)
   @ApiErrors(401)

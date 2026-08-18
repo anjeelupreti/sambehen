@@ -22,7 +22,7 @@ import {
   CreateStaffDto,
   UpdateStaffDto,
   ResetStaffPasswordDto,
-  ReassignRunnerDto,
+  ReassignStoreDto,
   StaffFilterDto,
   StaffResponseDto,
 } from './dto/staff.dto';
@@ -39,14 +39,14 @@ export class StaffService {
   ) {}
 
   /**
-   * Creates a manager or a runner.
+   * Creates a manager or a store.
    *
    * Who may create what:
-   *   master  -> managers (parent = the master) and runners (parent must
+   *   master  -> managers (parent = the master) and stores (parent must
    *              be an explicit manager)
-   *   manager -> runners only, always parented to themselves. The
+   *   manager -> stores only, always parented to themselves. The
    *              supplied parentId is ignored rather than validated, so a
-   *              manager cannot plant a runner in another manager's team.
+   *              manager cannot plant a store in another manager's team.
    */
   async create(actor: ICurrentStaff, dto: CreateStaffDto): Promise<StaffResponseDto> {
     if (dto.role === StaffRole.MASTER) {
@@ -263,30 +263,30 @@ export class StaffService {
   }
 
   /**
-   * Moves a runner to a different manager.
+   * Moves a store to a different manager.
    *
-   * The runner's customers carry a denormalised managerId, so it must be
+   * The store's customers carry a denormalised managerId, so it must be
    * rewritten in the same transaction. Skipping that would leave the old
    * manager still seeing those customers and the new one unable to — a
    * scope leak in both directions.
    */
-  async reassignRunner(
+  async reassignStore(
     actor: ICurrentStaff,
-    runnerId: string,
-    dto: ReassignRunnerDto,
+    storeId: string,
+    dto: ReassignStoreDto,
   ): Promise<StaffResponseDto> {
     if (actor.role !== StaffRole.MASTER) {
       throw new CapabilityDeniedException(
         ErrorCode.AUTH_FORBIDDEN_ROLE,
-        'Only a master can move a runner between managers',
+        'Only a master can move a store between managers',
       );
     }
 
-    const runner = await this.requireStaff(runnerId);
-    if (runner.role !== StaffRole.RUNNER) {
+    const store = await this.requireStaff(storeId);
+    if (store.role !== StaffRole.STORE) {
       throw new BusinessException(
         ErrorCode.STAFF_INVALID_HIERARCHY,
-        'Only a runner can be reassigned to a manager',
+        'Only a store can be reassigned to a manager',
       );
     }
 
@@ -302,11 +302,11 @@ export class StaffService {
       await tx
         .update(staffUsers)
         .set({ parentId: dto.newManagerId })
-        .where(eq(staffUsers.id, runnerId));
+        .where(eq(staffUsers.id, storeId));
 
-      return this.assignmentService.recascadeRunnerCustomers(
+      return this.assignmentService.recascadeStoreCustomers(
         tx as unknown as DrizzleDB,
-        runnerId,
+        storeId,
         dto.newManagerId,
       );
     });
@@ -315,15 +315,15 @@ export class StaffService {
       actorType: AuthRealm.TEAM,
       actorId: actor.id,
       actorRole: actor.role,
-      action: 'staff.reassign_runner',
+      action: 'staff.reassign_store',
       entityType: 'staff',
-      entityId: runnerId,
-      before: { parentId: runner.parentId },
+      entityId: storeId,
+      before: { parentId: store.parentId },
       after: { parentId: dto.newManagerId },
       metadata: { customersRecascaded: cascaded },
     });
 
-    const updated = await this.staffRepository.findById(runnerId);
+    const updated = await this.staffRepository.findById(storeId);
     return this.toResponse(updated as StaffUser);
   }
 
@@ -331,7 +331,7 @@ export class StaffService {
    * Soft-deletes an account.
    *
    * Refused while direct reports remain, because deleting a manager with
-   * runners would orphan them and, through the denormalised managerId,
+   * stores would orphan them and, through the denormalised managerId,
    * strand their customers outside every visible scope.
    */
   async remove(actor: ICurrentStaff, id: string): Promise<null> {
@@ -363,21 +363,21 @@ export class StaffService {
   // ── Internals ───────────────────────────────────────────────
 
   private async resolveParent(actor: ICurrentStaff, dto: CreateStaffDto): Promise<string> {
-    if (actor.role === StaffRole.RUNNER) {
+    if (actor.role === StaffRole.STORE) {
       throw new CapabilityDeniedException(
         ErrorCode.AUTH_FORBIDDEN_ROLE,
-        'Runners cannot create staff accounts',
+        'Stores cannot create staff accounts',
       );
     }
 
     if (actor.role === StaffRole.MANAGER) {
-      if (dto.role !== StaffRole.RUNNER) {
+      if (dto.role !== StaffRole.STORE) {
         throw new CapabilityDeniedException(
           ErrorCode.AUTH_FORBIDDEN_ROLE,
-          'Managers can only create runners',
+          'Managers can only create stores',
         );
       }
-      // Deliberately ignores dto.parentId: a manager's runners always
+      // Deliberately ignores dto.parentId: a manager's stores always
       // attach to that manager, so a supplied id cannot redirect them.
       return actor.id;
     }
@@ -390,7 +390,7 @@ export class StaffService {
     if (!dto.parentId) {
       throw new BusinessException(
         ErrorCode.STAFF_INVALID_HIERARCHY,
-        'parentId is required: a runner must be assigned to a manager',
+        'parentId is required: a store must be assigned to a manager',
       );
     }
 

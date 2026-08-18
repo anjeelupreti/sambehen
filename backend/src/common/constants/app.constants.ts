@@ -14,11 +14,11 @@ export enum AuthRealm {
   CUSTOMER = 'customer',
 }
 
-/** Business-side roles. Hierarchy: master -> manager -> runner. */
+/** Business-side roles. Hierarchy: master -> manager -> store. */
 export enum StaffRole {
   MASTER = 'master',
   MANAGER = 'manager',
-  RUNNER = 'runner',
+  STORE = 'store',
 }
 
 /**
@@ -28,10 +28,12 @@ export enum StaffRole {
 export const STAFF_ROLE_RANK: Readonly<Record<StaffRole, number>> = Object.freeze({
   [StaffRole.MASTER]: 3,
   [StaffRole.MANAGER]: 2,
-  [StaffRole.RUNNER]: 1,
+  [StaffRole.STORE]: 1,
 });
 
 export enum CustomerStatus {
+  /** Self-registered, not yet reviewed. Cannot sign in until a master approves it. */
+  PENDING = 'pending',
   ACTIVE = 'active',
   INACTIVE = 'inactive',
   SUSPENDED = 'suspended',

@@ -43,7 +43,7 @@ const room = {
  *
  * Fan-out is by identity room, not by conversation. Joining every
  * conversation a master can see would mean thousands of rooms per socket;
- * instead each message resolves its owning runner and manager and emits to
+ * instead each message resolves its owning store and manager and emits to
  * at most four rooms. Work per message is constant regardless of how many
  * customers the chain holds.
  *
@@ -131,7 +131,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     this.server.to(room.customer(event.customerId)).emit('message:new', customerView);
 
     const staffRooms = [room.masters()];
-    if (event.runnerId) staffRooms.push(room.staff(event.runnerId));
+    if (event.storeId) staffRooms.push(room.staff(event.storeId));
     if (event.managerId) staffRooms.push(room.staff(event.managerId));
 
     this.server.to(staffRooms).emit('message:new', {
@@ -166,9 +166,9 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     if (!principal) return;
 
     if (principal.realm === AuthRealm.CUSTOMER) {
-      const { managerId, runnerId } = await this.messagingService.recipientsFor(principal.id);
+      const { managerId, storeId } = await this.messagingService.recipientsFor(principal.id);
       const rooms = [room.masters()];
-      if (runnerId) rooms.push(room.staff(runnerId));
+      if (storeId) rooms.push(room.staff(storeId));
       if (managerId) rooms.push(room.staff(managerId));
 
       this.server.to(rooms).emit('typing', {

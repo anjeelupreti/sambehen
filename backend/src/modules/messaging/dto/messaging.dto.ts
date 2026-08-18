@@ -103,7 +103,7 @@ export class ConversationFilterDto extends BaseFilterDto {
 
   @ApiPropertyOptional({
     description:
-      'Only conversations with messages the CURRENT VIEWER has not read. Unread is per viewer: a message read by the runner is still unread for their manager.',
+      'Only conversations with messages the CURRENT VIEWER has not read. Unread is per viewer: a message read by the store is still unread for their manager.',
   })
   @IsBoolean()
   @IsOptional()
@@ -140,10 +140,10 @@ export class ConversationFilterDto extends BaseFilterDto {
   @IsOptional()
   managerId?: string;
 
-  @ApiPropertyOptional({ format: 'uuid', description: "Master, or a manager's own runner." })
+  @ApiPropertyOptional({ format: 'uuid', description: "Master, or a manager's own store." })
   @IsUUID('4')
   @IsOptional()
-  runnerId?: string;
+  storeId?: string;
 
   @ApiPropertyOptional({
     enum: CONVERSATION_SORT_FIELDS,
@@ -249,7 +249,7 @@ export class ConversationResponseDto {
   managerId!: string | null;
 
   @ApiProperty({ type: String, format: 'uuid', nullable: true })
-  runnerId!: string | null;
+  storeId!: string | null;
 }
 
 /** Inbox metrics over the whole filtered set, not the current page. */

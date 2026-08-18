@@ -69,7 +69,7 @@ export class RecipientFilterService {
 
     const scope = await this.scopeService.customerScope(actor, {
       managerId: filter.managerId,
-      runnerId: filter.runnerId,
+      storeId: filter.storeId,
     });
     if (scope) conditions.push(scope);
 

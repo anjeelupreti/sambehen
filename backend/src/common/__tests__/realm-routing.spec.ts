@@ -197,10 +197,10 @@ describe('Realm routing', () => {
         .expect(200);
     });
 
-    it('refuses a runner with 403, not 401', async () => {
+    it('refuses a store with 403, not 401', async () => {
       const res = await request(app.getHttpServer())
         .get('/probe/master-only')
-        .set('Authorization', `Bearer ${teamToken({ role: StaffRole.RUNNER })}`)
+        .set('Authorization', `Bearer ${teamToken({ role: StaffRole.STORE })}`)
         .expect(403);
 
       expect(res.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);

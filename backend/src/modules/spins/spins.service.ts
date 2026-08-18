@@ -355,7 +355,7 @@ export class SpinsService {
    * Deliberately separate from `recentWinners`. That feed is public-facing
    * and therefore masked and unscoped; this one names the customer, so it
    * is scoped through the customer exactly like transactions and referrals
-   * are. A runner sees wins by their own customers and nobody else's —
+   * are. A store sees wins by their own customers and nobody else's —
    * otherwise the register would become a way to enumerate accounts in
    * another manager's chain, which is precisely what the masking in the
    * public feed exists to prevent.
@@ -368,7 +368,7 @@ export class SpinsService {
 
     const scope = await this.scopeService.customerIdScope(sql`${spinWinners.customerId}`, actor, {
       managerId: filters.managerId,
-      runnerId: filters.runnerId,
+      storeId: filters.storeId,
     });
     if (scope) conditions.push(scope);
 
@@ -392,10 +392,10 @@ export class SpinsService {
     const limit = Math.min(Math.max(1, filters.limit ?? 25), 100);
     const where = and(...conditions);
 
-    // Managers and runners are joined for display only; ownership is
+    // Managers and stores are joined for display only; ownership is
     // already enforced by the scope predicate above.
     const managers = alias(staffUsers, 'winner_manager');
-    const runners = alias(staffUsers, 'winner_runner');
+    const stores = alias(staffUsers, 'winner_store');
 
     const [rows, [totalRow], [summaryRow]] = await Promise.all([
       this.db
@@ -408,7 +408,7 @@ export class SpinsService {
           customerUsername: customers.username,
           customerFullName: customers.fullName,
           managerUsername: managers.username,
-          runnerUsername: runners.username,
+          storeUsername: stores.username,
           prizeLabel: spinWinners.prizeLabel,
           prizeAmount: spinWinners.prizeAmount,
           rank: spinWinners.rank,
@@ -419,7 +419,7 @@ export class SpinsService {
         .innerJoin(spinEvents, eq(spinWinners.spinEventId, spinEvents.id))
         .innerJoin(customers, eq(spinWinners.customerId, customers.id))
         .leftJoin(managers, eq(customers.managerId, managers.id))
-        .leftJoin(runners, eq(customers.runnerId, runners.id))
+        .leftJoin(stores, eq(customers.storeId, stores.id))
         .where(where)
         .orderBy(...this.winnerOrder(filters))
         .limit(limit)

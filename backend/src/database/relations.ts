@@ -12,13 +12,13 @@ import { transactions } from './schema/transactions.schema';
  * cleanly at import time.
  */
 export const staffUsersRelations = relations(staffUsers, ({ one, many }) => ({
-  /** The managing staff member: a runner's manager, or a manager's master. */
+  /** The managing staff member: a store's manager, or a manager's master. */
   parent: one(staffUsers, {
     fields: [staffUsers.parentId],
     references: [staffUsers.id],
     relationName: 'staff_hierarchy',
   }),
-  /** Direct reports: a master's managers, or a manager's runners. */
+  /** Direct reports: a master's managers, or a manager's stores. */
   subordinates: many(staffUsers, { relationName: 'staff_hierarchy' }),
 
   ownedCustomers: many(customers, { relationName: 'customer_owner' }),
@@ -54,7 +54,7 @@ export const transactionsRelations = relations(transactions, ({ one, many }) => 
 
 export const customersRelations = relations(customers, ({ one, many }) => ({
   transactions: many(transactions),
-  /** Source of truth for ownership: a runner or a manager. */
+  /** Source of truth for ownership: a store or a manager. */
   owner: one(staffUsers, {
     fields: [customers.ownerStaffId],
     references: [staffUsers.id],
@@ -65,10 +65,10 @@ export const customersRelations = relations(customers, ({ one, many }) => ({
     references: [staffUsers.id],
     relationName: 'customer_manager',
   }),
-  runner: one(staffUsers, {
-    fields: [customers.runnerId],
+  store: one(staffUsers, {
+    fields: [customers.storeId],
     references: [staffUsers.id],
-    relationName: 'customer_runner',
+    relationName: 'customer_store',
   }),
   referredBy: one(customers, {
     fields: [customers.referredByCustomerId],

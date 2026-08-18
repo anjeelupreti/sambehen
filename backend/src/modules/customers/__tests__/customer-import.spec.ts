@@ -84,7 +84,7 @@ describe('CustomerImportService', () => {
       {} as CustomerRepository,
       {
         resolveOwnership: () =>
-          Promise.resolve({ ownerStaffId: 'owner', managerId: 'm', runnerId: null }),
+          Promise.resolve({ ownerStaffId: 'owner', managerId: 'm', storeId: null }),
       } as unknown as CustomerAssignmentService,
       { record: () => Promise.resolve() } as unknown as AuditService,
     );

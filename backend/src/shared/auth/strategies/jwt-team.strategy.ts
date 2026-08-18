@@ -10,7 +10,7 @@ import { ICurrentStaff, ITeamJwtPayload } from '@common/interfaces/auth.interfac
 export const JWT_TEAM_STRATEGY = 'jwt-team';
 
 /**
- * Validates business-side (master / manager / runner) access tokens.
+ * Validates business-side (master / manager / store) access tokens.
  *
  * Signed with JWT_SECRET, which is distinct from the customer realm's
  * secret. A customer token therefore fails signature verification here

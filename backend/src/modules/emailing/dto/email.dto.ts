@@ -168,10 +168,10 @@ export class RecipientFilterDto {
   @IsOptional()
   managerId?: string;
 
-  @ApiPropertyOptional({ format: 'uuid', description: "Master, or a manager's own runner." })
+  @ApiPropertyOptional({ format: 'uuid', description: "Master, or a manager's own store." })
   @IsUUID('4')
   @IsOptional()
-  runnerId?: string;
+  storeId?: string;
 
   @ApiPropertyOptional({
     type: [String],

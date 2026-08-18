@@ -19,13 +19,13 @@ const lower = ({ value }: { value: string }): string =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
 
 export class CreateStaffDto {
-  @ApiProperty({ example: 'runner1@sambehen.local' })
+  @ApiProperty({ example: 'store1@sambehen.local' })
   @IsEmail({}, { message: 'email must be a valid email address' })
   @MaxLength(255)
   @Transform(lower)
   email!: string;
 
-  @ApiProperty({ example: 'runner1', minLength: 3, maxLength: 100 })
+  @ApiProperty({ example: 'store1', minLength: 3, maxLength: 100 })
   @IsString()
   @MinLength(3)
   @MaxLength(100)
@@ -42,9 +42,9 @@ export class CreateStaffDto {
   password!: string;
 
   @ApiProperty({
-    enum: [StaffRole.MANAGER, StaffRole.RUNNER],
+    enum: [StaffRole.MANAGER, StaffRole.STORE],
     description:
-      'Only manager and runner can be created. A master is provisioned by the seed, since there is exactly one and it has no parent.',
+      'Only manager and store can be created. A master is provisioned by the seed, since there is exactly one and it has no parent.',
   })
   @IsEnum(StaffRole)
   role!: StaffRole;
@@ -52,7 +52,7 @@ export class CreateStaffDto {
   @ApiPropertyOptional({
     format: 'uuid',
     description:
-      'Managing staff member. Required when a master creates a runner. Ignored for a manager creating a runner, which always attaches to that manager.',
+      'Managing staff member. Required when a master creates a store. Ignored for a manager creating a store, which always attaches to that manager.',
   })
   @IsUUID('4')
   @IsOptional()
@@ -96,7 +96,7 @@ export class UpdateStaffDto {
   @IsOptional()
   phone?: string;
 
-  @ApiPropertyOptional({ example: 'runner1@sambehen.local' })
+  @ApiPropertyOptional({ example: 'store1@sambehen.local' })
   @IsEmail()
   @MaxLength(255)
   @Transform(lower)
@@ -121,8 +121,8 @@ export class ResetStaffPasswordDto {
   mustChangePassword?: boolean = true;
 }
 
-export class ReassignRunnerDto {
-  @ApiProperty({ format: 'uuid', description: 'The manager this runner should report to' })
+export class ReassignStoreDto {
+  @ApiProperty({ format: 'uuid', description: 'The manager this store should report to' })
   @IsUUID('4')
   newManagerId!: string;
 }

@@ -15,10 +15,10 @@ export class DashboardFilterDto {
   @IsOptional()
   managerId?: string;
 
-  @ApiPropertyOptional({ format: 'uuid', description: "Master, or a manager's own runner." })
+  @ApiPropertyOptional({ format: 'uuid', description: "Master, or a manager's own store." })
   @IsUUID('4')
   @IsOptional()
-  runnerId?: string;
+  storeId?: string;
 }
 
 export class TrendQueryDto extends DashboardFilterDto {
@@ -118,7 +118,7 @@ export class TopGameDto {
 }
 
 export class CustomerMetricsDto {
-  @ApiProperty({ example: 1240 })
+  @ApiProperty({ example: 1240, description: 'Excludes pending self-registrations.' })
   total!: number;
 
   @ApiProperty({ example: 812, description: 'Status active and seen within the activity window.' })
@@ -129,6 +129,13 @@ export class CustomerMetricsDto {
 
   @ApiProperty({ example: 37, description: 'Registered this calendar month.' })
   newThisMonth!: number;
+
+  @ApiProperty({
+    example: 3,
+    description:
+      'Self-registered, awaiting a master’s approval. Visible only within a scope that can see them — in practice, only a master, since a pending signup has no manager or store yet.',
+  })
+  pendingApproval!: number;
 }
 
 export class VipMetricsDto {
@@ -218,7 +225,7 @@ export class DashboardResponseDto {
   @ApiProperty({
     type: [TeamRollupRowDto],
     description:
-      'For a master, one row per manager; for a manager, one row per runner plus their own directly-owned customers; empty for a runner, who is a leaf.',
+      'For a master, one row per manager; for a manager, one row per store plus their own directly-owned customers; empty for a store, who is a leaf.',
   })
   teamRollup!: TeamRollupRowDto[];
 

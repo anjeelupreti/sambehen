@@ -17,7 +17,7 @@ import {
 /**
  * Aggregate metrics, scoped to the actor.
  *
- * A runner sees their own customers, a manager their chain, a master the
+ * A store sees their own customers, a manager their chain, a master the
  * whole business — the same endpoint, different data. The scope predicate
  * is resolved once and reused across every aggregate, so no two figures on
  * the page can be computed against different visibility.
@@ -35,8 +35,8 @@ export class DashboardController {
     description: [
       'All-time net (in, out, balance), this month with the change against last month,',
       'top games by debit and by credit, customer and VIP counts, messaging counters,',
-      'and a rollup one level below the actor: per-manager for a master, per-runner for',
-      'a manager, empty for a runner.',
+      'and a rollup one level below the actor: per-manager for a master, per-store for',
+      'a manager, empty for a store.',
       '',
       "Cached briefly per actor. The cache key includes the actor id, so one chain's",
       'figures can never be served to another.',

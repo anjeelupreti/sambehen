@@ -7,16 +7,16 @@ import { staffUsers, StaffUser } from '../schema/staff-users.schema';
 export interface ISeededStaff {
   master: StaffUser;
   managers: StaffUser[];
-  runners: StaffUser[];
+  stores: StaffUser[];
 }
 
 /** Development password for every seeded account. Never used in production. */
 export const SEED_PASSWORD = 'Password123!';
 
 /**
- * Seeds the staff hierarchy: one master, two managers, two runners each.
+ * Seeds the staff hierarchy: one master, two managers, two stores each.
  *
- * Two managers with runners apiece is the minimum shape that makes scope
+ * Two managers with stores apiece is the minimum shape that makes scope
  * bugs visible: with a single manager, a broken predicate that returns
  * everything looks identical to one that returns the right rows.
  *
@@ -65,7 +65,7 @@ export async function seedStaff(db: DrizzleDB): Promise<ISeededStaff> {
   );
 
   const managers: StaffUser[] = [];
-  const runners: StaffUser[] = [];
+  const stores: StaffUser[] = [];
 
   for (let m = 1; m <= 2; m += 1) {
     const manager = await upsert(
@@ -79,18 +79,18 @@ export async function seedStaff(db: DrizzleDB): Promise<ISeededStaff> {
     managers.push(manager);
 
     for (let r = 1; r <= 2; r += 1) {
-      runners.push(
+      stores.push(
         await upsert(
-          `runner${m}${r}@sambehen.local`,
-          `runner${m}${r}`,
-          StaffRole.RUNNER,
+          `store${m}${r}@sambehen.local`,
+          `store${m}${r}`,
+          StaffRole.STORE,
           manager.id,
-          `Runner${m}${r}`,
+          `Store${m}${r}`,
           'Field',
         ),
       );
     }
   }
 
-  return { master, managers, runners };
+  return { master, managers, stores };
 }

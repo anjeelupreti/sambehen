@@ -33,9 +33,9 @@ import {
  * a client on a flaky connection, or one that simply does not want a
  * socket, must be able to do everything over plain HTTP.
  *
- * Unread is per viewer throughout. A runner, their manager and the master
+ * Unread is per viewer throughout. A store, their manager and the master
  * all see the same thread but track their own read position, so a message
- * the runner has answered is still unread for the master until they look.
+ * the store has answered is still unread for the master until they look.
  */
 @ApiTags('Messaging')
 @Controller('team/conversations')
@@ -48,7 +48,7 @@ export class MessagingController {
   @ApiOperation({
     summary: 'Scoped inbox with per-viewer unread counts',
     description:
-      'Scoped through the owning customer: a runner sees their own customers, a manager their chain, a master everything. `summary` reports totals over the whole filtered set, not the page — "43 unread" is only useful if it means the whole inbox. Filters: unreadOnly, todayOnly, awaitingReply, activeCustomersOnly, status, assignedStaffId, managerId, runnerId, and search across customer details and message bodies.',
+      'Scoped through the owning customer: a store sees their own customers, a manager their chain, a master everything. `summary` reports totals over the whole filtered set, not the page — "43 unread" is only useful if it means the whole inbox. Filters: unreadOnly, todayOnly, awaitingReply, activeCustomersOnly, status, assignedStaffId, managerId, storeId, and search across customer details and message bodies.',
   })
   @ApiOkList(ConversationResponseDto, ConversationSummaryDto)
   @ApiErrors(401, 404, 422)
@@ -126,7 +126,7 @@ export class CustomerMessagingController {
   @ApiOperation({
     summary: "The signed-in customer's message thread",
     description:
-      'One continuous thread with the business. Internal staff attribution is omitted: the customer sees that the business replied, not which runner. The data is still stored, so that presentation choice can change without a migration.',
+      'One continuous thread with the business. Internal staff attribution is omitted: the customer sees that the business replied, not which store. The data is still stored, so that presentation choice can change without a migration.',
   })
   @ApiOkData(Object, 'Messages and next cursor')
   @ApiErrors(401, 422)

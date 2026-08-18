@@ -77,7 +77,7 @@ export class CreateCustomerDto {
   @ApiPropertyOptional({
     format: 'uuid',
     description:
-      'Owning manager or runner. A runner may only assign to themselves, so this is ignored for them. Required when a master creates a customer, since a master cannot own customers directly.',
+      'Owning manager or store. A store may only assign to themselves, so this is ignored for them. Required when a master creates a customer, since a master cannot own customers directly.',
   })
   @IsUUID('4')
   @IsOptional()
@@ -99,6 +99,67 @@ export class CreateCustomerDto {
   @MaxLength(32)
   @IsOptional()
   referralCode?: string;
+}
+
+/**
+ * A prospective customer registering themselves, with no staff behind the
+ * request. Deliberately narrower than `CreateCustomerDto`: no
+ * `ownerStaffId` (nobody has claimed this account yet — a master assigns
+ * one on approval) and no `notes` (an internal field, not something a
+ * signup form should be able to set on itself).
+ */
+export class RegisterCustomerDto {
+  @ApiProperty({ example: 'customer99@example.com' })
+  @IsEmail({}, { message: 'email must be a valid email address' })
+  @MaxLength(255)
+  @Transform(lower)
+  email!: string;
+
+  @ApiProperty({ example: 'customer99', minLength: 3, maxLength: 100 })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(100)
+  @Matches(/^[a-z0-9._-]+$/, {
+    message: 'username may only contain lowercase letters, digits, dot, underscore and hyphen',
+  })
+  @Transform(lower)
+  username!: string;
+
+  @ApiProperty({ example: 'StrongPass123!', minLength: 8, maxLength: 128 })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  password!: string;
+
+  @ApiPropertyOptional({ maxLength: 200 })
+  @IsString()
+  @MaxLength(200)
+  @IsOptional()
+  fullName?: string;
+
+  @ApiPropertyOptional({ maxLength: 32 })
+  @IsString()
+  @MaxLength(32)
+  @IsOptional()
+  phone?: string;
+
+  @ApiPropertyOptional({ maxLength: 120 })
+  @IsString()
+  @MaxLength(120)
+  @IsOptional()
+  city?: string;
+
+  @ApiPropertyOptional({ maxLength: 120 })
+  @IsString()
+  @MaxLength(120)
+  @IsOptional()
+  state?: string;
+
+  @ApiPropertyOptional({ maxLength: 120 })
+  @IsString()
+  @MaxLength(120)
+  @IsOptional()
+  country?: string;
 }
 
 /**
@@ -180,13 +241,13 @@ export class ChangeCustomerStatusDto {
 }
 
 export class ReassignCustomerDto {
-  @ApiProperty({ format: 'uuid', description: 'New owning manager or runner' })
+  @ApiProperty({ format: 'uuid', description: 'New owning manager or store' })
   @IsUUID('4')
   ownerStaffId!: string;
 }
 
 export class BulkReassignCustomersDto extends IdListDto {
-  @ApiProperty({ format: 'uuid', description: 'New owning manager or runner' })
+  @ApiProperty({ format: 'uuid', description: 'New owning manager or store' })
   @IsUUID('4')
   ownerStaffId!: string;
 }
@@ -244,11 +305,11 @@ export class CustomerFilterDto extends BaseFilterDto {
 
   @ApiPropertyOptional({
     format: 'uuid',
-    description: 'Master, or a manager narrowing to one of their own runners.',
+    description: 'Master, or a manager narrowing to one of their own stores.',
   })
   @IsUUID('4')
   @IsOptional()
-  runnerId?: string;
+  storeId?: string;
 
   @ApiPropertyOptional()
   @IsString()
@@ -315,20 +376,25 @@ export class CustomerResponseDto {
   @ApiProperty({ type: String, example: '50.00' })
   bonusBalance!: string;
 
-  @ApiProperty({ format: 'uuid' })
-  ownerStaffId!: string;
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'Null only while `status` is `pending` — nobody has claimed this account yet.',
+  })
+  ownerStaffId!: string | null;
 
   @ApiProperty({ type: String, format: 'uuid', nullable: true })
   managerId!: string | null;
 
   @ApiProperty({ type: String, format: 'uuid', nullable: true })
-  runnerId!: string | null;
+  storeId!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true, description: "Owning manager's username" })
   managerUsername?: string | null;
 
-  @ApiPropertyOptional({ type: String, nullable: true, description: "Owning runner's username" })
-  runnerUsername?: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Owning store's username" })
+  storeUsername?: string | null;
 
   @ApiProperty()
   emailOptOut!: boolean;

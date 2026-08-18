@@ -248,7 +248,7 @@ export async function seedEngagement(
     ...staff.managers
       .slice(0, 2)
       .map((m) => ({ id: m.id, role: 'manager', type: 'staff' as const })),
-    ...staff.runners.slice(0, 2).map((r) => ({ id: r.id, role: 'runner', type: 'staff' as const })),
+    ...staff.stores.slice(0, 2).map((r) => ({ id: r.id, role: 'store', type: 'staff' as const })),
   ];
 
   const entries: (typeof auditLogs.$inferInsert)[] = [];
@@ -342,16 +342,16 @@ export async function seedEngagement(
     });
   }
 
-  // Refusals — a runner reaching for another chain, and a manager reaching
+  // Refusals — a store reaching for another chain, and a manager reaching
   // for the audit trail. These are the entries an auditor actually looks for.
-  const runner = staff.runners[0];
+  const store = staff.stores[0];
   const manager = staff.managers[0];
 
-  if (runner) {
+  if (store) {
     entries.push({
       actorType: 'staff',
-      actorId: runner.id,
-      actorRole: 'runner',
+      actorId: store.id,
+      actorRole: 'store',
       action: 'customer.access_denied',
       entityType: 'customer',
       entityId: customers[0]?.id ?? null,

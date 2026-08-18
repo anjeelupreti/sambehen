@@ -9,12 +9,12 @@ import { seedGamesAndTransactions } from './transactions.seed';
 import { seedEngagement } from './engagement.seed';
 
 /**
- * Database seed runner — `npm run db:seed`.
+ * Database seed store — `npm run db:seed`.
  *
  * Seeders run in dependency order and must be idempotent, so the command
  * can be re-run against an existing database without duplicating rows.
  *
- * Phase 1 registers the staff/customer seeders; the runner is wired up
+ * Phase 1 registers the staff/customer seeders; the store is wired up
  * ahead of them so the entrypoint and its transaction handling stay stable.
  */
 async function main(): Promise<void> {
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
     await db.transaction(async (tx) => {
       const staff = await seedStaff(tx as unknown as DrizzleDB);
       logger.log(
-        `  staff: 1 master, ${staff.managers.length} managers, ${staff.runners.length} runners`,
+        `  staff: 1 master, ${staff.managers.length} managers, ${staff.stores.length} stores`,
       );
 
       const seededCustomers = await seedCustomers(tx as unknown as DrizzleDB, staff);
@@ -59,7 +59,7 @@ async function main(): Promise<void> {
 
     logger.log('Seed completed successfully');
     logger.log(`All seeded accounts share the password: ${SEED_PASSWORD}`);
-    logger.log('  master@sambehen.local / manager1@sambehen.local / runner11@sambehen.local');
+    logger.log('  master@sambehen.local / manager1@sambehen.local / store11@sambehen.local');
   } catch (error) {
     logger.error('Seed failed:', error);
     process.exitCode = 1;

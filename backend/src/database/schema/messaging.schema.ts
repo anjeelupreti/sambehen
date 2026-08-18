@@ -128,9 +128,9 @@ export const messages = pgTable(
 /**
  * Per-staff read position within a conversation.
  *
- * Unread cannot be a column on the conversation, because a runner, their
+ * Unread cannot be a column on the conversation, because a store, their
  * manager and the master all see the same thread independently: a message
- * read by the runner is still unread for the master. Each viewer carries
+ * read by the store is still unread for the master. Each viewer carries
  * their own marker.
  *
  * Customers need no equivalent: they have exactly one thread, so their

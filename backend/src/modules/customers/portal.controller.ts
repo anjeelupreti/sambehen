@@ -15,7 +15,7 @@ import { CustomerProfileDto } from '@modules/auth/dto/auth.dto';
  *
  * Read-only by design. Customers cannot update their profile, credentials
  * or status: those are performed by the master, their manager, or their
- * runner, and are audit-logged. There is deliberately no PATCH here — the
+ * store, and are audit-logged. There is deliberately no PATCH here — the
  * absence is the requirement, not an omission.
  *
  * Every route resolves the customer from the authenticated token, never
@@ -35,7 +35,7 @@ export class PortalController {
   @ApiOperation({
     summary: "The signed-in customer's own profile",
     description:
-      "Read-only. Profile and credential changes are made by staff on the customer's behalf. Internal ownership fields (owning manager and runner) are omitted, since the customer has no need to see the team structure behind their account.",
+      "Read-only. Profile and credential changes are made by staff on the customer's behalf. Internal ownership fields (owning manager and store) are omitted, since the customer has no need to see the team structure behind their account.",
   })
   @ApiOkData(CustomerProfileDto)
   @ApiErrors(401, 404)

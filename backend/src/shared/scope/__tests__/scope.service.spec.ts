@@ -14,8 +14,8 @@ import {
 const MASTER_ID = '11111111-1111-4111-8111-111111111111';
 const MANAGER_A = '22222222-2222-4222-8222-222222222222';
 const MANAGER_B = '33333333-3333-4333-8333-333333333333';
-const RUNNER_A1 = '44444444-4444-4444-8444-444444444444';
-const RUNNER_B1 = '55555555-5555-4555-8555-555555555555';
+const STORE_A1 = '44444444-4444-4444-8444-444444444444';
+const STORE_B1 = '55555555-5555-4555-8555-555555555555';
 
 const actor = (role: StaffRole, id: string, parentId: string | null): ICurrentStaff => ({
   id,
@@ -28,7 +28,7 @@ const actor = (role: StaffRole, id: string, parentId: string | null): ICurrentSt
 
 const master = actor(StaffRole.MASTER, MASTER_ID, null);
 const managerA = actor(StaffRole.MANAGER, MANAGER_A, MASTER_ID);
-const runnerA1 = actor(StaffRole.RUNNER, RUNNER_A1, MANAGER_A);
+const storeA1 = actor(StaffRole.STORE, STORE_A1, MANAGER_A);
 
 /** Renders a predicate to SQL text so assertions read against real output. */
 const dialect = new PgDialect();
@@ -70,23 +70,23 @@ describe('ScopeService', () => {
       const sql = render(await scopeService.customerScope(managerA));
 
       expect(sql).toContain('manager_id');
-      expect(sql).not.toContain('runner_id');
+      expect(sql).not.toContain('store_id');
     });
 
-    it('restricts a runner to their own runner_id', async () => {
-      const sql = render(await scopeService.customerScope(runnerA1));
+    it('restricts a store to their own store_id', async () => {
+      const sql = render(await scopeService.customerScope(storeA1));
 
-      expect(sql).toContain('runner_id');
+      expect(sql).toContain('store_id');
       expect(sql).not.toContain('manager_id');
     });
 
-    it('lets a master narrow by manager and runner', async () => {
+    it('lets a master narrow by manager and store', async () => {
       const sql = render(
-        await scopeService.customerScope(master, { managerId: MANAGER_B, runnerId: RUNNER_B1 }),
+        await scopeService.customerScope(master, { managerId: MANAGER_B, storeId: STORE_B1 }),
       );
 
       expect(sql).toContain('manager_id');
-      expect(sql).toContain('runner_id');
+      expect(sql).toContain('store_id');
     });
 
     it('denies a manager who filters by another manager', async () => {
@@ -98,60 +98,60 @@ describe('ScopeService', () => {
       expect(sql).toBe('false');
     });
 
-    it('allows a manager to narrow to one of their own runners', async () => {
+    it('allows a manager to narrow to one of their own stores', async () => {
       staffRepository.findById.mockResolvedValue({
-        id: RUNNER_A1,
+        id: STORE_A1,
         parentId: MANAGER_A,
-        role: StaffRole.RUNNER,
+        role: StaffRole.STORE,
       } as never);
 
-      const sql = render(await scopeService.customerScope(managerA, { runnerId: RUNNER_A1 }));
+      const sql = render(await scopeService.customerScope(managerA, { storeId: STORE_A1 }));
 
       expect(sql).toContain('manager_id');
-      expect(sql).toContain('runner_id');
+      expect(sql).toContain('store_id');
     });
 
-    it("rejects a manager narrowing to another manager's runner", async () => {
+    it("rejects a manager narrowing to another manager's store", async () => {
       staffRepository.findById.mockResolvedValue({
-        id: RUNNER_B1,
+        id: STORE_B1,
         parentId: MANAGER_B,
-        role: StaffRole.RUNNER,
+        role: StaffRole.STORE,
       } as never);
 
       await expect(
-        scopeService.customerScope(managerA, { runnerId: RUNNER_B1 }),
+        scopeService.customerScope(managerA, { storeId: STORE_B1 }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
     });
 
-    it('rejects a manager narrowing to a runner that does not exist', async () => {
+    it('rejects a manager narrowing to a store that does not exist', async () => {
       staffRepository.findById.mockResolvedValue(undefined as never);
 
       await expect(
-        scopeService.customerScope(managerA, { runnerId: RUNNER_B1 }),
+        scopeService.customerScope(managerA, { storeId: STORE_B1 }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
     });
 
-    it('denies a runner filtering by a different runner', async () => {
-      const sql = render(await scopeService.customerScope(runnerA1, { runnerId: RUNNER_B1 }));
+    it('denies a store filtering by a different store', async () => {
+      const sql = render(await scopeService.customerScope(storeA1, { storeId: STORE_B1 }));
 
       expect(sql).toBe('false');
     });
 
-    it('denies a runner filtering by a manager that is not their own', async () => {
-      const sql = render(await scopeService.customerScope(runnerA1, { managerId: MANAGER_B }));
+    it('denies a store filtering by a manager that is not their own', async () => {
+      const sql = render(await scopeService.customerScope(storeA1, { managerId: MANAGER_B }));
 
       expect(sql).toBe('false');
     });
 
-    it('allows a runner filtering by themselves', async () => {
-      const sql = render(await scopeService.customerScope(runnerA1, { runnerId: RUNNER_A1 }));
+    it('allows a store filtering by themselves', async () => {
+      const sql = render(await scopeService.customerScope(storeA1, { storeId: STORE_A1 }));
 
-      expect(sql).toContain('runner_id');
+      expect(sql).toContain('store_id');
       expect(sql).not.toBe('false');
     });
 
     it('denies an unknown role rather than falling through unrestricted', async () => {
-      const rogue = { ...runnerA1, role: 'superuser' as StaffRole };
+      const rogue = { ...storeA1, role: 'superuser' as StaffRole };
 
       expect(render(await scopeService.customerScope(rogue))).toBe('false');
     });
@@ -170,8 +170,8 @@ describe('ScopeService', () => {
       expect(sql).toContain('or');
     });
 
-    it('limits a runner to themselves only', () => {
-      const sql = render(scopeService.staffScope(runnerA1));
+    it('limits a store to themselves only', () => {
+      const sql = render(scopeService.staffScope(storeA1));
 
       expect(sql).toContain('id');
       expect(sql).not.toContain('parent_id');
@@ -194,24 +194,24 @@ describe('ScopeService', () => {
       await expect(scopeService.assertCanManageStaff(master, MANAGER_B)).resolves.toBeUndefined();
     });
 
-    it('allows a manager to manage their own runner', async () => {
+    it('allows a manager to manage their own store', async () => {
       staffRepository.findById.mockResolvedValue({
-        id: RUNNER_A1,
+        id: STORE_A1,
         parentId: MANAGER_A,
-        role: StaffRole.RUNNER,
+        role: StaffRole.STORE,
       } as never);
 
-      await expect(scopeService.assertCanManageStaff(managerA, RUNNER_A1)).resolves.toBeUndefined();
+      await expect(scopeService.assertCanManageStaff(managerA, STORE_A1)).resolves.toBeUndefined();
     });
 
-    it("refuses a manager managing another manager's runner", async () => {
+    it("refuses a manager managing another manager's store", async () => {
       staffRepository.findById.mockResolvedValue({
-        id: RUNNER_B1,
+        id: STORE_B1,
         parentId: MANAGER_B,
-        role: StaffRole.RUNNER,
+        role: StaffRole.STORE,
       } as never);
 
-      await expect(scopeService.assertCanManageStaff(managerA, RUNNER_B1)).rejects.toBeInstanceOf(
+      await expect(scopeService.assertCanManageStaff(managerA, STORE_B1)).rejects.toBeInstanceOf(
         CapabilityDeniedException,
       );
     });
@@ -228,8 +228,8 @@ describe('ScopeService', () => {
       );
     });
 
-    it('refuses a runner managing anyone', async () => {
-      await expect(scopeService.assertCanManageStaff(runnerA1, RUNNER_B1)).rejects.toBeInstanceOf(
+    it('refuses a store managing anyone', async () => {
+      await expect(scopeService.assertCanManageStaff(storeA1, STORE_B1)).rejects.toBeInstanceOf(
         CapabilityDeniedException,
       );
     });
@@ -240,14 +240,14 @@ describe('ScopeService', () => {
       await expect(scopeService.visibleStaffIds(master)).resolves.toBeNull();
     });
 
-    it('returns a manager plus their runners', async () => {
-      staffRepository.findChildIds.mockResolvedValue([RUNNER_A1]);
+    it('returns a manager plus their stores', async () => {
+      staffRepository.findChildIds.mockResolvedValue([STORE_A1]);
 
-      await expect(scopeService.visibleStaffIds(managerA)).resolves.toEqual([MANAGER_A, RUNNER_A1]);
+      await expect(scopeService.visibleStaffIds(managerA)).resolves.toEqual([MANAGER_A, STORE_A1]);
     });
 
-    it('returns only the runner themselves', async () => {
-      await expect(scopeService.visibleStaffIds(runnerA1)).resolves.toEqual([RUNNER_A1]);
+    it('returns only the store themselves', async () => {
+      await expect(scopeService.visibleStaffIds(storeA1)).resolves.toEqual([STORE_A1]);
     });
   });
 });

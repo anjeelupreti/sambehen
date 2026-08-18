@@ -172,7 +172,7 @@ export class TeamSpinWinnersController {
   @ApiOperation({
     summary: 'List spin winners',
     description: [
-      'Every recorded win, named and scoped: a runner sees wins by their own customers,',
+      'Every recorded win, named and scoped: a store sees wins by their own customers,',
       'a manager sees their chain, a master sees all. Filterable by event, customer,',
       'ownership, announcement date and whether the winner was preselected.',
       '',

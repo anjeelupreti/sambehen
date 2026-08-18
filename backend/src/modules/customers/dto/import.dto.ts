@@ -115,7 +115,7 @@ export class CommitImportDto {
   @ApiPropertyOptional({
     format: 'uuid',
     description:
-      'Who owns the imported customers. Required for a master, who sits above the chain; a manager or runner defaults to themselves.',
+      'Who owns the imported customers. Required for a master, who sits above the chain; a manager or store defaults to themselves.',
   })
   @IsUUID('4')
   @IsOptional()
