@@ -8,7 +8,7 @@ Two applications, deployed separately:
 
 | Directory              | What it is                                | Runs on (local dev)      |
 | ----------------------- | ------------------------------------------ | ------------------------- |
-| [backend/](backend)    | NestJS + Drizzle + PostgreSQL + Redis API | http://localhost:3001    |
+| [backend/](backend)    | NestJS + Drizzle + PostgreSQL + Redis API | http://localhost:3003    |
 | [frontend/](frontend)  | Next.js 15 + shadcn/ui — staff app + customer portal | http://localhost:3000 |
 
 Each has its own README, its own `package.json`, and its own install. There
@@ -49,7 +49,7 @@ Open `.env` and set:
   customer's token is rejected on a staff route at signature verification,
   not by a claim check that a forged token could satisfy.
 - `DB_PORT` / `REDIS_PORT` if 5432/6379 are already taken on your machine
-  by something else (see [Port conflicts](#port-conflicts-with-other-local-projects)
+  by something else (see [Changing the port](#changing-the-port)
   below) — otherwise leave the defaults.
 - SMTP settings, if you want outbound email to actually send. Without
   them, campaigns and notifications queue but never deliver — everything
@@ -61,7 +61,7 @@ Then bring up the database and start the API:
 docker compose up -d db redis
 npm run db:migrate
 npm run db:seed          # idempotent — safe to re-run
-npm run start:dev        # http://localhost:3001, Swagger at /api/docs
+npm run start:dev        # http://localhost:3003, Swagger at /api/docs
 ```
 
 ### 3. Frontend
@@ -75,8 +75,8 @@ cp .env.example .env.local   # if not already present
 npm run dev                        # http://localhost:3000
 ```
 
-`.env.local` should have `API_URL=http://127.0.0.1:3001` and
-`NEXT_PUBLIC_WS_URL=http://127.0.0.1:3001` pointing at the backend from
+`.env.local` should have `API_URL=http://127.0.0.1:3003` and
+`NEXT_PUBLIC_WS_URL=http://127.0.0.1:3003` pointing at the backend from
 step 2 (adjust the port if you changed `APP_PORT` there).
 
 ### 4. Sign in
@@ -87,14 +87,30 @@ Staff: **http://localhost:3000/login** — `master` / `Password123!` (see
 Customer portal: **http://localhost:3000/customer/login** —
 `customer1` / `Password123!`.
 
-### Port conflicts with other local projects
+### Changing the port
 
-If you run several projects on the same machine, 3000, 3001, 5432 or 6379
-may already be taken by something else. Nothing here is hard-coded to
-those numbers — change the relevant `*_PORT` variable in `backend/.env`
-(and `frontend/.env.local`'s `API_URL`/`NEXT_PUBLIC_WS_URL` to match), or
-run the frontend on a different port with `PORT=3002 npm run dev`. The
-app has no dependency on any specific port number.
+Nothing in this app is hard-coded to a specific port — every one of them
+is read from an env var at startup:
+
+| What | Where it's set | Default |
+| --- | --- | --- |
+| Backend (NestJS) | `APP_PORT` in `backend/.env` | `3003` |
+| Postgres | `DB_PORT` in `backend/.env` | `5432` |
+| Redis | `REDIS_PORT` in `backend/.env` | `6379` |
+| Frontend (Next.js) | no env var by default — pass `-p <port>` to `next dev`/`next start`, or add it permanently to the `dev`/`start` scripts in `frontend/package.json` | `3000` |
+
+**If you change the backend's `APP_PORT`, update `frontend/.env.local` to
+match** — `API_URL` and `NEXT_PUBLIC_WS_URL` both point at the backend by
+its full origin (e.g. `http://127.0.0.1:3003`), and the frontend has no
+way to discover the backend's port other than being told. Forgetting this
+step is the most common cause of "the frontend loads but nothing signs
+in" — the browser or the server-side fetch is quietly trying to reach a
+backend that isn't listening where it thinks it is.
+
+This comes up often on a machine running several local projects at once —
+3000, 5432 and 6379 are common defaults, so collisions happen. Change
+whichever `*_PORT` is taken, update the frontend to match if it was the
+backend's, and restart both.
 
 ---
 

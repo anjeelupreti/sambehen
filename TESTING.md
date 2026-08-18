@@ -8,7 +8,7 @@ This branch is pushed to `origin/feat/frontend-nextjs-shadcn` and not yet merged
 Both servers are already running locally:
 
 - Frontend: **http://localhost:3000**
-- Backend: **http://localhost:3001/api/v1** (Swagger at `/api/docs`)
+- Backend: **http://localhost:3003/api/v1** (Swagger at `/api/docs`)
 
 If either isn't responding, restart from a terminal:
 
@@ -23,6 +23,14 @@ cd backend && npm run start:dev
 cd frontend && npm run dev
 ```
 
+**Changing the port:** the backend's is `APP_PORT` in `backend/.env` (default
+`3003`); the frontend has no default env var and just falls back to `3000`,
+pass `-p <port>` to `next dev` to change it. If you change the backend's
+port, update `API_URL` and `NEXT_PUBLIC_WS_URL` in `frontend/.env.local` to
+match, or the frontend will build fine and then fail to reach the API —
+see [README.md § Changing the port](README.md#changing-the-port) for the
+full table.
+
 The database already has seed data from earlier verification passes. To reset to a
 clean seed instead: `cd backend && npm run db:seed` (idempotent — safe to re-run,
 reuses existing accounts rather than duplicating them).
@@ -31,7 +39,7 @@ reuses existing accounts rather than duplicating them).
 
 Every seeded account uses the same password: **`Password123!`**
 
-**Staff** (sign in at http://localhost:3001/login, username or email):
+**Staff** (sign in at http://localhost:3000/login, username or email):
 
 | Username | Role | Sees |
 |---|---|---|
@@ -39,7 +47,7 @@ Every seeded account uses the same password: **`Password123!`**
 | `manager1`, `manager2` | Manager | Their own stores and customers; not staff/audit-logs across other chains |
 | `store11`, `store12`, `store21`, `store22` | Store | Their own customers only; no Staff, Broadcast, Audit trail, or Messages-across-manager |
 
-**Customers** (sign in at http://localhost:3001/customer/login):
+**Customers** (sign in at http://localhost:3000/customer/login):
 
 `customer1` through `customer24` — spread across the stores/managers above, a mix
 of active/inactive/suspended so status filters have something to show.
@@ -80,11 +88,11 @@ of active/inactive/suspended so status filters have something to show.
 
 ### Referrals
 - [ ] As `master`: create a referral program, issue codes to a few customers
-- [ ] Open one issued referral link (`http://localhost:3001/r/<slug>`) in an incognito/private window — no sign-in, shows the program's offer and the code
+- [ ] Open one issued referral link (`http://localhost:3000/r/<slug>`) in an incognito/private window — no sign-in, shows the program's offer and the code
 - [ ] Create a new customer and paste that code into the "Referral code" field — confirm the referral shows up as `pending` in the ledger
 
 ### Public welcome page & self-registration
-- [ ] `http://localhost:3001/` with no session shows the marketing welcome page, not a redirect to `/login`
+- [ ] `http://localhost:3000/` with no session shows the marketing welcome page, not a redirect to `/login`
 - [ ] Navbar's Customer/Staff toggle changes where Login/Register point; Register only appears in Customer mode
 - [ ] `/customer/register` — create an account, confirm the "awaiting approval" message, then try `/customer/login` with those credentials and confirm it's refused
 - [ ] As `master`: `/customers?status=pending` shows the new signup with no owner; it's absent from the default (unfiltered) list
