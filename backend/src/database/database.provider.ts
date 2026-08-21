@@ -25,16 +25,26 @@ export const PgPoolProvider: Provider = {
   useFactory: async (configService: ConfigService): Promise<Pool> => {
     const logger = new Logger('DatabaseProvider');
 
-    const pool = new Pool({
-      host: configService.get<string>('database.host'),
-      port: configService.get<number>('database.port'),
-      user: configService.get<string>('database.username'),
-      password: configService.get<string>('database.password'),
-      database: configService.get<string>('database.name'),
-      ssl: configService.get<boolean>('database.ssl') ? { rejectUnauthorized: false } : false,
-      min: configService.get<number>('database.poolMin'),
-      max: configService.get<number>('database.poolMax'),
-    });
+    const dbUrl = configService.get<string>('database.url');
+    const poolConfig = dbUrl
+      ? {
+          connectionString: dbUrl,
+          ssl: configService.get<boolean>('database.ssl') ? { rejectUnauthorized: false } : false,
+          min: configService.get<number>('database.poolMin'),
+          max: configService.get<number>('database.poolMax'),
+        }
+      : {
+          host: configService.get<string>('database.host'),
+          port: configService.get<number>('database.port'),
+          user: configService.get<string>('database.username'),
+          password: configService.get<string>('database.password'),
+          database: configService.get<string>('database.name'),
+          ssl: configService.get<boolean>('database.ssl') ? { rejectUnauthorized: false } : false,
+          min: configService.get<number>('database.poolMin'),
+          max: configService.get<number>('database.poolMax'),
+        };
+
+    const pool = new Pool(poolConfig);
 
     // node-postgres's own docs warn about this: an *idle* client can still
     // emit 'error' (a dropped connection, the server restarting under it),

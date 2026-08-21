@@ -21,11 +21,12 @@ export const validationSchema = Joi.object({
   APP_PUBLIC_URL: Joi.string().uri().default('http://localhost:3000'),
 
   // ── Database ───────────────────────────────────────────────
-  DB_HOST: Joi.string().required(),
+  DATABASE_URL: Joi.string().optional(),
+  DB_HOST: Joi.string().optional(),
   DB_PORT: Joi.number().port().default(5432),
-  DB_USERNAME: Joi.string().required(),
-  DB_PASSWORD: Joi.string().required(),
-  DB_NAME: Joi.string().required(),
+  DB_USERNAME: Joi.string().optional(),
+  DB_PASSWORD: Joi.string().optional(),
+  DB_NAME: Joi.string().optional(),
   DB_SSL: Joi.boolean().default(false),
   DB_POOL_MIN: Joi.number().min(0).default(2),
   DB_POOL_MAX: Joi.number().min(1).default(10),
