@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { MessagesSquareIcon } from 'lucide-react';
 
 import { ThemeCustomizer } from '@/components/theme-customizer';
 import { cn } from '@/lib/utils';
@@ -27,8 +28,8 @@ export function SiteNavbar() {
     <header className="bg-background/80 sticky top-0 z-20 border-b backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <div className="bg-primary text-primary-foreground grid size-8 place-items-center rounded-md text-lg font-bold">
-            S
+          <div className="bg-primary text-primary-foreground grid size-8 place-items-center rounded-lg shadow-sm">
+            <MessagesSquareIcon className="size-4.5" />
           </div>
           <span className="text-lg font-bold tracking-tight">Sambehen</span>
         </Link>
