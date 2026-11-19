@@ -54,7 +54,9 @@ describe('Cross-tenant isolation (e2e)', () => {
     await app.init();
     http = request(app.getHttpServer());
 
-    for (const who of ['master', 'manager1', 'manager2', 'runner11', 'runner21']) {
+    // Team login is throttled to 5 per minute per client, so this list must
+    // stay at five or fewer. Look up other accounts' ids through master.
+    for (const who of ['master', 'manager1', 'manager2', 'manager3', 'store11']) {
       tokens[who] = await login(`${who}@sambehen.local`);
     }
 
@@ -64,7 +66,7 @@ describe('Cross-tenant isolation (e2e)', () => {
     ids.manager1Customer = customers.body.data[0].id;
 
     const staff = await get('/api/v1/team/staff?limit=50', tokens.master).expect(200);
-    ids.runner21 = staff.body.data.find((s: { username: string }) => s.username === 'runner21').id;
+    ids.store21 = staff.body.data.find((s: { username: string }) => s.username === 'store21').id;
     ids.manager2 = staff.body.data.find((s: { username: string }) => s.username === 'manager2').id;
   }, 60_000);
 
@@ -77,32 +79,37 @@ describe('Cross-tenant isolation (e2e)', () => {
    * per actor, and the chains partition cleanly rather than overlapping.
    */
   describe('list scoping partitions the data', () => {
-    it('splits customers between the two chains with no overlap', async () => {
-      const [master, m1, m2] = await Promise.all([
+    it('splits customers between the manager chains with no overlap', async () => {
+      // The seed has three manager chains; together they must cover every
+      // customer the master sees, with none counted twice.
+      const [master, m1, m2, m3] = await Promise.all([
         get('/api/v1/team/customers?limit=1', tokens.master).expect(200),
         get('/api/v1/team/customers?limit=1', tokens.manager1).expect(200),
         get('/api/v1/team/customers?limit=1', tokens.manager2).expect(200),
+        get('/api/v1/team/customers?limit=1', tokens.manager3).expect(200),
       ]);
 
-      expect(master.body.meta.total).toBe(m1.body.meta.total + m2.body.meta.total);
+      expect(master.body.meta.total).toBe(
+        m1.body.meta.total + m2.body.meta.total + m3.body.meta.total,
+      );
     });
 
-    it('gives a runner a strict subset of their manager', async () => {
-      const [manager, runner] = await Promise.all([
+    it('gives a store a strict subset of their manager', async () => {
+      const [manager, store] = await Promise.all([
         get('/api/v1/team/customers?limit=1', tokens.manager1).expect(200),
-        get('/api/v1/team/customers?limit=1', tokens.runner11).expect(200),
+        get('/api/v1/team/customers?limit=1', tokens.store11).expect(200),
       ]);
 
-      expect(runner.body.meta.total).toBeLessThanOrEqual(manager.body.meta.total);
+      expect(store.body.meta.total).toBeLessThanOrEqual(manager.body.meta.total);
     });
 
-    it('shows a manager only themselves and their own runners', async () => {
+    it('shows a manager only themselves and their own stores', async () => {
       const res = await get('/api/v1/team/staff?limit=50', tokens.manager1).expect(200);
       const usernames = res.body.data.map((s: { username: string }) => s.username);
 
       expect(usernames).toContain('manager1');
       expect(usernames).not.toContain('manager2');
-      expect(usernames).not.toContain('runner21');
+      expect(usernames).not.toContain('store21');
     });
   });
 
@@ -123,7 +130,7 @@ describe('Cross-tenant isolation (e2e)', () => {
     });
 
     it('refuses a staff detail', async () => {
-      const res = await get(`/api/v1/team/staff/${ids.runner21}`, tokens.manager1).expect(404);
+      const res = await get(`/api/v1/team/staff/${ids.store21}`, tokens.manager1).expect(404);
 
       expect(res.body.error.code).toBe(ErrorCode.STAFF_NOT_FOUND);
     });
@@ -139,9 +146,9 @@ describe('Cross-tenant isolation (e2e)', () => {
       expect(res.body.meta.total).toBe(0);
     });
 
-    it("refuses a manager filtering by another manager's runner", async () => {
+    it("refuses a manager filtering by another manager's store", async () => {
       const res = await get(
-        `/api/v1/team/customers?runnerId=${ids.runner21}&limit=1`,
+        `/api/v1/team/customers?storeId=${ids.store21}&limit=1`,
         tokens.manager1,
       ).expect(404);
 
@@ -207,13 +214,18 @@ describe('Cross-tenant isolation (e2e)', () => {
       ['conversations', '/api/v1/team/conversations?limit=1'],
       ['spin-winners', '/api/v1/team/spin-winners?limit=1'],
     ])('%s totals partition across the chains', async (_name, path) => {
-      const [master, m1, m2] = await Promise.all([
+      // The seed has three manager chains; together they must cover every
+      // customer the master sees, with none counted twice.
+      const [master, m1, m2, m3] = await Promise.all([
         get(path, tokens.master).expect(200),
         get(path, tokens.manager1).expect(200),
         get(path, tokens.manager2).expect(200),
+        get(path, tokens.manager3).expect(200),
       ]);
 
-      expect(master.body.meta.total).toBe(m1.body.meta.total + m2.body.meta.total);
+      expect(master.body.meta.total).toBe(
+        m1.body.meta.total + m2.body.meta.total + m3.body.meta.total,
+      );
     });
 
     /**
@@ -237,7 +249,7 @@ describe('Cross-tenant isolation (e2e)', () => {
 
     /** The public feed is unscoped BY DESIGN, and must stay masked. */
     it('keeps the public winners feed masked and id-free', async () => {
-      const res = await get('/api/v1/team/recent-winners?limit=5', tokens.runner11).expect(200);
+      const res = await get('/api/v1/team/recent-winners?limit=5', tokens.store11).expect(200);
 
       for (const row of res.body.data as Record<string, unknown>[]) {
         expect(row).not.toHaveProperty('customerId');
@@ -265,10 +277,10 @@ describe('Cross-tenant isolation (e2e)', () => {
       expect(exported.body.data.rowCount).toBe(list.body.meta.total);
     });
 
-    it('refuses a restricted export to a runner, on both the file and the count', async () => {
+    it('refuses a restricted export to a store, on both the file and the count', async () => {
       const [file, count] = await Promise.all([
-        get('/api/v1/team/exports/email-campaigns', tokens.runner11).expect(403),
-        get('/api/v1/team/exports/email-campaigns/count', tokens.runner11).expect(403),
+        get('/api/v1/team/exports/email-campaigns', tokens.store11).expect(403),
+        get('/api/v1/team/exports/email-campaigns/count', tokens.store11).expect(403),
       ]);
 
       expect(file.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
@@ -306,33 +318,33 @@ describe('Cross-tenant isolation (e2e)', () => {
 
   /** Capability denials, where 403 IS the right answer. */
   describe('role capabilities', () => {
-    it('refuses a runner creating staff', async () => {
+    it('refuses a store creating staff', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/team/staff')
-        .set('Authorization', `Bearer ${tokens.runner11}`)
-        .send({ email: 'x@y.local', username: 'sneaky', password: 'Password123!', role: 'runner' })
+        .set('Authorization', `Bearer ${tokens.store11}`)
+        .send({ email: 'x@y.local', username: 'sneaky', password: 'Password123!', role: 'store' })
         .expect(403);
 
       expect(res.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
     });
 
-    it('refuses a runner creating a game', async () => {
+    it('refuses a store creating a game', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/team/games')
-        .set('Authorization', `Bearer ${tokens.runner11}`)
+        .set('Authorization', `Bearer ${tokens.store11}`)
         .send({ name: 'X', code: 'XX1' })
         .expect(403);
     });
 
-    it('refuses the audit trail to a manager and a runner, but not a master', async () => {
-      const [manager, runner, master] = await Promise.all([
+    it('refuses the audit trail to a manager and a store, but not a master', async () => {
+      const [manager, store, master] = await Promise.all([
         get('/api/v1/team/audit-logs?limit=1', tokens.manager1).expect(403),
-        get('/api/v1/team/audit-logs?limit=1', tokens.runner11).expect(403),
+        get('/api/v1/team/audit-logs?limit=1', tokens.store11).expect(403),
         get('/api/v1/team/audit-logs?limit=1', tokens.master).expect(200),
       ]);
 
       expect(manager.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
-      expect(runner.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
+      expect(store.body.error.code).toBe(ErrorCode.AUTH_FORBIDDEN_ROLE);
       expect(master.body.meta.total).toBeGreaterThan(0);
     });
 

@@ -20,6 +20,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       port,
       password,
       db,
+      // Resolve both A and AAAA records. ioredis defaults to IPv4 only,
+      // which cannot reach hosts on IPv6-only private networks (Railway).
+      family: 0,
       lazyConnect: true,
       maxRetriesPerRequest: 3,
     });

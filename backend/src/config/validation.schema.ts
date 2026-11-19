@@ -61,6 +61,8 @@ export const validationSchema = Joi.object({
   SMTP_SECURE: Joi.boolean().default(false),
   SMTP_USER: Joi.string().allow('').default(''),
   SMTP_PASSWORD: Joi.string().allow('').default(''),
+  // Takes precedence over SMTP when set.
+  RESEND_API_KEY: Joi.string().allow('').default(''),
   // tlds: false — Joi validates against the IANA TLD list by default,
   // which rejects internal senders like no-reply@sambehen.local and any
   // corporate .internal domain.

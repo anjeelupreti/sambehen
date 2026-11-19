@@ -13,6 +13,8 @@ export default registerAs('mail', () => ({
   secure: process.env.SMTP_SECURE === 'true',
   user: process.env.SMTP_USER || '',
   password: process.env.SMTP_PASSWORD || '',
+  /** When set, mail goes through Resend's HTTPS API and the SMTP_* values are ignored. */
+  resendApiKey: process.env.RESEND_API_KEY || '',
   from: process.env.MAIL_FROM || 'no-reply@sambehen.local',
   fromName: process.env.MAIL_FROM_NAME || 'Sambehen',
   /** Public origin used to build unsubscribe and download links in emails. */

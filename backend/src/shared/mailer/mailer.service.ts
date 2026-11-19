@@ -17,12 +17,18 @@ export interface ISendMailResult {
   retryable: boolean;
 }
 
+const RESEND_ENDPOINT = 'https://api.resend.com/emails';
+
 /**
- * SMTP transport.
+ * Mail transport: Resend's HTTPS API when `RESEND_API_KEY` is set, SMTP
+ * otherwise.
  *
- * Deliberately the only place nodemailer is referenced: everything else
- * depends on this interface, so swapping in SendGrid, SES or Resend later
- * touches one file rather than the campaign pipeline.
+ * Resend goes over HTTPS rather than its SMTP relay because hosts such as
+ * Railway block outbound SMTP ports (25/465/587) on their lower plans.
+ *
+ * Deliberately the only place a mail transport is referenced: everything
+ * else depends on this interface, so swapping providers touches one file
+ * rather than the campaign pipeline.
  *
  * `send` never throws. A campaign of a thousand recipients must not stop
  * because one address is malformed, so failures come back as a result the
@@ -31,11 +37,18 @@ export interface ISendMailResult {
 @Injectable()
 export class MailerService implements OnModuleInit {
   private readonly logger = new Logger(MailerService.name);
-  private transporter!: nodemailer.Transporter;
+  private transporter?: nodemailer.Transporter;
+  private resendApiKey = '';
 
   constructor(private readonly configService: ConfigService) {}
 
   onModuleInit(): void {
+    this.resendApiKey = this.configService.get<string>('mail.resendApiKey', '');
+    if (this.resendApiKey) {
+      this.logger.log('Mail transport configured for Resend (HTTPS API)');
+      return;
+    }
+
     const host = this.configService.get<string>('mail.host', 'localhost');
     const port = this.configService.get<number>('mail.port', 587);
     const user = this.configService.get<string>('mail.user', '');
@@ -59,8 +72,10 @@ export class MailerService implements OnModuleInit {
     const from = this.configService.get<string>('mail.from', 'no-reply@sambehen.local');
     const fromName = this.configService.get<string>('mail.fromName', 'Sambehen');
 
+    if (this.resendApiKey) return this.sendViaResend(input, `${fromName} <${from}>`);
+
     try {
-      const info = await this.transporter.sendMail({
+      const info = await this.transporter!.sendMail({
         from: `"${fromName}" <${from}>`,
         to: input.to,
         subject: input.subject,
@@ -73,6 +88,43 @@ export class MailerService implements OnModuleInit {
       const message = error instanceof Error ? error.message : String(error);
 
       return { success: false, error: message, retryable: this.isRetryable(error) };
+    }
+  }
+
+  private async sendViaResend(input: ISendMailInput, from: string): Promise<ISendMailResult> {
+    try {
+      const response = await fetch(RESEND_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to: [input.to],
+          subject: input.subject,
+          text: input.text,
+          html: input.html,
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+
+      const body = (await response.json().catch(() => ({}))) as { id?: string; message?: string };
+
+      if (response.ok) return { success: true, messageId: body.id, retryable: false };
+
+      // 429 (rate limit) and 5xx are transient; any other 4xx — an
+      // unverified sender domain, an invalid address — will fail again.
+      const retryable = response.status === 429 || response.status >= 500;
+      return {
+        success: false,
+        error: `Resend ${response.status}: ${body.message ?? response.statusText}`,
+        retryable,
+      };
+    } catch (error) {
+      // Network failure or timeout: worth another attempt.
+      const message = error instanceof Error ? error.message : String(error);
+      return { success: false, error: message, retryable: true };
     }
   }
 
@@ -95,8 +147,12 @@ export class MailerService implements OnModuleInit {
 
   /** Connectivity probe, for the health endpoint. */
   async verify(): Promise<boolean> {
+    // A sending-only Resend key cannot call any read endpoint, so there is
+    // nothing to probe beyond the key being present.
+    if (this.resendApiKey) return true;
+
     try {
-      await this.transporter.verify();
+      await this.transporter!.verify();
       return true;
     } catch {
       return false;

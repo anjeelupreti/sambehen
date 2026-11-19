@@ -41,7 +41,8 @@ export async function seedReferrals(
     return { programs: 0, codes: 0, referrals: 0 };
   }
 
-  const [standardProgram, closedProgram] = await db
+  // The closed program is inserted for display only; nothing references it.
+  const [standardProgram] = await db
     .insert(referralPrograms)
     .values([
       {

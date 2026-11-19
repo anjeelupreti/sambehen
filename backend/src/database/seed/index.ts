@@ -23,14 +23,20 @@ async function main(): Promise<void> {
   const logger = console;
   logger.log('Starting database seed...');
 
-  const pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT) || 5432,
-    user: process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'sambehen',
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-  });
+  const ssl = process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false;
+  // DATABASE_URL wins when set, matching the app and drizzle.config.ts.
+  const pool = new Pool(
+    process.env.DATABASE_URL
+      ? { connectionString: process.env.DATABASE_URL, ssl }
+      : {
+          host: process.env.DB_HOST || 'localhost',
+          port: Number(process.env.DB_PORT) || 5432,
+          user: process.env.DB_USERNAME || 'postgres',
+          password: process.env.DB_PASSWORD || 'postgres',
+          database: process.env.DB_NAME || 'sambehen',
+          ssl,
+        },
+  );
 
   const db = drizzle(pool, { schema });
 
