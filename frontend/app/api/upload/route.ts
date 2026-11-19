@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { storeFile } from '@/lib/server/storage';
 
 /**
  * Game cover image upload.
@@ -46,14 +45,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Image must be 5MB or smaller.' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filename = `${randomUUID()}.${extension}`;
-    const uploadDir = join(process.cwd(), 'public', 'uploads');
+    const url = await storeFile({
+      key: `games/${randomUUID()}.${extension}`,
+      body: Buffer.from(await file.arrayBuffer()),
+      contentType: file.type,
+    });
 
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(join(uploadDir, filename), buffer);
-
-    return NextResponse.json({ url: `/uploads/${filename}` });
+    return NextResponse.json({ url });
   } catch (error) {
     console.error('Error uploading file:', error);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });

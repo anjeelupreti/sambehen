@@ -1,8 +1,7 @@
 import 'server-only';
 
-import { mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { storeFile } from './storage';
 
 /**
  * Shared by both message-attachment upload routes (staff and customer —
@@ -54,17 +53,24 @@ export async function saveAttachment(file: File): Promise<SaveAttachmentResult> 
     return { ok: false, status: 400, message: 'Files must be 15MB or smaller.' };
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const filename = `${randomUUID()}.${extension}`;
-  const uploadDir = join(process.cwd(), 'public', 'uploads', 'attachments');
-
-  await mkdir(uploadDir, { recursive: true });
-  await writeFile(join(uploadDir, filename), buffer);
+  let url: string;
+  try {
+    url = await storeFile({
+      key: `attachments/${randomUUID()}.${extension}`,
+      body: Buffer.from(await file.arrayBuffer()),
+      contentType: file.type,
+      // Images display inline in the thread; everything else downloads.
+      download: !file.type.startsWith('image/'),
+    });
+  } catch (error) {
+    console.error('Error storing attachment:', error);
+    return { ok: false, status: 502, message: 'The file could not be stored. Try again.' };
+  }
 
   return {
     ok: true,
     attachment: {
-      url: `/uploads/attachments/${filename}`,
+      url,
       // The original name is what a recipient recognises — kept as
       // metadata, never as the path on disk.
       filename: file.name.slice(0, 255),
