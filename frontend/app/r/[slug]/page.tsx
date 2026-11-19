@@ -41,7 +41,8 @@ export default async function ReferralLandingPage({
     response = await fetch(`${API_URL}${API_PREFIX}/public/referral/${encodeURIComponent(slug)}`, {
       cache: 'no-store',
     });
-  } catch {
+  } catch (error) {
+    console.error('Referral lookup failed:', error);
     return (
       <main className="flex min-h-svh items-center justify-center p-6">
         <Card className="w-full max-w-md">
