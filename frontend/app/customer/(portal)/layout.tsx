@@ -52,10 +52,13 @@ export default async function CustomerLayout({ children }: { children: React.Rea
 
             <ThemeToggle />
 
+            {/* A plain <a>, not <Link>: production Next.js prefetches visible
+                links, and prefetching this route runs it, which clears the
+                session cookies the moment any portal page renders. */}
             <Button asChild variant="ghost" size="sm" aria-label="Sign out">
-              <Link href="/customer/logout">
+              <a href="/customer/logout">
                 <LogOutIcon className="size-4" />
-              </Link>
+              </a>
             </Button>
           </nav>
         </div>
