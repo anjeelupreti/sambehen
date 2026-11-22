@@ -416,7 +416,7 @@ function ConnectionBadge({ state }: { state: 'connecting' | 'live' | 'offline' }
   if (state === 'live') {
     return (
       <span className="text-muted-foreground flex items-center gap-1 text-xs">
-        <RadioIcon className="size-3 text-green-600 dark:text-green-500" />
+        <RadioIcon className="size-3 text-success" />
         Live
       </span>
     );

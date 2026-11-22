@@ -25,27 +25,16 @@ import { ApiError, apiGet, apiList } from '@/lib/api';
 import { formatCount, formatDate, formatDateTime } from '@/lib/money';
 import type {
   Customer,
-  CustomerStatus,
   Game,
   Transaction,
   TrendResponse,
   TrendGranularity,
 } from '@/lib/types';
+import { CUSTOMER_STATUS_VARIANT } from '@/lib/status';
 
 export const metadata: Metadata = { title: 'Customer' };
 
 const GRANULARITIES: TrendGranularity[] = ['day', 'week', 'month'];
-
-const STATUS_VARIANT: Record<
-  CustomerStatus,
-  'default' | 'secondary' | 'outline' | 'destructive' | 'warning'
-> = {
-  pending: 'warning',
-  active: 'default',
-  inactive: 'secondary',
-  suspended: 'outline',
-  banned: 'destructive',
-};
 
 export default async function CustomerDetailPage({
   params,
@@ -107,7 +96,7 @@ export default async function CustomerDetailPage({
               <h1 className="truncate text-2xl font-semibold tracking-tight">
                 {customer.username}
               </h1>
-              <Badge variant={STATUS_VARIANT[customer.status]} className="capitalize">
+              <Badge variant={CUSTOMER_STATUS_VARIANT[customer.status]} className="capitalize">
                 {customer.status}
               </Badge>
             </div>

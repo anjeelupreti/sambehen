@@ -62,7 +62,7 @@ export default async function UnsubscribePage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             {ok ? (
-              <CheckCircle2Icon className="size-5 text-green-600 dark:text-green-500" />
+              <CheckCircle2Icon className="size-5 text-success" />
             ) : (
               <XCircleIcon className="text-destructive size-5" />
             )}

@@ -26,7 +26,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
     <div className="flex min-h-svh flex-col">
       <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-2 px-4">
-          <Link href="/customer" className="font-semibold tracking-tight">
+          <Link href="/customer" className="text-lg font-bold tracking-tight [font-stretch:125%]">
             Sambehen
           </Link>
 

@@ -578,7 +578,7 @@ export function MessagesFab({ role: _role, actorId }: { role: string; actorId: s
           <div className="relative">
             <MessageSquareIcon className="size-6" />
             {unreadCount > 0 && (
-              <span className="animate-in zoom-in absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+              <span className="animate-in zoom-in absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-white">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -661,7 +661,7 @@ function TeamBubble({ message, fromSelf }: { message: StaffMessage; fromSelf: bo
 /** A one-glyph version of the full page's connection badge — there's no room for the label here. */
 function ConnectionDot({ state }: { state: 'connecting' | 'live' | 'offline' }) {
   if (state === 'live') {
-    return <RadioIcon className="ml-1 size-3 text-green-300" aria-label="Live" />;
+    return <RadioIcon className="text-primary-foreground ml-1 size-3" aria-label="Live" />;
   }
   if (state === 'connecting') {
     return <span className="sr-only">Connecting…</span>;

@@ -46,10 +46,13 @@ const STATUS_OPTIONS = [
   { value: 'rejected', label: 'Rejected' },
 ];
 
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+const STATUS_VARIANT: Record<
+  string,
+  'default' | 'secondary' | 'outline' | 'destructive' | 'success' | 'warning'
+> = {
   pending: 'outline',
   qualified: 'secondary',
-  rewarded: 'default',
+  rewarded: 'success',
   rejected: 'destructive',
 };
 

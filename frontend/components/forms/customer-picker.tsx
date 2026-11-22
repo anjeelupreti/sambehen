@@ -61,7 +61,7 @@ export function CustomerPicker({
         {() => (
           <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
             <span className="flex min-w-0 items-center gap-2">
-              <CheckIcon className="size-4 shrink-0 text-green-600 dark:text-green-500" />
+              <CheckIcon className="size-4 shrink-0 text-success" />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">{value.username}</span>
                 {value.fullName ? (

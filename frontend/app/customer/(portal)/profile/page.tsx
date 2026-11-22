@@ -7,17 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { customerGet } from '@/lib/customer-api';
 import { formatDateTime } from '@/lib/money';
 import type { components } from '@/lib/api-schema';
+import { CUSTOMER_STATUS_VARIANT } from '@/lib/status';
 
 type CustomerProfile = components['schemas']['CustomerProfileDto'];
 
 export const metadata: Metadata = { title: 'Your profile' };
-
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-  active: 'default',
-  inactive: 'secondary',
-  suspended: 'outline',
-  banned: 'destructive',
-};
 
 /**
  * Read-only, deliberately. The API refuses every write to a customer's own
@@ -67,7 +61,10 @@ export default async function CustomerProfilePage() {
             <Field
               label="Status"
               value={
-                <Badge variant={STATUS_VARIANT[profile.status] ?? 'outline'} className="capitalize">
+                <Badge
+                  variant={CUSTOMER_STATUS_VARIANT[profile.status] ?? 'outline'}
+                  className="capitalize"
+                >
                   {profile.status}
                 </Badge>
               }

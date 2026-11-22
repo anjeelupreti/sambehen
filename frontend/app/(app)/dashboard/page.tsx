@@ -69,9 +69,9 @@ export default async function DashboardPage({
       {actor?.role === 'master' && metrics.customers.pendingApproval > 0 ? (
         <Link
           href="/customers?status=pending"
-          className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm transition-colors hover:bg-amber-500/15"
+          className="flex items-center gap-3 rounded-lg border-highlight/60 bg-warning-surface hover:border-highlight border px-4 py-3 text-sm transition-colors"
         >
-          <UserCheckIcon className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <UserCheckIcon className="size-4 shrink-0 text-warning" />
           <span>
             <strong className="font-semibold">
               {formatCount(metrics.customers.pendingApproval)}

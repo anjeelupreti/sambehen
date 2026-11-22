@@ -15,7 +15,14 @@ const badgeVariants = cva(
         outline: 'text-foreground',
         // Needs a human to act on it — distinct from suspended/banned
         // (outline/destructive), which are already-decided end states.
-        warning: 'border-transparent bg-amber-500/15 text-amber-600 dark:text-amber-400',
+        warning: 'border-transparent bg-warning-surface text-warning',
+        // A settled, healthy state: active, approved, rewarded.
+        success: 'border-transparent bg-success/12 text-success',
+        // Blocked but reversible (suspended) — softer than destructive,
+        // which marks a final state such as banned.
+        danger: 'border-transparent bg-destructive/10 text-destructive',
+        highlight:
+          'border-transparent bg-highlight/25 text-highlight-foreground dark:text-highlight',
         // Money direction, matching the tokens in globals.css. Neither is a
         // success or a failure state.
         debit: 'border-transparent bg-debit/10 text-debit',

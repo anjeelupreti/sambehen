@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 
 import { AppSidebar } from '@/components/app-sidebar';
 import { MobileNav } from '@/components/mobile-nav';
-import { ThemeCustomizer } from '@/components/theme-customizer';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { UserMenu } from '@/components/user-menu';
 import { MessagesFab } from '@/components/messages-fab';
 import { Separator } from '@/components/ui/separator';
@@ -27,9 +27,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-svh overflow-hidden">
-      <aside className="bg-card hidden w-60 shrink-0 border-r md:flex md:flex-col">
+      <aside className="bg-sidebar hidden w-60 shrink-0 border-r md:flex md:flex-col">
         <div className="flex h-14 items-center px-5 shrink-0">
-          <Link href="/dashboard" className="font-semibold tracking-tight">
+          <Link href="/dashboard" className="text-lg font-bold tracking-tight [font-stretch:125%]">
             Sambehen
           </Link>
         </div>
@@ -45,13 +45,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {/* Below md the sidebar is hidden, so this drawer is the only
                 way off the current page. */}
             <MobileNav role={actor.role} />
-            <Link href="/dashboard" className="font-semibold tracking-tight md:hidden">
+            <Link
+              href="/dashboard"
+              className="text-lg font-bold tracking-tight [font-stretch:125%] md:hidden"
+            >
               Sambehen
             </Link>
           </div>
 
           <div className="flex items-center gap-1">
-            <ThemeCustomizer />
+            <ThemeToggle />
             <UserMenu username={actor.username} role={actor.role} />
           </div>
         </header>

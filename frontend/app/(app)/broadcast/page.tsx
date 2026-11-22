@@ -30,12 +30,16 @@ export const metadata: Metadata = { title: 'Broadcast' };
  * recipients did not receive it, and that is the state most worth noticing
  * on this page.
  */
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+const STATUS_VARIANT: Record<
+  string,
+  'default' | 'secondary' | 'outline' | 'destructive' | 'success' | 'warning' | 'danger'
+> = {
   draft: 'secondary',
   queued: 'outline',
   sending: 'outline',
-  sent: 'default',
-  partial: 'destructive',
+  sent: 'success',
+  // Some recipients failed: someone should look, but it is not a total loss.
+  partial: 'warning',
   failed: 'destructive',
   cancelled: 'secondary',
 };

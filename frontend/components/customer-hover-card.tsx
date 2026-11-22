@@ -11,19 +11,8 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { Money } from '@/components/money';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/money';
-import type { CustomerStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
-
-const STATUS_VARIANT: Record<
-  CustomerStatus,
-  'default' | 'secondary' | 'outline' | 'destructive' | 'warning'
-> = {
-  pending: 'warning',
-  active: 'default',
-  inactive: 'secondary',
-  suspended: 'outline',
-  banned: 'destructive',
-};
+import { CUSTOMER_STATUS_VARIANT } from '@/lib/status';
 
 const initials = (name: string) =>
   name
@@ -89,7 +78,7 @@ export function CustomerHoverCard({
                 className="bg-background absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full border shadow-sm"
                 title={`VIP tier ${profile.vipTier}`}
               >
-                <CrownIcon className="size-3 fill-amber-400 text-amber-500" />
+                <CrownIcon className="size-3 fill-highlight text-highlight" />
               </span>
             ) : null}
           </div>
@@ -104,7 +93,7 @@ export function CustomerHoverCard({
               </Link>
               {profile?.isVip ? (
                 <Badge variant="outline" className="h-5 gap-1 px-1.5 text-[10px]">
-                  <CrownIcon className="size-2.5 fill-amber-400 text-amber-500" />
+                  <CrownIcon className="size-2.5 fill-highlight text-highlight" />
                   Tier {profile.vipTier}
                 </Badge>
               ) : null}
@@ -124,7 +113,7 @@ export function CustomerHoverCard({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Status</span>
                 <Badge
-                  variant={STATUS_VARIANT[profile.customer.status]}
+                  variant={CUSTOMER_STATUS_VARIANT[profile.customer.status]}
                   className="h-5 px-1.5 text-[10px] capitalize"
                 >
                   {profile.customer.status}

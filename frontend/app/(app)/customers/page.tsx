@@ -32,20 +32,10 @@ import {
 import { apiList } from '@/lib/api';
 import { formatCount, formatDate } from '@/lib/money';
 import { getActor } from '@/lib/session';
-import type { Customer, CustomerStatus, CustomerSummary, Staff } from '@/lib/types';
+import type { Customer, CustomerSummary, Staff } from '@/lib/types';
+import { CUSTOMER_STATUS_VARIANT } from '@/lib/status';
 
 export const metadata: Metadata = { title: 'Customers' };
-
-const STATUS_VARIANT: Record<
-  CustomerStatus,
-  'default' | 'secondary' | 'outline' | 'destructive' | 'warning'
-> = {
-  pending: 'warning',
-  active: 'default',
-  inactive: 'secondary',
-  suspended: 'outline',
-  banned: 'destructive',
-};
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -225,7 +215,10 @@ export default async function CustomersPage({
                       ) : null}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANT[customer.status]} className="capitalize">
+                      <Badge
+                        variant={CUSTOMER_STATUS_VARIANT[customer.status]}
+                        className="capitalize"
+                      >
                         {customer.status}
                       </Badge>
                     </TableCell>
