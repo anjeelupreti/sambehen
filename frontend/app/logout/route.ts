@@ -1,4 +1,6 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+import { redirectTo } from '@/lib/redirect';
 
 import { apiRequest } from '@/lib/api';
 
@@ -35,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.redirect(new URL('/login', request.url));
+  const response = redirectTo('/login');
   for (const name of COOKIES) {
     response.cookies.set(name, '', { path: '/', maxAge: 0 });
   }

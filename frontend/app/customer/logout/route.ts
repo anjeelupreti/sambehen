@@ -1,4 +1,6 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+import { redirectTo } from '@/lib/redirect';
 
 const COOKIES = [
   'sambehen_customer_access',
@@ -17,8 +19,8 @@ const COOKIES = [
  * throwing, and the response built from that throw does not reliably carry
  * cookie mutations.
  */
-export async function GET(request: NextRequest) {
-  const response = NextResponse.redirect(new URL('/login', request.url));
+export async function GET(_request: NextRequest) {
+  const response = redirectTo('/login');
   for (const name of COOKIES) {
     response.cookies.set(name, '', { path: '/', maxAge: 0 });
   }
