@@ -191,6 +191,59 @@
   }
 }
 
+/*
+ * Landing page tokens (`lp-`). The public page commits to one dark look,
+ * so these are fixed values rather than theme-switched ones, and they sit
+ * beside the shadcn set without touching it — the signed-in app keeps its
+ * own tokens until it is redesigned onto these.
+ *
+ * A light, cool ground (not cream) with navy ink. Cobalt is the action
+ * colour: buttons, links, selection. Sunflower is the highlight colour and is
+ * reserved for VIP and reward data — as a fill; on white its text form is
+ * the darker `chip-text` so it stays readable. Signal marks money in.
+ */
+@theme {
+  --color-lp-ground: #f6f7fb;
+  --color-lp-raised: #ffffff;
+  --color-lp-sunk: #eef1f7;
+  --color-lp-line: #e2e6ef;
+  --color-lp-line-strong: #cbd2e0;
+  --color-lp-text: #121a2b;
+  --color-lp-dim: #5b6478;
+  --color-lp-primary: #2f5bff;
+  --color-lp-primary-hover: #1f47e6;
+  --color-lp-chip: #ffc83d;
+  --color-lp-chip-text: #9a6b00;
+  --color-lp-signal: #2f5bff;
+  --color-lp-ok: #0e8a5f;
+  --color-lp-stop: #d1343a;
+}
+
+@theme inline {
+  --font-lp: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* The landing hero's one moment: a transaction lands, its figures update. */
+@keyframes lp-land {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lp-tick {
+  0% {
+    color: var(--color-lp-signal);
+  }
+  100% {
+    color: inherit;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

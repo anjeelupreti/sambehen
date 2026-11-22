@@ -1,156 +1,141 @@
+import { existsSync } from 'fs';
+import { join } from 'path';
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import {
-  ArrowRightIcon,
-  BellDotIcon,
-  ClipboardCheckIcon,
-  HelpCircleIcon,
-  HistoryIcon,
-  MessagesSquareIcon,
-  PaperclipIcon,
-  RadioIcon,
-  SearchIcon,
-  SendHorizonalIcon,
-  ShieldCheckIcon,
-  UserPlusIcon,
-  UserRoundCheckIcon,
-  ZapIcon,
-} from 'lucide-react';
 
-import { ChatPreview } from '@/components/welcome/chat-preview';
-import { InboxPreview } from '@/components/welcome/inbox-preview';
-import { Reveal } from '@/components/welcome/reveal';
-import { SecureRealms } from '@/components/welcome/secure-realms';
-import { SiteNavbar } from '@/components/welcome/site-navbar';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { getAccessToken } from '@/lib/session';
+import { AccessMap } from '@/components/landing/access-map';
+import { DashboardView } from '@/components/landing/dashboard-view';
+import { ImportExportView } from '@/components/landing/import-export-view';
+import { PortalView } from '@/components/landing/portal-view';
+import { HeroRecord } from '@/components/landing/hero-record';
+import { PlatformTour } from '@/components/landing/platform-tour';
+import { SiteHeader } from '@/components/landing/site-header';
 import { getCustomerAccessToken } from '@/lib/customer-session';
+import { archivo } from '@/lib/fonts';
+import { getAccessToken } from '@/lib/session';
 
 export const metadata: Metadata = {
   title: 'Sambehen',
   description:
-    'Message your team directly. One thread, delivered live, with everything said kept in order.',
+    'Player data and messaging for gaming operators: transactions, VIP tiers, reward events, referrals and live messages, scoped to every store.',
 };
 
-const PILLARS = [
+const LIFECYCLE = [
+  { title: 'Player registers', body: 'Online, or added by staff from a spreadsheet.' },
   {
-    icon: ZapIcon,
-    title: 'Messages arrive, not refresh',
-    body: 'An open connection delivers each message the moment it is sent. Nothing here waits for you to reload the page.',
+    title: 'Store takes them on',
+    body: 'The master assigns a manager or store before first sign-in.',
   },
   {
-    icon: UserRoundCheckIcon,
-    title: 'Owned, not ticketed',
-    body: 'Every account is assigned to a manager or store at approval. Your thread goes to the people responsible for it, not into a general pile.',
+    title: 'Play is recorded',
+    body: 'Each debit and credit updates the balance as it is entered.',
+  },
+  { title: 'VIP qualifies', body: 'Spend in the period moves the player into a tier.' },
+  { title: 'Rewards go out', body: 'Only players who qualified can receive a reward.' },
+  { title: 'Referral pays', body: 'Both bonuses post once the new player spends enough.' },
+];
+
+const PORTAL_POINTS = [
+  {
+    title: 'Their balance, always current',
+    body: 'Every entry a store records shows up the moment it is saved.',
+  },
+  { title: 'Progress they can see', body: 'Players know how close they are to the next tier.' },
+  { title: 'Referrals in their pocket', body: 'A personal code and link, ready to share.' },
+  { title: 'A direct line to their store', body: 'Messages go to the team that looks after them.' },
+];
+
+const GET_STARTED = [
+  {
+    title: 'Set up your chain',
+    body: 'Add your managers and stores. Each one gets its own sign-in.',
   },
   {
-    icon: PaperclipIcon,
-    title: 'Files in the thread',
-    body: 'Images, PDFs and spreadsheets attach straight to a message and stay with it — no separate upload to chase.',
+    title: 'Bring in your players',
+    body: 'Import a spreadsheet or add players one at a time, then assign them to stores.',
   },
   {
-    icon: ShieldCheckIcon,
-    title: 'Separate by design',
-    body: 'Customer and team sign-ins are signed with different keys, so a session on one side is not a session on the other.',
+    title: 'Start recording',
+    body: 'Stores enter play as it happens. Tiers, rewards and referrals follow on their own.',
   },
 ];
 
-const STEPS = [
+const TRUST = [
   {
-    icon: UserPlusIcon,
-    title: 'Create your account',
-    body: 'Email, a username and a password. It takes about a minute.',
+    title: 'Every change is on record',
+    body: 'The audit trail keeps who changed what, with before and after values.',
   },
   {
-    icon: ClipboardCheckIcon,
-    title: 'A team member picks it up',
-    body: 'Every new account is reviewed and assigned to a manager or store, so there is someone responsible for it from day one.',
+    title: 'Staff and players sign in apart',
+    body: 'Their sessions use separate keys, so one can never act as the other.',
   },
   {
-    icon: SendHorizonalIcon,
-    title: 'Start the conversation',
-    body: 'Sign in and open your thread. Everything you send and receive stays in one place.',
-  },
-];
-
-const INBOX_DETAILS = [
-  {
-    icon: BellDotIcon,
-    title: 'Unread counts that mean something',
-    body: 'Anything you have not read is counted. Opening a thread clears it — nothing has to be marked by hand.',
+    title: 'Exports follow access',
+    body: 'A spreadsheet only ever contains rows the person exporting can see.',
   },
   {
-    icon: SearchIcon,
-    title: 'Search across people and messages',
-    body: 'One field over the whole list, matching names and message text alike, so an old thread is a few letters away.',
-  },
-  {
-    icon: RadioIcon,
-    title: 'It tells you when it is not live',
-    body: 'The connection state is shown rather than hidden. If the live link drops the page says so, instead of letting an empty thread read as silence.',
+    title: 'Money is never rounded',
+    body: 'Amounts are stored to the cent and totalled in the database.',
   },
 ];
 
-const ATTACHMENTS = [
-  { name: 'friday-summary.pdf', meta: 'PDF · from the team' },
-  { name: 'receipt-scan.png', meta: 'Image · sent by you' },
-  { name: 'entries-march.csv', meta: 'Spreadsheet · from the team' },
-];
-
-const FAQS = [
+const QUESTIONS = [
   {
-    q: 'Who am I actually talking to?',
-    a: 'The manager or store your account was assigned to when it was approved. Replies show as coming from "Team" rather than naming an individual — which of them typed it is internal, but the responsibility for your account is not shared out to a general queue, and it is not a bot.',
+    q: 'Can one store see another store’s players?',
+    a: 'No. A store sees its own players, a manager sees their stores, and only the master sees everything.',
   },
   {
-    q: 'Why does my account need approval before I can sign in?',
-    a: 'Because the assignment happens then. A team member reviews the account and takes it on, which is what gives your messages someone to arrive with.',
+    q: 'How are VIP tiers decided?',
+    a: 'The master sets a spend target for a period. Qualification updates on every transaction, so nobody maintains a list by hand.',
   },
   {
-    q: 'Are messages delivered live, or do I have to refresh?',
-    a: 'Live. The app holds an authenticated connection open and messages appear as they are sent, on every device you have the page open on. If that connection drops, the page tells you rather than pretending.',
+    q: 'Can we bring our existing players?',
+    a: 'Yes. Upload a spreadsheet, review each row, and import only the ones you keep.',
   },
   {
-    q: 'Can I send files?',
-    a: 'Yes — images, PDFs, documents, spreadsheets, CSVs and zip archives attach directly to a message and stay attached to it in the thread.',
+    q: 'Do players get their own login?',
+    a: 'Yes. Players see their balance, VIP progress, recent rewards and referral link, and can message their store.',
   },
   {
-    q: 'Is my conversation kept?',
-    a: 'Every message is stored and the full history is there when you open the thread. Nothing is dropped after a period of silence.',
+    q: 'Can we get our data out?',
+    a: 'Every list exports to a spreadsheet that matches the filters on screen.',
   },
   {
-    q: 'Can staff read anyone they like?',
-    a: 'No. Reach follows assignment: a team member sees the conversations belonging to the accounts in their own chain, and an internal message between two staff is visible to those two.',
+    q: 'What happens when a player is suspended?',
+    a: 'They can no longer sign in. Their record and history stay intact, and staff can reactivate them at any time.',
   },
   {
-    q: 'Can I change my own password?',
-    a: 'No — credential and profile changes are made by your assigned team member on your behalf. That keeps a real person accountable for every change on your account. Message them and they will make it.',
+    q: 'Can staff message each other?',
+    a: 'Yes. Staff have their own threads, and each one is visible only to the people in it.',
+  },
+  {
+    q: 'Does it work on a phone?',
+    a: 'Yes. Staff and players can use every page on a phone, including messaging.',
   },
 ];
 
 /**
- * The public front door.
- *
- * A signed-in visitor is sent straight past this to where they were
- * already going — staff to `/dashboard`, customers to `/customer` — so
- * this page is only ever seen by someone with no session at all. That is
- * also why it checks the *access* token rather than the actor cookie: the
- * actor cookie outlives the access token by design (see `/login`), and
- * keying on it here would land a stale session back on a marketing page
- * instead of asking them to sign back in.
- *
- * Every claim below describes something the signed-in product actually
- * does — live delivery, attachments, unread counts, per-realm keys. A
- * front door that promises a feature the app does not have is a bug that
- * only shows up after someone registers.
+ * Illustrations are generated outside the codebase and dropped into
+ * `public/landing/`. Each slot renders only once its file exists, so the
+ * page is complete with or without them.
  */
-export default async function WelcomePage() {
+const landingAsset = (file: string): string | null =>
+  existsSync(join(process.cwd(), 'public', 'landing', file)) ? `/landing/${file}` : null;
+
+const HERO_ART = landingAsset('hero-objects.png');
+const TRUST_ART = landingAsset('trust.png');
+const CLOSING_ART = landingAsset('closing.png');
+
+/**
+ * The public front door, for operators evaluating Sambehen.
+ *
+ * A signed-in visitor goes straight to their own app. Every view on this
+ * page is built from the product's own components with example data, and
+ * every claim describes something the product does today.
+ */
+export default async function LandingPage() {
   const [staffToken, customerToken] = await Promise.all([
     getAccessToken(),
     getCustomerAccessToken(),
@@ -159,321 +144,333 @@ export default async function WelcomePage() {
   if (staffToken) redirect('/dashboard');
   if (customerToken) redirect('/customer');
 
+  const contactEmail = process.env.CONTACT_EMAIL;
+
   return (
-    <div className="flex min-h-svh flex-col">
-      <SiteNavbar />
+    <div
+      className={`${archivo.variable} font-lp bg-lp-ground text-lp-text min-h-svh antialiased [color-scheme:light]`}
+    >
+      <SiteHeader />
 
-      <main className="flex-1">
+      <main>
         {/* Hero */}
-        <section className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2 lg:py-24 lg:px-8">
-          <div className="animate-in fade-in slide-in-from-bottom-6 space-y-6 duration-700">
-            <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
-              <MessagesSquareIcon className="size-3.5" />
-              Real-time messaging
-            </span>
-            <h1 className="text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
-              Talk to your team.
-              <span className="text-primary"> Right here.</span>
+        <section className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 pt-14 pb-20 sm:px-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,7fr)] lg:gap-14 lg:px-8 lg:pt-20 lg:pb-28">
+          <div className="max-w-xl">
+            <h1 className="text-[2.25rem] leading-[1.04] font-extrabold tracking-[-0.02em] text-balance [font-stretch:112%] sm:text-5xl sm:[font-stretch:125%] xl:text-[3.4rem]">
+              Run every player, store and reward from one system.
             </h1>
-            <p className="text-muted-foreground max-w-lg text-lg">
-              Sambehen puts every conversation with the team that handles your account in one
-              thread — delivered as it is sent, kept in order, and there whenever you open it.
+            <p className="text-lp-dim mt-6 max-w-md text-lg leading-relaxed">
+              Record play, track VIP tiers, run rewards and referrals, and message players. Each
+              store sees only its own.
             </p>
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Link
-                href="/customer/register"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 items-center justify-center gap-2 rounded-md px-6 text-sm font-semibold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+            <div className="mt-9 flex flex-wrap gap-3">
+              {contactEmail ? (
+                <a
+                  href={`mailto:${contactEmail}?subject=Sambehen%20demo`}
+                  className="bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  Book a demo
+                </a>
+              ) : (
+                <Link
+                  href="/login"
+                  className="bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  Sign in
+                </Link>
+              )}
+              <a
+                href="#platform"
+                className="border-lp-line-strong hover:border-lp-dim focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg border px-6 font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
               >
-                Start messaging
-                <ArrowRightIcon className="size-4" />
-              </Link>
-              <Link
-                href="/customer/login"
-                className="hover:bg-muted inline-flex h-11 items-center justify-center rounded-md border px-6 text-sm font-semibold transition-all hover:-translate-y-0.5 active:translate-y-0"
-              >
-                Open your inbox
-              </Link>
+                See the platform
+              </a>
             </div>
-            <p className="text-muted-foreground text-sm">
-              On the team?{' '}
-              <Link
-                href="/login"
-                className="text-foreground font-medium underline-offset-4 hover:underline"
-              >
-                Sign in here
-              </Link>
-              .
-            </p>
           </div>
 
-          <div className="animate-in fade-in zoom-in-95 duration-1000">
-            <ChatPreview />
-          </div>
-        </section>
-
-        {/* What the messaging actually gives you */}
-        <section className="border-t">
-          <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-20 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8 lg:py-24">
-            {PILLARS.map(({ icon: Icon, title, body }, index) => (
-              <Reveal key={title} delay={index * 100}>
-                <div className="group space-y-3 rounded-xl p-2 transition-all hover:-translate-y-1">
-                  <div className="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground flex size-10 items-center justify-center rounded-lg transition-colors duration-300">
-                    <Icon className="size-5" />
-                  </div>
-                  <h3 className="font-semibold">{title}</h3>
-                  <p className="text-muted-foreground text-sm">{body}</p>
-                </div>
-              </Reveal>
-            ))}
+          <div className={`relative ${HERO_ART ? 'lg:pt-20 lg:pr-16' : ''}`}>
+            {HERO_ART && (
+              <Image
+                src={HERO_ART}
+                alt=""
+                width={1200}
+                height={1200}
+                priority
+                className="pointer-events-none absolute -top-4 -right-6 hidden w-[18rem] select-none lg:block"
+              />
+            )}
+            <div className="relative">
+              <HeroRecord />
+            </div>
           </div>
         </section>
 
-        {/* The inbox */}
-        <section className="bg-muted/30 border-t">
-          <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
-            <Reveal className="order-2 lg:order-1">
-              <InboxPreview />
-            </Reveal>
+        {/* Platform */}
+        <section id="platform" className="border-lp-line scroll-mt-16 border-t">
+          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <SectionHeading
+              title="The whole operation in six tools"
+              body="They share one record per player, so nothing is entered twice."
+            />
+            <div className="mt-12">
+              <PlatformTour />
+            </div>
+          </div>
+        </section>
 
-            <Reveal delay={150} className="order-1 lg:order-2">
-              <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
-                <MessagesSquareIcon className="size-3.5" />
-                For the team
-              </span>
-              <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
-                Every conversation in one list
-              </h2>
-              <p className="text-muted-foreground mt-3 max-w-md">
-                Customers get one thread with their team. On the other side, staff get all of theirs
-                in a single searchable list — sorted by what came in last, so nothing sits unanswered
-                because it scrolled out of sight.
-              </p>
+        {/* Dashboard */}
+        <section id="dashboard" className="border-lp-line bg-lp-sunk scroll-mt-16 border-t">
+          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <SectionHeading
+              title="Know where every store stands"
+              body="Money in, money out and top games, for the stores you can see."
+            />
+            <div className="mt-12">
+              <DashboardView />
+            </div>
+          </div>
+        </section>
 
-              <dl className="mt-6 space-y-4">
-                {INBOX_DETAILS.map(({ icon: Icon, title, body }) => (
-                  <div key={title} className="flex gap-3">
-                    <span className="bg-primary/10 text-primary mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg">
-                      <Icon className="size-4" />
-                    </span>
-                    <div>
-                      <dt className="text-sm font-semibold">{title}</dt>
-                      <dd className="text-muted-foreground text-sm">{body}</dd>
-                    </div>
+        {/* Lifecycle */}
+        <section id="lifecycle" className="border-lp-line scroll-mt-16 border-t">
+          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <SectionHeading
+              title="From sign-up to reward"
+              body="Each step triggers the next. Staff only enter the play."
+            />
+            <ol className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-lp-line bg-lp-line sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              {LIFECYCLE.map((step, index) => (
+                <li key={step.title} className="bg-lp-raised flex flex-col gap-3 p-6">
+                  <span className="tabular text-lp-chip-text text-sm font-semibold">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <h3 className="font-semibold">{step.title}</h3>
+                  <p className="text-lp-dim text-sm leading-relaxed">{step.body}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Player portal */}
+        <section id="players" className="border-lp-line bg-lp-sunk scroll-mt-16 border-t">
+          <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-28">
+            <div>
+              <SectionHeading
+                title="Players get a view of their own"
+                body="A separate sign-in where players check their standing and talk to their store."
+              />
+              <dl className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
+                {PORTAL_POINTS.map((item) => (
+                  <div key={item.title} className="border-lp-line-strong border-t pt-5">
+                    <dt className="font-semibold">{item.title}</dt>
+                    <dd className="text-lp-dim mt-2 text-sm leading-relaxed">{item.body}</dd>
                   </div>
                 ))}
               </dl>
-            </Reveal>
+            </div>
+            <PortalView />
           </div>
         </section>
 
-        {/* How it works */}
-        <section className="border-t">
-          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
-            <Reveal className="mx-auto max-w-2xl space-y-3 text-center">
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Three steps to your first message
-              </h2>
-              <p className="text-muted-foreground">
-                Register, get assigned, start talking.
-              </p>
-            </Reveal>
+        {/* Access */}
+        <section id="access" className="border-lp-line scroll-mt-16 border-t">
+          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <SectionHeading
+              title="Each store sees its own players"
+              body="Pick a role to see exactly what it can reach."
+            />
+            <div className="mt-12">
+              <AccessMap />
+            </div>
+          </div>
+        </section>
 
-            <div className="relative mt-12 grid gap-8 sm:grid-cols-3">
-              <div
-                aria-hidden
-                className="bg-border absolute top-6 right-[16.5%] left-[16.5%] hidden h-px sm:block"
+        {/* Import and export */}
+        <section className="border-lp-line bg-lp-sunk border-t">
+          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <SectionHeading
+              title="Bring your players. Take your data."
+              body="Check every row before it is imported, and export any list exactly as it appears."
+            />
+            <div className="mt-12">
+              <ImportExportView />
+            </div>
+          </div>
+        </section>
+
+        {/* Trust */}
+        <section className="border-lp-line border-t">
+          <div
+            className={`mx-auto grid w-full max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:px-8 lg:py-28 ${TRUST_ART ? 'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center' : ''}`}
+          >
+            {TRUST_ART && (
+              <Image
+                src={TRUST_ART}
+                alt=""
+                width={1200}
+                height={1200}
+                className="mx-auto w-full max-w-sm select-none lg:max-w-none"
               />
-              {STEPS.map(({ icon: Icon, title, body }, index) => (
-                <Reveal key={title} delay={index * 150}>
-                  <div className="relative flex flex-col items-center gap-3 text-center">
-                    <div className="bg-primary text-primary-foreground relative z-10 flex size-12 items-center justify-center rounded-full text-sm font-bold shadow-sm">
-                      <Icon className="size-5" />
-                    </div>
-                    <h3 className="font-semibold">{title}</h3>
-                    <p className="text-muted-foreground max-w-xs text-sm">{body}</p>
+            )}
+            <div>
+              <SectionHeading
+                title="Built to be trusted with money"
+                body="The rules that matter are enforced by the system, not left to habit."
+              />
+              <dl
+                className={`mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 ${TRUST_ART ? '' : 'lg:grid-cols-4'}`}
+              >
+                {TRUST.map((item) => (
+                  <div key={item.title} className="border-lp-line-strong border-t pt-5">
+                    <dt className="font-semibold">{item.title}</dt>
+                    <dd className="text-lp-dim mt-2 text-sm leading-relaxed">{item.body}</dd>
                   </div>
-                </Reveal>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        {/* Getting started */}
+        <section className="border-lp-line bg-lp-sunk border-t">
+          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <SectionHeading
+              title="Getting started"
+              body="Three steps from an empty system to stores recording play."
+            />
+            <ol className="mt-12 grid gap-10 md:grid-cols-3">
+              {GET_STARTED.map((step, index) => (
+                <li key={step.title} className="border-lp-primary border-t-2 pt-6">
+                  <span className="tabular text-lp-primary text-4xl font-extrabold [font-stretch:125%]">
+                    {index + 1}
+                  </span>
+                  <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
+                  <p className="text-lp-dim mt-2 leading-relaxed">{step.body}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Questions */}
+        <section id="questions" className="border-lp-line scroll-mt-16 border-t">
+          <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:px-8 lg:py-28">
+            <SectionHeading title="Questions operators ask" />
+            <div className="divide-lp-line border-lp-line divide-y border-y">
+              {QUESTIONS.map((item) => (
+                <details key={item.q} className="group">
+                  <summary className="focus-visible:outline-lp-primary flex cursor-pointer list-none items-center justify-between gap-6 rounded py-5 font-medium focus-visible:outline-2 [&::-webkit-details-marker]:hidden">
+                    {item.q}
+                    <span
+                      aria-hidden
+                      className="text-lp-dim text-xl leading-none transition-transform group-open:rotate-45"
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <p className="text-lp-dim max-w-2xl pb-6 leading-relaxed">{item.a}</p>
+                </details>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Attachments and history */}
-        <section className="bg-muted/30 border-t">
-          <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
-            <Reveal>
-              <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
-                <HistoryIcon className="size-3.5" />
-                Kept, not cleared
-              </span>
-              <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
-                The whole thread, files and all
+        {/* Closing */}
+        <section className="border-lp-line bg-lp-sunk border-t">
+          <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8 lg:py-24">
+            <div className="flex flex-col items-start gap-8">
+              <h2 className="max-w-2xl text-4xl leading-[1.05] font-extrabold tracking-[-0.02em] text-balance [font-stretch:125%] sm:text-5xl">
+                See it with your own players.
               </h2>
-              <p className="text-muted-foreground mt-3 max-w-md">
-                Attach a screenshot, a PDF or a spreadsheet and it stays with the message you sent
-                it on. Scroll back weeks later and the answer is still sitting where it was given.
-              </p>
-              <Link
-                href="/customer/register"
-                className="text-primary group mt-5 inline-flex items-center gap-1 text-sm font-semibold"
-              >
-                Open your first thread
-                <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Reveal>
-
-            <Reveal delay={150}>
-              <div className="bg-card space-y-3 rounded-2xl border p-6 shadow-lg">
-                {ATTACHMENTS.map(({ name, meta }) => (
-                  <div
-                    key={name}
-                    className="hover:border-primary/40 flex items-center gap-3 rounded-lg border p-3 transition-colors"
+              <div className="flex flex-wrap gap-3">
+                {contactEmail && (
+                  <a
+                    href={`mailto:${contactEmail}?subject=Sambehen%20demo`}
+                    className="bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
-                    <span className="bg-primary/10 text-primary grid size-9 shrink-0 place-items-center rounded-lg">
-                      <PaperclipIcon className="size-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{name}</p>
-                      <p className="text-muted-foreground truncate text-xs">{meta}</p>
-                    </div>
-                  </div>
-                ))}
-                <p className="text-muted-foreground border-t pt-4 text-xs">
-                  Images, PDFs, documents, spreadsheets, CSVs and archives.
-                </p>
+                    Book a demo
+                  </a>
+                )}
+                <Link
+                  href="/login"
+                  className={
+                    contactEmail
+                      ? 'border-lp-line-strong hover:border-lp-dim focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg border px-6 font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2'
+                      : 'bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2'
+                  }
+                >
+                  Sign in
+                </Link>
               </div>
-            </Reveal>
+            </div>
+            {CLOSING_ART && (
+              <Image
+                src={CLOSING_ART}
+                alt=""
+                width={1000}
+                height={1000}
+                className="mx-auto w-64 select-none sm:w-72 lg:w-96"
+              />
+            )}
           </div>
-        </section>
-
-        {/* Who can see what */}
-        <section className="border-t">
-          <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
-            <Reveal className="order-2 lg:order-1">
-              <SecureRealms />
-            </Reveal>
-
-            <Reveal delay={150} className="order-1 lg:order-2">
-              <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
-                <ShieldCheckIcon className="size-3.5" />
-                Who can see what
-              </span>
-              <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
-                Your thread is yours
-              </h2>
-              <p className="text-muted-foreground mt-3 max-w-md">
-                Reach follows assignment, not seniority: a team member sees the conversations
-                belonging to the accounts they are responsible for. The live connection is
-                authenticated the same way every request is — an unidentified socket is closed, not
-                left listening.
-              </p>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section className="bg-muted/30 border-t">
-          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
-            <Reveal className="mx-auto max-w-2xl space-y-3 text-center">
-              <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
-                <HelpCircleIcon className="size-3.5" />
-                Questions
-              </span>
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Frequently asked questions
-              </h2>
-            </Reveal>
-
-            <Reveal delay={150} className="mx-auto mt-8 max-w-2xl">
-              <Accordion type="single" collapsible className="bg-card rounded-xl border px-6">
-                {FAQS.map(({ q, a }) => (
-                  <AccordionItem key={q} value={q}>
-                    <AccordionTrigger>{q}</AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">{a}</AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* Closing CTA */}
-        <section className="border-t">
-          <Reveal className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 px-4 py-20 text-center sm:px-6 lg:px-8 lg:py-24">
-            <span className="bg-primary/10 text-primary grid size-12 place-items-center rounded-2xl">
-              <MessagesSquareIcon className="size-6" />
-            </span>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Say the first thing.</h2>
-            <p className="text-muted-foreground max-w-md">
-              Registration takes a minute. A team member reviews every new account and takes it on
-              before the first message lands.
-            </p>
-            <Link
-              href="/customer/register"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 items-center justify-center gap-2 rounded-md px-6 text-sm font-semibold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
-            >
-              Create your account
-              <SendHorizonalIcon className="size-4" />
-            </Link>
-          </Reveal>
         </section>
       </main>
 
-      <footer className="border-t">
-        <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-16 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="bg-primary text-primary-foreground grid size-7 place-items-center rounded-lg">
-                <MessagesSquareIcon className="size-4" />
-              </div>
-              <span className="font-bold tracking-tight">Sambehen</span>
-            </div>
-            <p className="text-muted-foreground max-w-xs text-sm">
-              One thread with the team that handles your account.
+      <footer className="border-lp-line border-t">
+        <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-14 text-sm sm:px-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] lg:px-8">
+          <div className="max-w-xs">
+            <p className="text-lg font-bold [font-stretch:125%]">Sambehen</p>
+            <p className="text-lp-dim mt-3 leading-relaxed">
+              Player data and messaging for gaming operators, scoped to every store.
             </p>
           </div>
-
-          <div className="space-y-2 text-sm">
-            <p className="font-semibold">Customers</p>
-            <Link
-              href="/customer/register"
-              className="text-muted-foreground hover:text-foreground block transition-colors"
-            >
-              Create an account
+          <nav aria-label="Product" className="flex flex-col gap-2.5">
+            <p className="font-semibold">Product</p>
+            {[
+              ['#platform', 'Platform'],
+              ['#dashboard', 'Dashboard'],
+              ['#players', 'Player portal'],
+              ['#access', 'Access'],
+              ['#questions', 'Questions'],
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="text-lp-dim hover:text-lp-text w-fit transition-colors"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+          <nav aria-label="Sign in" className="flex flex-col gap-2.5">
+            <p className="font-semibold">Sign in</p>
+            <Link href="/login" className="text-lp-dim hover:text-lp-text w-fit transition-colors">
+              Sign in
             </Link>
             <Link
-              href="/customer/login"
-              className="text-muted-foreground hover:text-foreground block transition-colors"
+              href="/register"
+              className="text-lp-dim hover:text-lp-text w-fit transition-colors"
             >
-              Open your inbox
+              Create a player account
             </Link>
-          </div>
-
-          <div className="space-y-2 text-sm">
-            <p className="font-semibold">Team</p>
-            <Link
-              href="/login"
-              className="text-muted-foreground hover:text-foreground block transition-colors"
-            >
-              Staff sign in
-            </Link>
-          </div>
-
-          <div className="space-y-2 text-sm">
-            <p className="font-semibold">Get in touch</p>
-            <p className="text-muted-foreground flex items-start gap-1.5">
-              <MessagesSquareIcon className="mt-0.5 size-4 shrink-0" />
-              Message your team from your inbox once you are signed in.
-            </p>
-          </div>
+          </nav>
         </div>
-
-        <div className="border-t px-4 py-6 text-center sm:px-6">
-          <span className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} Sambehen.
-          </span>
+        <div className="border-lp-line text-lp-dim mx-auto w-full max-w-7xl border-t px-4 py-6 text-xs sm:px-6 lg:px-8">
+          © {new Date().getFullYear()} Sambehen
         </div>
       </footer>
+    </div>
+  );
+}
+
+function SectionHeading({ title, body }: { title: string; body?: string }) {
+  return (
+    <div className="max-w-2xl">
+      <h2 className="text-3xl leading-[1.08] font-extrabold tracking-[-0.015em] text-balance [font-stretch:118%] sm:text-4xl">
+        {title}
+      </h2>
+      {body && <p className="text-lp-dim mt-4 text-lg leading-relaxed">{body}</p>}
     </div>
   );
 }
