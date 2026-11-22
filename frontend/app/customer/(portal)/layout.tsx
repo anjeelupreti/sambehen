@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { getCustomerActor } from '@/lib/customer-session';
 import { SkipLink } from '@/components/skip-link';
+import { ChatSocketProvider } from '@/components/chat/socket';
 
 /**
  * The customer portal shell.
@@ -24,51 +25,53 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   if (!actor) redirect('/login');
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <SkipLink />
-      <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-2 px-4 sm:px-6">
-          <Link href="/customer" className="text-lg font-bold tracking-tight [font-stretch:125%]">
-            Sambehen
-          </Link>
+    <ChatSocketProvider realm="customer">
+      <div className="flex min-h-svh flex-col">
+        <SkipLink />
+        <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
+          <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-2 px-4 sm:px-6">
+            <Link href="/customer" className="text-lg font-bold tracking-tight [font-stretch:125%]">
+              Sambehen
+            </Link>
 
-          <nav className="flex items-center gap-1" aria-label="Portal">
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/customer">
-                <LayoutDashboardIcon className="size-4" />
-                <span className="hidden sm:inline">Overview</span>
-              </Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/customer/messages">
-                <MessageSquareIcon className="size-4" />
-                <span className="hidden sm:inline">Messages</span>
-              </Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/customer/profile">
-                <UserIcon className="size-4" />
-                <span className="hidden sm:inline">Profile</span>
-              </Link>
-            </Button>
+            <nav className="flex items-center gap-1" aria-label="Portal">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/customer">
+                  <LayoutDashboardIcon className="size-4" />
+                  <span className="hidden sm:inline">Overview</span>
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/customer/messages">
+                  <MessageSquareIcon className="size-4" />
+                  <span className="hidden sm:inline">Messages</span>
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/customer/profile">
+                  <UserIcon className="size-4" />
+                  <span className="hidden sm:inline">Profile</span>
+                </Link>
+              </Button>
 
-            <ThemeToggle />
+              <ThemeToggle />
 
-            {/* A plain <a>, not <Link>: production Next.js prefetches visible
+              {/* A plain <a>, not <Link>: production Next.js prefetches visible
                 links, and prefetching this route runs it, which clears the
                 session cookies the moment any portal page renders. */}
-            <Button asChild variant="ghost" size="sm" aria-label="Sign out">
-              <a href="/customer/logout">
-                <LogOutIcon className="size-4" />
-              </a>
-            </Button>
-          </nav>
-        </div>
-      </header>
+              <Button asChild variant="ghost" size="sm" aria-label="Sign out">
+                <a href="/customer/logout">
+                  <LogOutIcon className="size-4" />
+                </a>
+              </Button>
+            </nav>
+          </div>
+        </header>
 
-      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-3xl flex-1 p-4 pb-10 sm:p-6">
-        {children}
-      </main>
-    </div>
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-3xl flex-1 p-4 pb-10 sm:p-6">
+          {children}
+        </main>
+      </div>
+    </ChatSocketProvider>
   );
 }

@@ -7,60 +7,61 @@ import type { MessageAttachment } from '@/lib/types';
 export interface PendingAttachment {
   id: string;
   file: File;
-  /** Created once per file rather than per render, so it can be revoked exactly once too. */
   previewUrl: string | null;
   status: 'uploading' | 'done' | 'error';
+  /** 0–1 while uploading. */
+  progress: number;
   attachment?: MessageAttachment;
   error?: string;
 }
 
 /**
- * Picks, uploads and tracks files for a message before it is sent.
- *
- * Files upload the moment they are picked, not on send — so by the time
- * someone hits send, the attachments already have URLs and the message
- * itself is a fast JSON post rather than something waiting on file I/O.
- * Multiple files upload in parallel, each tracked independently, so one
- * slow or failed upload does not block the others.
- *
- * `uploadUrl` differs by realm (staff vs customer) because middleware
- * gates each on a different session cookie — see the two route handlers
- * under app/api/messages/attachments and app/customer/messages/attachments.
+ * Uploads files as soon as they are added, so the message can go the
+ * moment the person presses send. XMLHttpRequest rather than fetch, because
+ * only it reports upload progress.
  */
 export function useAttachmentUpload(uploadUrl: string) {
   const [pending, setPending] = useState<PendingAttachment[]>([]);
 
+  const patch = useCallback((id: string, change: Partial<PendingAttachment>) => {
+    setPending((current) => current.map((p) => (p.id === id ? { ...p, ...change } : p)));
+  }, []);
+
   const upload = useCallback(
-    async (item: PendingAttachment) => {
-      try {
-        const formData = new FormData();
-        formData.append('file', item.file);
-        const response = await fetch(uploadUrl, { method: 'POST', body: formData });
+    (item: PendingAttachment) => {
+      const request = new XMLHttpRequest();
+      const formData = new FormData();
+      formData.append('file', item.file);
 
-        if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(payload?.error ?? 'Upload failed.');
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable) patch(item.id, { progress: event.loaded / event.total });
+      };
+      request.onload = () => {
+        let payload: (MessageAttachment & { error?: string }) | null = null;
+        try {
+          payload = JSON.parse(request.responseText);
+        } catch {
+          payload = null;
         }
+        if (request.status >= 200 && request.status < 300 && payload) {
+          patch(item.id, { status: 'done', progress: 1, attachment: payload });
+        } else {
+          patch(item.id, {
+            status: 'error',
+            error: payload?.error ?? 'Upload failed. Remove it and try again.',
+          });
+        }
+      };
+      request.onerror = () =>
+        patch(item.id, {
+          status: 'error',
+          error: 'Upload failed. Check your connection and try again.',
+        });
 
-        const attachment = (await response.json()) as MessageAttachment;
-        setPending((current) =>
-          current.map((p) => (p.id === item.id ? { ...p, status: 'done', attachment } : p)),
-        );
-      } catch (error) {
-        setPending((current) =>
-          current.map((p) =>
-            p.id === item.id
-              ? {
-                  ...p,
-                  status: 'error',
-                  error: error instanceof Error ? error.message : 'Upload failed.',
-                }
-              : p,
-          ),
-        );
-      }
+      request.open('POST', uploadUrl);
+      request.send(formData);
     },
-    [uploadUrl],
+    [uploadUrl, patch],
   );
 
   const addFiles = useCallback(
@@ -70,10 +71,11 @@ export function useAttachmentUpload(uploadUrl: string) {
         file,
         previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
         status: 'uploading',
+        progress: 0,
       }));
 
       setPending((current) => [...current, ...items]);
-      for (const item of items) void upload(item);
+      for (const item of items) upload(item);
     },
     [upload],
   );
@@ -95,8 +97,10 @@ export function useAttachmentUpload(uploadUrl: string) {
 
   const ready = pending
     .filter((p) => p.status === 'done' && p.attachment)
-    .map((p) => p.attachment!);
+    .map((p) => p.attachment!) as MessageAttachment[];
   const uploading = pending.some((p) => p.status === 'uploading');
 
   return { pending, addFiles, remove, clear, ready, uploading };
 }
+
+export type AttachmentUpload = ReturnType<typeof useAttachmentUpload>;

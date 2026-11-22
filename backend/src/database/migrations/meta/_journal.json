@@ -99,6 +99,13 @@
       "when": 1786941280000,
       "tag": "0013_customer_self_registration",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795338670247,
+      "tag": "0014_customer_read_receipts",
+      "breakpoints": true
     }
   ]
 }

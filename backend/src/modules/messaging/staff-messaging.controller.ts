@@ -85,7 +85,11 @@ export class StaffMessagingController {
     @CurrentStaff() actor: ICurrentStaff,
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: StaffMessageThreadQueryDto,
-  ): Promise<{ data: StaffMessageResponseDto[]; nextCursor: string | null }> {
+  ): Promise<{
+    data: StaffMessageResponseDto[];
+    nextCursor: string | null;
+    otherReadAt: Date | null;
+  }> {
     return this.staffMessagingService.findMessages(actor, id, query);
   }
 

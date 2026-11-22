@@ -1,20 +1,18 @@
 'use server';
 
 import { apiGet, apiList, apiMutate } from '@/lib/api';
-import { runAction } from '@/lib/run-action';
-import type { ActionResult } from '@/lib/action-result';
+import { fromStaffThread } from '@/components/chat/mappers';
+import type { ChatMessage, ThreadPage } from '@/components/chat/types';
+import { getActor } from '@/lib/session';
 import type { MessageAttachment, StaffContact, StaffConversation, StaffMessage } from '@/lib/types';
 
 /**
- * Server actions for internal staff-to-staff messaging.
- *
- * A separate surface from `./actions.ts`: different backend routes
- * (`/team/staff-conversations` rather than `/team/conversations`),
- * different participants, and no reason to share code beyond the
- * `apiMutate`/`apiList` primitives both already use.
+ * Server actions for internal staff-to-staff messaging: different routes
+ * (`/team/staff-conversations`), different participants, and the same
+ * thread model as customer conversations on screen.
  */
 
-/** Staff the caller may open a DM with — scoped by hierarchy on the server. */
+/** Staff the caller may open a chat with, scoped by hierarchy on the server. */
 export async function listStaffContacts(search?: string): Promise<StaffContact[]> {
   try {
     const { data } = await apiList<StaffContact>('/team/staff-conversations/contacts', {
@@ -37,47 +35,57 @@ export async function listStaffConversations(): Promise<StaffConversation[]> {
   }
 }
 
-/** A thread, oldest first — the API returns newest-first for pagination. */
-export async function loadStaffMessages(conversationId: string): Promise<StaffMessage[]> {
-  try {
-    const thread = await apiGet<{ data: StaffMessage[]; nextCursor: string | null }>(
+/** One page of a thread, oldest first, with how far the other person has read. */
+export async function loadStaffThread(
+  conversationId: string,
+  before?: string,
+): Promise<ThreadPage> {
+  const [actor, page] = await Promise.all([
+    getActor(),
+    apiGet<{ data: StaffMessage[]; nextCursor: string | null; otherReadAt: string | null }>(
       `/team/staff-conversations/${conversationId}/messages`,
-      { query: { limit: 100 } },
-    );
-    return [...(thread?.data ?? [])].reverse();
+      { query: { limit: 50, ...(before ? { before } : {}) } },
+    ),
+  ]);
+  return {
+    messages: [...page.data].reverse().map((m) => fromStaffThread(m, actor?.id ?? '')),
+    nextCursor: page.nextCursor,
+    readAt: page.otherReadAt,
+  };
+}
+
+export async function markStaffConversationRead(conversationId: string): Promise<void> {
+  try {
+    await apiMutate<unknown>(`/team/staff-conversations/${conversationId}/read`, 'POST');
   } catch {
-    return [];
+    // Read state is best-effort; the next open marks it again.
   }
 }
 
-export async function markStaffConversationRead(
-  conversationId: string,
-): Promise<ActionResult<unknown>> {
-  return runAction(
-    () => apiMutate<unknown>(`/team/staff-conversations/${conversationId}/read`, 'POST'),
-    'Marked as read.',
-  );
-}
-
 /**
- * Sends an internal message.
- *
- * Keyed on the target staff id rather than a conversation id — the same
- * call starts a thread and continues one, so there is no separate "start"
- * path to keep in step with this one.
+ * Sends an internal message, keyed on the colleague rather than a thread:
+ * the same call starts a chat and continues one. Returns the thread id too,
+ * so a brand-new chat can switch from "contact" to "conversation".
  */
-export async function sendStaffMessage(
+export async function sendStaffReply(
   targetStaffId: string,
   body: string,
-  attachments?: MessageAttachment[],
-): Promise<ActionResult<StaffMessage>> {
-  return runAction(
-    () =>
+  attachments: MessageAttachment[],
+): Promise<{ message: ChatMessage; conversationId: string } | null> {
+  try {
+    const [actor, message] = await Promise.all([
+      getActor(),
       apiMutate<StaffMessage>('/team/staff-conversations/messages', 'POST', {
         targetStaffId,
         body,
-        ...(attachments?.length ? { attachments } : {}),
+        ...(attachments.length ? { attachments } : {}),
       }),
-    'Message sent.',
-  );
+    ]);
+    return {
+      message: fromStaffThread(message, actor?.id ?? ''),
+      conversationId: message.conversationId,
+    };
+  } catch {
+    return null;
+  }
 }

@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-import { ExportButton } from '@/components/export-button';
-import { MessagingView } from '@/components/messaging/messaging-view';
-import { TeamMessagingView } from '@/components/messaging/team-messaging-view';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MessagesWorkspace } from '@/components/messaging/messages-workspace';
 import { apiList } from '@/lib/api';
 import { getActor } from '@/lib/session';
 import type { Conversation } from '@/lib/types';
@@ -11,36 +9,21 @@ import type { Conversation } from '@/lib/types';
 export const metadata: Metadata = { title: 'Messages' };
 
 export default async function MessagesPage() {
-  // The thread pane holds one conversation; the list is scrolled, not
-  // paged, and searched client-side in MessagingView rather than via a
-  // page reload — so it takes a single generous page rather than
-  // pagination or query-string filters that would fight the live updates.
+  // One generous page, searched client-side: the list is live-updated over
+  // the socket, which pagination would fight.
   const [{ data }, actor] = await Promise.all([
     apiList<Conversation>('/team/conversations', { query: { limit: 100 } }),
     getActor(),
   ]);
+  if (!actor) redirect('/logout');
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Messages</h1>
-        </div>
-        <ExportButton exportKey="conversations" />
-      </header>
-
-      <Tabs defaultValue="customers">
-        <TabsList>
-          <TabsTrigger value="customers">Customers</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
-        </TabsList>
-        <TabsContent value="customers">
-          <MessagingView initialConversations={data} />
-        </TabsContent>
-        <TabsContent value="team">
-          {actor ? <TeamMessagingView actorId={actor.id} /> : null}
-        </TabsContent>
-      </Tabs>
+    // Fills the viewport under the 3.5rem app header, inside main's padding.
+    <div className="-m-4 h-[calc(100svh-3.5rem)] sm:-m-6">
+      <MessagesWorkspace
+        initialConversations={data}
+        viewer={{ id: actor.id, username: actor.username }}
+      />
     </div>
   );
 }

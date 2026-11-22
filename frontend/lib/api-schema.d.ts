@@ -1323,6 +1323,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/me/messages/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark the thread read for the customer
+     * @description Called while the customer has the thread open. Clears their unread count and updates the read ticks staff see on their replies.
+     */
+    post: operations['CustomerMessagingController_markRead'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/me/messages/unread-count': {
     parameters: {
       query?: never;
@@ -1330,7 +1350,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Staff replies since the customer last wrote */
+    /** Staff replies since the customer last read or wrote */
     get: operations['CustomerMessagingController_unread'];
     put?: never;
     post?: never;
@@ -8596,6 +8616,41 @@ export interface operations {
       };
       /** @description Rate limit exceeded */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  CustomerMessagingController_markRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description When the thread was marked read */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['Object'];
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid customer access token
+       */
+      401: {
         headers: {
           [name: string]: unknown;
         };

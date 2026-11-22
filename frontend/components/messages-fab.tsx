@@ -1,675 +1,112 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import {
-  ArrowLeftIcon,
-  Maximize2Icon,
-  MessageSquareIcon,
-  RadioIcon,
-  UsersIcon,
-  WifiOffIcon,
-  XIcon,
-} from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { usePathname } from 'next/navigation';
+import { Maximize2Icon, MessageSquareIcon, XIcon } from 'lucide-react';
 
-import { MessageAttachments } from '@/components/messaging/message-attachments';
-import { MessageComposer } from '@/components/messaging/message-composer';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
-import {
-  getConversations,
-  getMessages,
-  markAsRead,
-  sendMessage,
-} from '@/app/(app)/messages/actions';
-import {
-  listStaffContacts,
-  listStaffConversations,
-  loadStaffMessages,
-  markStaffConversationRead,
-  sendStaffMessage,
-} from '@/app/(app)/messages/staff-actions';
-import {
-  useMessagingSocket,
-  type LiveMessage,
-  type LiveStaffMessage,
-} from '@/hooks/use-messaging-socket';
+import { InboxSwitch } from '@/components/messaging/messages-workspace';
+import { MessagingView } from '@/components/messaging/messaging-view';
+import { TeamMessagingView } from '@/components/messaging/team-messaging-view';
 import { cn } from '@/lib/utils';
-import type {
-  Conversation,
-  Message,
-  StaffContact,
-  StaffConversation,
-  StaffMessage,
-} from '@/lib/types';
 
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('') || '?';
-
-type View = 'customers' | 'team';
+type Inbox = 'customers' | 'team';
 
 /**
- * The chat bubble. Same inbox and threads as the full `/messages` page —
- * this is the compact surface for staying on top of things without leaving
- * whatever page you're on, with a link out to the full page for anyone who
- * wants more room. Shares MessageComposer with the full page, so an
- * attachment sent from either surface behaves identically.
- *
- * Two inboxes share this one bubble: customer conversations (Inbox) and
- * internal staff DMs (Team). They toggle rather than sit side by side —
- * there is not enough width here for two panes, unlike the full page.
- *
- * Arrivals come over the socket, not a poll: `useMessagingSocket` is the
- * same hook the full page uses, so a message shows up here the instant it
- * shows up there. The 30s fetch is a fallback for while the socket is
- * reconnecting, not the primary path — it stands down once the connection
- * is live.
+ * The chat bubble: both inboxes in a small panel, for answering without
+ * leaving the page. Hidden on /messages, which already shows everything.
+ * The views stay mounted while the panel is closed so the badge stays live.
  */
-export function MessagesFab({ role: _role, actorId }: { role: string; actorId: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [view, setView] = useState<View>('customers');
-
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeCustomer, setActiveCustomer] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [sending, setSending] = useState(false);
-
-  const [teamConversations, setTeamConversations] = useState<StaffConversation[]>([]);
-  const [teamContacts, setTeamContacts] = useState<StaffContact[]>([]);
-  const [activeThread, setActiveThread] = useState<StaffConversation | null>(null);
-  const [activeContact, setActiveContact] = useState<StaffContact | null>(null);
-  const [teamMessages, setTeamMessages] = useState<StaffMessage[]>([]);
-  const [teamSending, setTeamSending] = useState(false);
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const activeIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    activeIdRef.current = activeCustomer?.id ?? null;
-  }, [activeCustomer]);
-
-  const activeThreadIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    activeThreadIdRef.current = activeThread?.id ?? null;
-  }, [activeThread]);
-
-  const refresh = useCallback(() => {
-    getConversations()
-      .then(setConversations)
-      .catch(() => {});
-  }, []);
-
-  const refreshTeam = useCallback(() => {
-    Promise.all([listStaffConversations(), listStaffContacts()])
-      .then(([convos, people]) => {
-        setTeamConversations(convos);
-        setTeamContacts(people);
-      })
-      .catch(() => {});
-  }, []);
-
-  // Seeds both lists once on mount — the socket only reports what arrives
-  // *after* it connects, not what was already unread.
-  useEffect(() => {
-    refresh();
-    refreshTeam();
-  }, [refresh, refreshTeam]);
-
-  const handleIncoming = useCallback(
-    (message: LiveMessage) => {
-      setConversations((current) => {
-        const known = current.some((c) => c.id === message.conversationId);
-        // A brand new conversation carries no username or preview over the
-        // socket, so it is fetched properly rather than rendered half-empty.
-        if (!known) {
-          refresh();
-          return current;
-        }
-
-        return current.map((conversation) =>
-          conversation.id === message.conversationId
-            ? {
-                ...conversation,
-                lastMessagePreview: message.body,
-                lastMessageAt: message.createdAt,
-                messageCount: conversation.messageCount + 1,
-                unreadCount:
-                  conversation.id === activeIdRef.current
-                    ? conversation.unreadCount
-                    : conversation.unreadCount + 1,
-                awaitingReply: message.senderType === 'customer',
-              }
-            : conversation,
-        );
-      });
-
-      if (message.conversationId === activeIdRef.current) {
-        setMessages((current) =>
-          current.some((existing) => existing.id === message.id) ? current : [...current, message],
-        );
-      }
-    },
-    [refresh],
+export function MessagesFab({ viewer }: { viewer: { id: string; username: string } }) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const [inbox, setInbox] = useState<Inbox>('customers');
+  const [unread, setUnread] = useState<Record<Inbox, number>>({ customers: 0, team: 0 });
+  const setCustomersUnread = useCallback(
+    (count: number) =>
+      setUnread((current) =>
+        current.customers === count ? current : { ...current, customers: count },
+      ),
+    [],
+  );
+  const setTeamUnread = useCallback(
+    (count: number) =>
+      setUnread((current) => (current.team === count ? current : { ...current, team: count })),
+    [],
   );
 
-  const handleIncomingTeam = useCallback(
-    (message: LiveStaffMessage) => {
-      setTeamConversations((current) => {
-        const known = current.some((c) => c.id === message.conversationId);
-        if (!known) {
-          refreshTeam();
-          return current;
-        }
-        return current.map((conversation) =>
-          conversation.id === message.conversationId
-            ? {
-                ...conversation,
-                lastMessagePreview: message.body,
-                lastMessageAt: message.createdAt,
-                messageCount: conversation.messageCount + 1,
-                unreadCount:
-                  conversation.id === activeThreadIdRef.current
-                    ? conversation.unreadCount
-                    : conversation.unreadCount + 1,
-              }
-            : conversation,
-        );
-      });
-
-      if (message.conversationId === activeThreadIdRef.current) {
-        setTeamMessages((current) =>
-          current.some((existing) => existing.id === message.id) ? current : [...current, message],
-        );
-      }
-    },
-    [refreshTeam],
-  );
-
-  const { state } = useMessagingSocket(handleIncoming, handleIncomingTeam);
-
-  // Fallback only: while the socket is not live, nothing pushes updates, so
-  // this covers reconnect gaps. Once `state === 'live'` the socket is the
-  // only source — polling on top of it would just re-sort the list under
-  // someone mid-read for no reason.
-  useEffect(() => {
-    if (state === 'live') return;
-    const interval = setInterval(() => {
-      refresh();
-      refreshTeam();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [state, refresh, refreshTeam]);
+  const onMessagesPage = pathname.startsWith('/messages');
+  const total = unread.customers + unread.team;
 
   useEffect(() => {
-    if (activeCustomer) {
-      getMessages(activeCustomer.id)
-        .then((thread) => {
-          setMessages(thread);
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
 
-          if (activeCustomer.unreadCount > 0) {
-            void markAsRead(activeCustomer.id);
-            setConversations((current) =>
-              current.map((c) => (c.id === activeCustomer.id ? { ...c, unreadCount: 0 } : c)),
-            );
-          }
-        })
-        .catch(console.error);
-    }
-  }, [activeCustomer]);
-
-  useEffect(() => {
-    if (activeThread) {
-      loadStaffMessages(activeThread.id)
-        .then((thread) => {
-          setTeamMessages(thread);
-
-          if (activeThread.unreadCount > 0) {
-            void markStaffConversationRead(activeThread.id);
-            setTeamConversations((current) =>
-              current.map((c) => (c.id === activeThread.id ? { ...c, unreadCount: 0 } : c)),
-            );
-          }
-        })
-        .catch(console.error);
-    }
-  }, [activeThread]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, teamMessages]);
-
-  const unreadCount =
-    conversations.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0) +
-    teamConversations.reduce((acc, conv) => acc + (conv.unreadCount || 0), 0);
-
-  const teamCounterparts = new Set(teamConversations.map((c) => c.counterpartId));
-  const startableContacts = teamContacts.filter((c) => !teamCounterparts.has(c.id));
-  const teamTargetId = activeThread?.counterpartId ?? activeContact?.id ?? null;
-  const teamTargetName = activeThread?.counterpartUsername ?? activeContact?.username ?? '';
-
-  const closeThreads = () => {
-    setActiveCustomer(null);
-    setActiveThread(null);
-    setActiveContact(null);
-  };
+  if (onMessagesPage) return null;
 
   return (
-    <div className="fixed right-6 bottom-6 z-50 flex flex-col items-end">
-      {isOpen && (
-        <Card className="animate-in slide-in-from-bottom-5 mb-4 flex h-[560px] w-[360px] flex-col overflow-hidden border-none py-0 shadow-2xl sm:w-[400px]">
-          <div className="bg-primary text-primary-foreground flex shrink-0 items-center justify-between px-3 py-3">
-            {activeCustomer || teamTargetId ? (
-              <div className="flex min-w-0 items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-primary-foreground/15 size-8 shrink-0 text-current"
-                  onClick={closeThreads}
-                >
-                  <ArrowLeftIcon className="size-4" />
-                </Button>
-                <Avatar className="size-7 shrink-0">
-                  <AvatarFallback className="bg-primary-foreground/15 text-primary-foreground text-[11px]">
-                    {activeCustomer
-                      ? initials(
-                          activeCustomer.customerFullName || activeCustomer.customerUsername || '?',
-                        )
-                      : initials(teamTargetName || '?')}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="truncate font-medium">
-                  {activeCustomer ? activeCustomer.customerUsername : teamTargetName}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 pl-1">
-                <button
-                  type="button"
-                  onClick={() => setView('customers')}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-semibold transition-colors',
-                    view === 'customers'
-                      ? 'bg-primary-foreground/15'
-                      : 'opacity-70 hover:opacity-100',
-                  )}
-                >
-                  <MessageSquareIcon className="size-4" />
-                  Inbox
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setView('team')}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-semibold transition-colors',
-                    view === 'team' ? 'bg-primary-foreground/15' : 'opacity-70 hover:opacity-100',
-                  )}
-                >
-                  <UsersIcon className="size-4" />
-                  Team
-                </button>
-                <ConnectionDot state={state} />
-              </div>
-            )}
-            <div className="flex shrink-0 items-center gap-0.5">
-              <Button
-                asChild
-                variant="ghost"
-                size="icon"
-                className="hover:bg-primary-foreground/15 size-8 text-current"
-                aria-label="Open full messages page"
-                title="Open full page"
-              >
-                <Link href="/messages">
-                  <Maximize2Icon className="size-4" />
-                </Link>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:bg-primary-foreground/15 size-8 text-current"
-                onClick={() => setIsOpen(false)}
-              >
-                <XIcon className="size-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-muted/20 relative flex-1 overflow-hidden">
-            {view === 'customers' ? (
-              !activeCustomer ? (
-                <ScrollArea className="h-full">
-                  <div className="space-y-0.5 p-2">
-                    {conversations.length === 0 ? (
-                      <div className="text-muted-foreground p-8 text-center text-sm">
-                        No conversations yet.
-                      </div>
-                    ) : (
-                      conversations.map((conv) => (
-                        <button
-                          key={conv.id}
-                          onClick={() => setActiveCustomer(conv)}
-                          className="hover:bg-accent flex w-full items-start gap-2.5 rounded-md p-2.5 text-left transition-colors"
-                        >
-                          <Avatar className="size-9 shrink-0">
-                            <AvatarFallback className="text-xs">
-                              {initials(conv.customerFullName || conv.customerUsername || '?')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="mb-0.5 flex items-baseline justify-between gap-2">
-                              <span className="truncate text-sm font-medium">
-                                {conv.customerUsername}
-                              </span>
-                              <span className="text-muted-foreground shrink-0 text-[11px]">
-                                {conv.lastMessageAt
-                                  ? formatDistanceToNow(new Date(conv.lastMessageAt), {
-                                      addSuffix: true,
-                                    })
-                                  : ''}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <p
-                                className={cn(
-                                  'truncate text-xs',
-                                  conv.unreadCount > 0
-                                    ? 'text-foreground font-medium'
-                                    : 'text-muted-foreground',
-                                )}
-                              >
-                                {conv.lastMessagePreview || 'No messages yet.'}
-                              </p>
-                              {conv.unreadCount > 0 && (
-                                <span className="bg-primary text-primary-foreground flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold">
-                                  {conv.unreadCount}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </ScrollArea>
-              ) : (
-                <div className="flex h-full flex-col">
-                  <div className="flex-1 space-y-3 overflow-y-auto p-3" ref={scrollRef}>
-                    {messages.length === 0 ? (
-                      <div className="text-muted-foreground mt-10 text-center text-sm">
-                        Send a message to start the conversation.
-                      </div>
-                    ) : (
-                      messages.map((msg) => <CustomerBubble key={msg.id} message={msg} />)
-                    )}
-                  </div>
-
-                  <MessageComposer
-                    uploadUrl="/api/messages/attachments"
-                    sending={sending}
-                    onSend={async (body, attachments) => {
-                      setSending(true);
-                      const result = await sendMessage(
-                        activeCustomer.customerId,
-                        body,
-                        attachments,
-                      );
-                      setSending(false);
-
-                      if (result.ok && result.data) {
-                        setMessages((current) =>
-                          current.some((existing) => existing.id === result.data!.id)
-                            ? current
-                            : [...current, result.data!],
-                        );
-                        return true;
-                      }
-                      return false;
-                    }}
-                  />
-                </div>
-              )
-            ) : !teamTargetId ? (
-              <ScrollArea className="h-full">
-                <div className="space-y-0.5 p-2">
-                  {teamConversations.length === 0 && startableContacts.length === 0 ? (
-                    <div className="text-muted-foreground p-8 text-center text-sm">
-                      No one to message yet.
-                    </div>
-                  ) : (
-                    <>
-                      {teamConversations.map((conv) => (
-                        <button
-                          key={conv.id}
-                          onClick={() => setActiveThread(conv)}
-                          className="hover:bg-accent flex w-full items-start gap-2.5 rounded-md p-2.5 text-left transition-colors"
-                        >
-                          <Avatar className="size-9 shrink-0">
-                            <AvatarFallback className="text-xs">
-                              {initials(conv.counterpartFullName || conv.counterpartUsername)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="mb-0.5 flex items-baseline justify-between gap-2">
-                              <span className="truncate text-sm font-medium">
-                                {conv.counterpartUsername}
-                              </span>
-                              <span className="text-muted-foreground shrink-0 text-[11px]">
-                                {conv.lastMessageAt
-                                  ? formatDistanceToNow(new Date(conv.lastMessageAt), {
-                                      addSuffix: true,
-                                    })
-                                  : ''}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <p
-                                className={cn(
-                                  'truncate text-xs',
-                                  conv.unreadCount > 0
-                                    ? 'text-foreground font-medium'
-                                    : 'text-muted-foreground',
-                                )}
-                              >
-                                {conv.lastMessagePreview || 'No messages yet.'}
-                              </p>
-                              {conv.unreadCount > 0 && (
-                                <span className="bg-primary text-primary-foreground flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold">
-                                  {conv.unreadCount}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-
-                      {startableContacts.length > 0 ? (
-                        <>
-                          <div className="text-muted-foreground px-2.5 pt-2 pb-1 text-[11px] font-medium">
-                            Start a conversation
-                          </div>
-                          {startableContacts.map((contact) => (
-                            <button
-                              key={contact.id}
-                              onClick={() => setActiveContact(contact)}
-                              className="hover:bg-accent flex w-full items-center gap-2.5 rounded-md p-2.5 text-left transition-colors"
-                            >
-                              <Avatar className="size-9 shrink-0">
-                                <AvatarFallback className="text-xs">
-                                  {initials(contact.fullName || contact.username)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="truncate text-sm font-medium">
-                                {contact.username}
-                              </span>
-                            </button>
-                          ))}
-                        </>
-                      ) : null}
-                    </>
-                  )}
-                </div>
-              </ScrollArea>
-            ) : (
-              <div className="flex h-full flex-col">
-                <div className="flex-1 space-y-3 overflow-y-auto p-3" ref={scrollRef}>
-                  {teamMessages.length === 0 ? (
-                    <div className="text-muted-foreground mt-10 text-center text-sm">
-                      Send a message to start the conversation.
-                    </div>
-                  ) : (
-                    teamMessages.map((msg) => (
-                      <TeamBubble
-                        key={msg.id}
-                        message={msg}
-                        fromSelf={msg.senderStaffId === actorId}
-                      />
-                    ))
-                  )}
-                </div>
-
-                <MessageComposer
-                  uploadUrl="/api/messages/attachments"
-                  sending={teamSending}
-                  onSend={async (body, attachments) => {
-                    setTeamSending(true);
-                    const result = await sendStaffMessage(teamTargetId, body, attachments);
-                    setTeamSending(false);
-
-                    if (result.ok && result.data) {
-                      setTeamMessages((current) =>
-                        current.some((existing) => existing.id === result.data!.id)
-                          ? current
-                          : [...current, result.data!],
-                      );
-                      if (!activeThread) refreshTeam();
-                      return true;
-                    }
-                    return false;
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
-
-      <Button
-        size="icon"
-        className={cn(
-          'size-14 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95',
-          isOpen
-            ? 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
-            : 'bg-primary text-primary-foreground',
-        )}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? (
-          <XIcon className="size-6" />
-        ) : (
-          <div className="relative">
-            <MessageSquareIcon className="size-6" />
-            {unreadCount > 0 && (
-              <span className="animate-in zoom-in absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-white">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </div>
-        )}
-      </Button>
-    </div>
-  );
-}
-
-function CustomerBubble({ message }: { message: Message }) {
-  const isCustomer = message.senderType === 'customer';
-  const hasAttachments = Boolean(message.attachments?.length);
-  const hasBody = message.body.trim().length > 0;
-
-  return (
-    <div className={cn('flex', isCustomer ? 'justify-start' : 'justify-end')}>
+    <>
       <div
+        role="dialog"
+        aria-label="Messages"
+        aria-hidden={!open}
         className={cn(
-          'w-max max-w-[85%] space-y-1.5 rounded-2xl px-3.5 py-2 text-sm shadow-sm',
-          isCustomer
-            ? 'bg-background rounded-bl-sm'
-            : 'bg-primary text-primary-foreground rounded-br-sm',
+          'bg-background fixed z-50 flex flex-col overflow-hidden',
+          'inset-0 sm:inset-auto sm:right-6 sm:bottom-24 sm:h-[min(620px,calc(100svh-8rem))] sm:w-[400px] sm:rounded-2xl sm:border sm:shadow-xl',
+          !open && 'hidden',
         )}
       >
-        {hasBody ? <p className="whitespace-pre-wrap">{message.body}</p> : null}
-        {hasAttachments ? (
-          <MessageAttachments attachments={message.attachments!} fromSelf={!isCustomer} />
-        ) : null}
-        <p
-          className={cn(
-            'text-[11px] opacity-90',
-            isCustomer ? 'text-left' : 'text-primary-foreground text-right',
-          )}
-        >
-          {new Date(message.createdAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </p>
+        <div className="flex items-center gap-2 border-b px-3 py-2">
+          <InboxSwitch value={inbox} onChange={setInbox} unread={unread} />
+          <div className="ml-auto flex items-center">
+            <Link
+              href="/messages"
+              onClick={() => setOpen(false)}
+              aria-label="Open full messages"
+              className="hover:bg-accent focus-visible:ring-ring/70 grid size-9 place-items-center rounded-full outline-none focus-visible:ring-[3px]"
+            >
+              <Maximize2Icon className="size-4" />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close messages"
+              className="hover:bg-accent focus-visible:ring-ring/70 grid size-9 place-items-center rounded-full outline-none focus-visible:ring-[3px]"
+            >
+              <XIcon className="size-4" />
+            </button>
+          </div>
+        </div>
+        <div className={cn('flex min-h-0 flex-1 flex-col', inbox !== 'customers' && 'hidden')}>
+          <MessagingView viewer={viewer} compact onUnreadChange={setCustomersUnread} />
+        </div>
+        <div className={cn('flex min-h-0 flex-1 flex-col', inbox !== 'team' && 'hidden')}>
+          <TeamMessagingView viewer={viewer} compact onUnreadChange={setTeamUnread} />
+        </div>
       </div>
-    </div>
-  );
-}
 
-function TeamBubble({ message, fromSelf }: { message: StaffMessage; fromSelf: boolean }) {
-  const hasAttachments = Boolean(message.attachments?.length);
-  const hasBody = message.body.trim().length > 0;
-
-  return (
-    <div className={cn('flex', fromSelf ? 'justify-end' : 'justify-start')}>
-      <div
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label={total > 0 ? `Messages, ${total} unread` : 'Messages'}
+        aria-expanded={open}
         className={cn(
-          'w-max max-w-[85%] space-y-1.5 rounded-2xl px-3.5 py-2 text-sm shadow-sm',
-          fromSelf
-            ? 'bg-primary text-primary-foreground rounded-br-sm'
-            : 'bg-background rounded-bl-sm',
+          'bg-primary text-primary-foreground focus-visible:ring-ring/70 fixed right-6 bottom-6 z-50 grid size-14 place-items-center rounded-full shadow-lg outline-none transition-transform hover:scale-105 focus-visible:ring-[3px]',
+          open && 'max-sm:hidden',
         )}
       >
-        {hasBody ? <p className="whitespace-pre-wrap">{message.body}</p> : null}
-        {hasAttachments ? (
-          <MessageAttachments attachments={message.attachments!} fromSelf={fromSelf} />
-        ) : null}
-        <p
-          className={cn(
-            'text-[11px] opacity-90',
-            fromSelf ? 'text-primary-foreground text-right' : 'text-left',
-          )}
-        >
-          {new Date(message.createdAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/** A one-glyph version of the full page's connection badge — there's no room for the label here. */
-function ConnectionDot({ state }: { state: 'connecting' | 'live' | 'offline' }) {
-  if (state === 'live') {
-    return <RadioIcon className="text-primary-foreground ml-1 size-3" aria-label="Live" />;
-  }
-  if (state === 'connecting') {
-    return <span className="sr-only">Connecting…</span>;
-  }
-  return (
-    <WifiOffIcon
-      className="text-primary-foreground/90 ml-1 size-3"
-      aria-label="Not live — new messages will not appear until you refresh"
-    />
+        {open ? <XIcon className="size-6" /> : <MessageSquareIcon className="size-6" />}
+        {total > 0 && !open && (
+          <span className="bg-destructive ring-background absolute -top-0.5 -right-0.5 grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] font-semibold text-white tabular-nums ring-2">
+            {total > 99 ? '99+' : total}
+          </span>
+        )}
+      </button>
+    </>
   );
 }

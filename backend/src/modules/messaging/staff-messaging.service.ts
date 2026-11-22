@@ -39,6 +39,18 @@ export class StaffMessageCreatedEvent {
   ) {}
 }
 
+export const STAFF_CONVERSATION_READ = 'staffconversation.read';
+
+/** A participant caught up on a staff thread; the other one's ticks update. */
+export class StaffConversationReadEvent {
+  constructor(
+    readonly conversationId: string,
+    readonly readerId: string,
+    readonly participantIds: [string, string],
+    readonly readAt: Date,
+  ) {}
+}
+
 /**
  * Internal messaging between staff, entirely separate from customer
  * conversations: different tables, different scoping (hierarchy rather
@@ -197,8 +209,24 @@ export class StaffMessagingService {
     actor: ICurrentStaff,
     conversationId: string,
     query: StaffMessageThreadQueryDto,
-  ): Promise<{ data: StaffMessageResponseDto[]; nextCursor: string | null }> {
+  ): Promise<{
+    data: StaffMessageResponseDto[];
+    nextCursor: string | null;
+    otherReadAt: Date | null;
+  }> {
     const conversation = await this.requireOwnConversation(actor, conversationId);
+    const otherId =
+      conversation.staffAId === actor.id ? conversation.staffBId : conversation.staffAId;
+    const [otherRead] = await this.db
+      .select({ readAt: staffConversationReadStates.lastReadAt })
+      .from(staffConversationReadStates)
+      .where(
+        and(
+          eq(staffConversationReadStates.conversationId, conversation.id),
+          eq(staffConversationReadStates.staffId, otherId),
+        ),
+      )
+      .limit(1);
 
     const conditions: SQL[] = [
       eq(staffMessages.conversationId, conversation.id),
@@ -237,6 +265,7 @@ export class StaffMessagingService {
     return {
       data: data as StaffMessageResponseDto[],
       nextCursor: hasMore ? data[data.length - 1].id : null,
+      otherReadAt: otherRead?.readAt ?? null,
     };
   }
 
@@ -319,7 +348,44 @@ export class StaffMessagingService {
         },
       });
 
+    const participants = await this.participantsOf(conversationId);
+    if (participants) {
+      this.events.emit(
+        STAFF_CONVERSATION_READ,
+        new StaffConversationReadEvent(conversationId, actor.id, participants, new Date()),
+      );
+    }
+
     return { conversationId, unreadCount: 0 };
+  }
+
+  /** Both participants of a thread, or null if it does not exist. */
+  async participantsOf(conversationId: string): Promise<[string, string] | null> {
+    const [row] = await this.db
+      .select({ a: staffConversations.staffAId, b: staffConversations.staffBId })
+      .from(staffConversations)
+      .where(eq(staffConversations.id, conversationId))
+      .limit(1);
+    return row ? [row.a, row.b] : null;
+  }
+
+  /**
+   * Every active staff member this actor may message: the same rule the
+   * contacts list uses, without its 50-row page limit. Presence follows it,
+   * so nobody learns whether staff outside their own chain are online.
+   */
+  async contactIds(actor: Pick<ICurrentStaff, 'id' | 'role' | 'parentId'>): Promise<string[]> {
+    const rows = await this.db
+      .select({ id: staffUsers.id })
+      .from(staffUsers)
+      .where(
+        and(
+          isNull(staffUsers.deletedAt),
+          eq(staffUsers.isActive, true),
+          this.scopeService.staffMessagingScope(actor as ICurrentStaff),
+        ),
+      );
+    return rows.map((row) => row.id);
   }
 
   // ── Internals ───────────────────────────────────────────────

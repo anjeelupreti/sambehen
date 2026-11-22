@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { and, count, desc, eq, isNull, sql, SQL } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, sql, SQL } from 'drizzle-orm';
 import {
   ConversationStatus,
   CustomerStatus,
@@ -47,6 +47,24 @@ export class MessageCreatedEvent {
     readonly customerId: string,
     readonly managerId: string | null,
     readonly storeId: string | null,
+  ) {}
+}
+
+export const CONVERSATION_READ = 'conversation.read';
+
+/**
+ * Someone caught up on a customer thread. `by` says which side read, so the
+ * gateway knows whose ticks to update: the customer's when staff read, the
+ * team's when the customer did.
+ */
+export class ConversationReadEvent {
+  constructor(
+    readonly conversationId: string,
+    readonly customerId: string,
+    readonly managerId: string | null,
+    readonly storeId: string | null,
+    readonly by: 'staff' | 'customer',
+    readonly readAt: Date,
   ) {}
 }
 
@@ -273,7 +291,11 @@ export class MessagingService {
     actor: ICurrentStaff,
     conversationId: string,
     query: MessageThreadQueryDto,
-  ): Promise<{ data: MessageResponseDto[]; nextCursor: string | null }> {
+  ): Promise<{
+    data: MessageResponseDto[];
+    nextCursor: string | null;
+    customerReadAt: Date | null;
+  }> {
     const conversation = await this.requireScopedConversation(actor, conversationId);
 
     const conditions: SQL[] = [
@@ -317,6 +339,7 @@ export class MessagingService {
     return {
       data: data as MessageResponseDto[],
       nextCursor: hasMore ? data[data.length - 1].id : null,
+      customerReadAt: conversation.customerLastReadAt ?? null,
     };
   }
 
@@ -384,16 +407,73 @@ export class MessagingService {
         },
       });
 
+    const [conversation] = await this.db
+      .select({ customerId: conversations.customerId })
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+
+    if (conversation) {
+      const { managerId, storeId } = await this.recipientsFor(conversation.customerId);
+      this.events.emit(
+        CONVERSATION_READ,
+        new ConversationReadEvent(
+          conversationId,
+          conversation.customerId,
+          managerId,
+          storeId,
+          'staff',
+          new Date(),
+        ),
+      );
+    }
+
     return { conversationId, unreadCount: 0 };
+  }
+
+  /**
+   * The customer has the thread open: everything up to now counts as read
+   * for them, and the team's read ticks follow.
+   */
+  async markReadByCustomer(customerId: string): Promise<{ readAt: Date | null }> {
+    const conversation = await this.findConversationByCustomer(customerId);
+    if (!conversation) return { readAt: null };
+
+    const readAt = new Date();
+    await this.db
+      .update(conversations)
+      .set({ customerLastReadAt: readAt })
+      .where(eq(conversations.id, conversation.id));
+
+    const { managerId, storeId } = await this.recipientsFor(customerId);
+    this.events.emit(
+      CONVERSATION_READ,
+      new ConversationReadEvent(
+        conversation.id,
+        customerId,
+        managerId,
+        storeId,
+        'customer',
+        readAt,
+      ),
+    );
+    return { readAt };
   }
 
   /** The customer's own thread. */
   async customerThread(
     customerId: string,
     query: MessageThreadQueryDto,
-  ): Promise<{ data: MessageResponseDto[]; nextCursor: string | null }> {
+  ): Promise<{ data: MessageResponseDto[]; nextCursor: string | null; teamReadAt: Date | null }> {
     const conversation = await this.findConversationByCustomer(customerId);
-    if (!conversation) return { data: [], nextCursor: null };
+    if (!conversation) return { data: [], nextCursor: null, teamReadAt: null };
+
+    // The furthest any staff member has read: for the customer, the team
+    // has seen a message once anyone on it has.
+    const [teamRead] = await this.db
+      .select({ readAt: sql<Date | null>`MAX(${conversationReadStates.lastReadAt})` })
+      .from(conversationReadStates)
+      .where(eq(conversationReadStates.conversationId, conversation.id));
 
     const conditions: SQL[] = [
       eq(messages.conversationId, conversation.id),
@@ -432,10 +512,11 @@ export class MessagingService {
     return {
       data: data as MessageResponseDto[],
       nextCursor: hasMore ? data[data.length - 1].id : null,
+      teamReadAt: teamRead?.readAt ? new Date(teamRead.readAt) : null,
     };
   }
 
-  /** Staff messages the customer has not seen since their own last message. */
+  /** Staff messages the customer has not seen since they last read or wrote. */
   async customerUnreadCount(customerId: string): Promise<UnreadCountDto> {
     const conversation = await this.findConversationByCustomer(customerId);
     if (!conversation) return { unreadCount: 0 };
@@ -448,9 +529,12 @@ export class MessagingService {
           eq(messages.conversationId, conversation.id),
           eq(messages.senderType, MessageSenderType.STAFF),
           isNull(messages.deletedAt),
-          conversation.lastCustomerMessageAt
-            ? sql`${messages.createdAt} > ${conversation.lastCustomerMessageAt}`
-            : sql`true`,
+          (() => {
+            const seen = [conversation.lastCustomerMessageAt, conversation.customerLastReadAt]
+              .filter((value): value is Date => value !== null)
+              .sort((a, b) => b.getTime() - a.getTime())[0];
+            return seen ? sql`${messages.createdAt} > ${seen}` : sql`true`;
+          })(),
         ),
       );
 
@@ -609,6 +693,33 @@ export class MessagingService {
     });
 
     return row;
+  }
+
+  /**
+   * Last sign-in times, used as "last seen" for anyone the gateway has not
+   * watched disconnect since it started.
+   */
+  async lastSignIns(
+    customerIds: string[],
+    staffIds: string[],
+  ): Promise<{ customers: Map<string, Date>; staff: Map<string, Date> }> {
+    const [customerRows, staffRows] = await Promise.all([
+      customerIds.length
+        ? this.db
+            .select({ id: customers.id, at: customers.lastLoginAt })
+            .from(customers)
+            .where(inArray(customers.id, customerIds))
+        : Promise.resolve([]),
+      staffIds.length
+        ? this.db
+            .select({ id: staffUsers.id, at: staffUsers.lastLoginAt })
+            .from(staffUsers)
+            .where(inArray(staffUsers.id, staffIds))
+        : Promise.resolve([]),
+    ]);
+    const toMap = (rows: { id: string; at: Date | null }[]) =>
+      new Map(rows.filter((row) => row.at).map((row) => [row.id, row.at as Date]));
+    return { customers: toMap(customerRows), staff: toMap(staffRows) };
   }
 
   /** Staff who should receive a live update for a conversation. */

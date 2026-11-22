@@ -191,6 +191,12 @@
     font-family: var(--font-lp);
   }
 
+  /* The surface behind a conversation: a step off the page, so cards and
+     the person's own cobalt bubbles both read clearly against it. */
+  .chat-wallpaper {
+    background: color-mix(in oklab, var(--muted) 55%, var(--background));
+  }
+
   /* Page and section titles take Archivo's wider cut, as on the public pages. */
   h1,
   h2 {

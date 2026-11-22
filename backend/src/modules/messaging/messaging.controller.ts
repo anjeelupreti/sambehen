@@ -73,7 +73,11 @@ export class MessagingController {
     @CurrentStaff() actor: ICurrentStaff,
     @Param('id', ParseUUIDPipe) id: string,
     @Query() query: MessageThreadQueryDto,
-  ): Promise<{ data: MessageResponseDto[]; nextCursor: string | null }> {
+  ): Promise<{
+    data: MessageResponseDto[];
+    nextCursor: string | null;
+    customerReadAt: Date | null;
+  }> {
     return this.messagingService.findMessages(actor, id, query);
   }
 
@@ -133,14 +137,29 @@ export class CustomerMessagingController {
   thread(
     @CurrentCustomer() actor: ICurrentCustomer,
     @Query() query: MessageThreadQueryDto,
-  ): Promise<{ data: MessageResponseDto[]; nextCursor: string | null }> {
+  ): Promise<{ data: MessageResponseDto[]; nextCursor: string | null; teamReadAt: Date | null }> {
     return this.messagingService.customerThread(actor.id, query);
+  }
+
+  @Post('messages/read')
+  @CustomerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Thread marked read')
+  @ApiOperation({
+    summary: 'Mark the thread read for the customer',
+    description:
+      'Called while the customer has the thread open. Clears their unread count and updates the read ticks staff see on their replies.',
+  })
+  @ApiOkData(Object, 'When the thread was marked read')
+  @ApiErrors(401)
+  markRead(@CurrentCustomer() actor: ICurrentCustomer): Promise<{ readAt: Date | null }> {
+    return this.messagingService.markReadByCustomer(actor.id);
   }
 
   @Get('messages/unread-count')
   @CustomerAuth()
   @ResponseMessage('Unread count retrieved successfully')
-  @ApiOperation({ summary: 'Staff replies since the customer last wrote' })
+  @ApiOperation({ summary: 'Staff replies since the customer last read or wrote' })
   @ApiOkData(UnreadCountDto)
   @ApiErrors(401)
   unread(@CurrentCustomer() actor: ICurrentCustomer): Promise<UnreadCountDto> {

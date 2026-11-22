@@ -1,59 +1,58 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-
+import { fromCustomerThreadForCustomer } from '@/components/chat/mappers';
+import type { ChatMessage, ThreadPage } from '@/components/chat/types';
 import { customerGet, customerMutate } from '@/lib/customer-api';
 import { getCustomerAccessToken } from '@/lib/customer-session';
-import { runAction } from '@/lib/run-action';
-import type { ActionResult } from '@/lib/action-result';
 import type { Message, MessageAttachment } from '@/lib/types';
 
 /**
- * The customer side of messaging.
- *
- * A customer has exactly one thread — with the business — so there is no
- * conversation to choose. The API keys everything off the authenticated
- * customer, which is why none of these take an id.
+ * The customer side of messaging. A customer has exactly one thread, with
+ * their team, so nothing here takes a conversation id: the API keys
+ * everything off the signed-in customer.
  */
 
-/** The thread, oldest first for rendering. */
-export async function loadMyMessages(): Promise<Message[]> {
+/** One page of the thread, oldest first, with how far the team has read. */
+export async function loadMyThread(before?: string): Promise<ThreadPage> {
+  const page = await customerGet<{
+    data: Message[];
+    nextCursor: string | null;
+    teamReadAt: string | null;
+  }>('/me/messages', { limit: 50, ...(before ? { before } : {}) });
+  return {
+    messages: [...(page?.data ?? [])].reverse().map(fromCustomerThreadForCustomer),
+    nextCursor: page?.nextCursor ?? null,
+    readAt: page?.teamReadAt ?? null,
+  };
+}
+
+/** Called while the thread is open, so the team's ticks turn read. */
+export async function markMyThreadRead(): Promise<void> {
   try {
-    const thread = await customerGet<{ data: Message[]; nextCursor: string | null }>(
-      '/me/messages',
-      { limit: 100 },
-    );
-    return [...(thread?.data ?? [])].reverse();
+    await customerMutate<unknown>('/me/messages/read', 'POST');
   } catch {
-    return [];
+    // Best-effort; the next open marks it again.
   }
 }
 
-export async function sendMyMessage(
+export async function sendMine(
   body: string,
-  attachments?: MessageAttachment[],
-): Promise<ActionResult<Message>> {
-  const result = await runAction(
-    () =>
-      customerMutate<Message>('/me/messages', 'POST', {
-        body,
-        ...(attachments?.length ? { attachments } : {}),
-      }),
-    'Message sent.',
-  );
-
-  if (result.ok) revalidatePath('/customer/messages');
-  return result;
+  attachments: MessageAttachment[],
+): Promise<ChatMessage | null> {
+  try {
+    const message = await customerMutate<Message>('/me/messages', 'POST', {
+      body,
+      ...(attachments.length ? { attachments } : {}),
+    });
+    return fromCustomerThreadForCustomer(message);
+  } catch {
+    return null;
+  }
 }
 
 /**
- * The token the browser needs to open the messaging socket.
- *
- * Same narrow exception as the staff side: a WebSocket is opened by the
- * browser and the gateway authenticates the handshake, so there is no way
- * to connect without the browser holding a token. It is the short-lived
- * customer access token, fetched on connect rather than embedded in the
- * page, and kept in a variable rather than storage.
+ * The token the browser needs to open the messaging socket: the
+ * short-lived access token, fetched on connect and never stored.
  */
 export async function getCustomerSocketToken(): Promise<string | null> {
   return getCustomerAccessToken();

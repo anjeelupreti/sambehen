@@ -50,6 +50,11 @@ export const conversations = pgTable(
     /** Drives the "awaiting reply" filter without scanning messages. */
     lastCustomerMessageAt: timestamp('last_customer_message_at', { withTimezone: true }),
     lastStaffMessageAt: timestamp('last_staff_message_at', { withTimezone: true }),
+    /**
+     * When the customer last had the thread open. Drives the read ticks
+     * staff see on their replies, and the customer's own unread count.
+     */
+    customerLastReadAt: timestamp('customer_last_read_at', { withTimezone: true }),
 
     messageCount: integer('message_count').notNull().default(0),
 

@@ -1,33 +1,27 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-
 import { apiGet, apiList, apiMutate } from '@/lib/api';
-import { runAction } from '@/lib/run-action';
-import { getAccessToken } from '@/lib/session';
-import type { ActionResult } from '@/lib/action-result';
+import { fromCustomerThreadForStaff } from '@/components/chat/mappers';
+import type { ChatMessage, ThreadPage } from '@/components/chat/types';
+import { getAccessToken, getActor } from '@/lib/session';
 import type { Conversation, Message, MessageAttachment } from '@/lib/types';
 
 /**
- * Server actions for messaging.
+ * Server actions for customer conversations, as staff see them.
  *
- * Everything here runs on the server because the API client does: the bearer
- * token lives in an httpOnly cookie that browser JavaScript cannot read, so
- * a client component calling `apiList` directly would have no credential
- * even if `server-only` allowed it to compile.
+ * Everything here runs on the server because the API client does: the
+ * bearer token lives in an httpOnly cookie that browser JavaScript cannot
+ * read.
  *
- * Note the ids. `/team/conversations/{id}/messages` and `/{id}/read` take a
- * **conversation** id; only sending takes a customer id, because sending is
- * what creates the conversation when none exists. Passing a customer id to
- * the first two returns nothing and looks like an empty thread.
+ * Mind the ids: reading and marking read take a **conversation** id; only
+ * sending takes a customer id, because sending is what creates the
+ * conversation when none exists.
  */
 
 /** The inbox, scoped by the API to what the caller may see. */
 export async function listConversations(): Promise<Conversation[]> {
   try {
-    const { data } = await apiList<Conversation>('/team/conversations', {
-      query: { limit: 50 },
-    });
+    const { data } = await apiList<Conversation>('/team/conversations', { query: { limit: 100 } });
     return data;
   } catch {
     return [];
@@ -35,88 +29,63 @@ export async function listConversations(): Promise<Conversation[]> {
 }
 
 /**
- * A thread, oldest first.
- *
- * The API returns newest-first because that is what pagination needs.
- * Reversing here keeps that detail in one place rather than in every
- * component that renders a conversation.
+ * One page of a thread, oldest first, with how far the customer has read.
+ * Opening a thread also marks it read for this viewer (the API does that).
  */
-export async function loadMessages(conversationId: string): Promise<Message[]> {
-  try {
-    // This route is cursor-paginated, so its payload is
-    // `{ data, nextCursor }` rather than a bare array — one level deeper
-    // than every other list in the API.
-    const thread = await apiGet<{ data: Message[]; nextCursor: string | null }>(
+export async function loadThread(conversationId: string, before?: string): Promise<ThreadPage> {
+  const [actor, page] = await Promise.all([
+    getActor(),
+    apiGet<{ data: Message[]; nextCursor: string | null; customerReadAt: string | null }>(
       `/team/conversations/${conversationId}/messages`,
-      { query: { limit: 100 } },
-    );
+      { query: { limit: 50, ...(before ? { before } : {}) } },
+    ),
+  ]);
+  return {
+    messages: [...page.data]
+      .reverse()
+      .map((m) => fromCustomerThreadForStaff(m, actor?.username ?? '')),
+    nextCursor: page.nextCursor,
+    readAt: page.customerReadAt,
+  };
+}
 
-    return [...(thread?.data ?? [])].reverse();
+/** Marks a thread read for this viewer, e.g. when a message arrives while it is open. */
+export async function markConversationRead(conversationId: string): Promise<void> {
+  try {
+    await apiMutate<unknown>(`/team/conversations/${conversationId}/read`, 'POST');
   } catch {
-    return [];
+    // Read state is best-effort; the next open marks it again.
   }
 }
 
-/*
- * Aliases for the messaging FAB, which uses a different vocabulary.
- *
- * Written as async functions rather than `export const x = y`: a
- * 'use server' module may only export async functions, and a re-exported
- * binding fails that check at build time.
- */
-export async function getConversations(): Promise<Conversation[]> {
-  return listConversations();
-}
-
-export async function getMessages(conversationId: string): Promise<Message[]> {
-  return loadMessages(conversationId);
-}
-
-export async function markAsRead(conversationId: string): Promise<ActionResult<unknown>> {
-  return markConversationRead(conversationId);
-}
-
-export async function markConversationRead(conversationId: string): Promise<ActionResult<unknown>> {
-  return runAction(
-    () => apiMutate<unknown>(`/team/conversations/${conversationId}/read`, 'POST'),
-    'Marked as read.',
-  );
-}
-
-/**
- * Sends a message to a customer.
- *
- * The same call starts a thread and continues one — the API keys on the
- * customer rather than on a conversation id, so there is no separate
- * "start" path to keep in step.
- */
-export async function sendMessage(
+/** Sends a reply. Starts the thread when there is none. */
+export async function sendReply(
   customerId: string,
   body: string,
-  attachments?: MessageAttachment[],
-): Promise<ActionResult<Message>> {
-  const result = await runAction(
-    () =>
+  attachments: MessageAttachment[],
+): Promise<ChatMessage | null> {
+  try {
+    const [actor, message] = await Promise.all([
+      getActor(),
       apiMutate<Message>('/team/conversations/messages', 'POST', {
         customerId,
         body,
-        ...(attachments?.length ? { attachments } : {}),
+        ...(attachments.length ? { attachments } : {}),
       }),
-    'Message sent.',
-  );
-
-  if (result.ok) revalidatePath('/dashboard');
-  return result;
+    ]);
+    return fromCustomerThreadForStaff(message, actor?.username ?? '');
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Hands the access token to the browser so it can open the messaging socket.
  *
  * A deliberate, narrow exception to the rule that the browser never holds a
- * token: a WebSocket is opened *by the browser* and the gateway
- * authenticates the handshake, so there is no way around it. It is the
- * short-lived access token only, fetched on connect rather than embedded in
- * the page, and the caller keeps it in a variable rather than storage.
+ * token: a WebSocket is opened by the browser and the gateway authenticates
+ * the handshake. It is the short-lived access token only, fetched on
+ * connect and kept in a variable rather than storage.
  */
 export async function getSocketToken(): Promise<string | null> {
   return getAccessToken();
