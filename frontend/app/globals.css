@@ -83,8 +83,9 @@
   --highlight: #ffc83d;
   --highlight-foreground: #3a2a00;
 
-  --debit: #7ea2ff;
-  --credit: #f2c14e;
+  /* Validated as a chart pair against the dark card (dataviz validator). */
+  --debit: #6f8ff0;
+  --credit: #be8a2c;
 
   --sidebar: #121a28;
 }

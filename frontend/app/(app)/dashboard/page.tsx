@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 
 import { ChartCard } from '@/components/charts/chart-card';
-import { GameDotPlot } from '@/components/charts/game-dot-plot';
+import { RankedBars } from '@/components/charts/ranked-bars';
 import { TrendChart } from '@/components/charts/trend-chart';
 import { TrendControls } from '@/components/charts/trend-controls';
+import { AttentionPanel, type AttentionItem } from '@/components/dashboard/attention-panel';
+import { MoneySummary } from '@/components/dashboard/money-summary';
+import { TeamBreakdown } from '@/components/dashboard/team-breakdown';
+import { RecordTransactionModal } from '@/components/forms/record-transaction-modal';
 import { Money } from '@/components/money';
 import { StatCard } from '@/components/stat-card';
-import { UserCheckIcon } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -16,15 +18,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { apiGet } from '@/lib/api';
+import { apiGet, apiList } from '@/lib/api';
 import { formatCount, formatDate } from '@/lib/money';
 import { getActor } from '@/lib/session';
-import type { DashboardMetrics, GameTotal, TrendGranularity, TrendResponse } from '@/lib/types';
+import type {
+  DashboardMetrics,
+  Game,
+  GameTotal,
+  TrendGranularity,
+  TrendResponse,
+} from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
 const GRANULARITIES: TrendGranularity[] = ['day', 'week', 'month'];
 
+/**
+ * One dashboard, shaped by role. Everything is scoped by the API to the
+ * signed-in person's part of the chain; what changes per role is what is
+ * worth showing: a master sees managers compared and the approval queue, a
+ * manager sees their stores compared, a store sees its own figures and the
+ * work waiting on it.
+ */
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -47,102 +62,146 @@ export default async function DashboardPage({
   const lastNDays = Number(first('lastNDays'));
   const range = Number.isInteger(lastNDays) && lastNDays > 0 && lastNDays <= 730 ? lastNDays : 30;
 
-  const [actor, metrics, trends] = await Promise.all([
+  const [actor, metrics, trends, games] = await Promise.all([
     getActor(),
     apiGet<DashboardMetrics>('/team/dashboard'),
     apiGet<TrendResponse>('/team/dashboard/trends', {
       query: { granularity, lastNDays: range },
     }),
+    apiList<Game>('/team/games', { query: { limit: 100, isActive: true } }),
   ]);
+
+  const role = actor?.role;
+  const attention: AttentionItem[] = [
+    ...(role === 'master'
+      ? [
+          {
+            key: 'approvals',
+            label: 'Customers waiting for approval',
+            count: metrics.customers.pendingApproval,
+            href: '/customers?status=pending',
+            icon: 'approval' as const,
+          },
+        ]
+      : []),
+    {
+      key: 'replies',
+      label: 'Conversations waiting for a reply',
+      count: metrics.messaging.awaitingReply,
+      href: '/messages',
+      icon: 'reply',
+    },
+    {
+      key: 'unread',
+      label: 'Unread messages',
+      count: metrics.messaging.unreadMessages,
+      href: '/messages',
+      icon: 'unread',
+    },
+  ];
+
+  const vipTiers = metrics.vips.byTier
+    .map((tier) => `${formatCount(tier.count)} in tier ${tier.tier}`)
+    .join(', ');
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm">
-          {actor?.role === 'master'
-            ? 'Across every chain.'
-            : 'Limited to the customers you can see.'}
-        </p>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <RecordTransactionModal games={games.data} />
       </header>
 
-      {actor?.role === 'master' && metrics.customers.pendingApproval > 0 ? (
-        <Link
-          href="/customers?status=pending"
-          className="flex items-center gap-3 rounded-lg border-highlight/60 bg-warning-surface hover:border-highlight border px-4 py-3 text-sm transition-colors"
-        >
-          <UserCheckIcon className="size-4 shrink-0 text-warning" />
-          <span>
-            <strong className="font-semibold">
-              {formatCount(metrics.customers.pendingApproval)}
-            </strong>{' '}
-            self-registered {metrics.customers.pendingApproval === 1 ? 'customer' : 'customers'}{' '}
-            {metrics.customers.pendingApproval === 1 ? 'is' : 'are'} waiting on your approval.
-          </span>
-        </Link>
-      ) : null}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <MoneySummary
+          net={metrics.thisMonth.balance}
+          moneyIn={metrics.thisMonth.totalIn}
+          moneyOut={metrics.thisMonth.totalOut}
+          changePercent={metrics.thisMonth.changePercent}
+          allTimeNet={metrics.allTime.balance}
+        />
+        <AttentionPanel items={attention} />
+      </div>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Key figures" className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <StatCard
           label="Customers"
           value={formatCount(metrics.customers.total)}
-          hint={`${formatCount(metrics.customers.newThisMonth)} new this month.`}
+          hint={`${formatCount(metrics.customers.newThisMonth)} new this month`}
         />
         <StatCard
           label="Active"
           value={formatCount(metrics.customers.active)}
-          hint="Active within the configured activity window."
+          hint={`${formatCount(metrics.customers.inactive)} inactive`}
         />
-        <StatCard label="Net (all time)" value={<Money value={metrics.allTime.balance} />} />
         <StatCard
-          label="Net (this month)"
-          value={<Money value={metrics.thisMonth.balance} />}
-          trend={metrics.thisMonth.changePercent}
-          hint={
-            metrics.thisMonth.changePercent === null
-              ? 'No activity last month to compare against.'
-              : undefined
-          }
+          label="VIP players"
+          value={formatCount(metrics.vips.activeVips)}
+          hint={vipTiers || undefined}
+        />
+        <StatCard
+          label="Replies today"
+          value={formatCount(metrics.messaging.responsesToday)}
+          hint={`${formatCount(metrics.messaging.conversationsToday)} conversations today`}
         />
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Debit (all time)"
-          value={<Money value={metrics.allTime.totalIn} />}
-          hint="Money in."
+      <section aria-labelledby="trend-title" className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="trend-title" className="text-lg font-semibold">
+            Money in and out
+          </h2>
+          <TrendControls />
+        </div>
+        <ChartCard
+          title={`Last ${range} days, by ${granularity}`}
+          chart={<TrendChart points={trends.points} granularity={granularity} />}
+          table={<TrendTable points={trends.points} />}
         />
-        <StatCard
-          label="Credit (all time)"
-          value={<Money value={metrics.allTime.totalOut} />}
-          hint="Money out, excluding corrections."
-        />
-        <StatCard label="Debit (month)" value={<Money value={metrics.thisMonth.totalIn} />} />
-        <StatCard label="Credit (month)" value={<Money value={metrics.thisMonth.totalOut} />} />
       </section>
 
-      <ChartCard
-        title="Money in and out over time"
-        description="Empty periods are real zeros, not missing data."
-        controls={<TrendControls />}
-        chart={<TrendChart points={trends.points} granularity={granularity} />}
-        table={<TrendTable points={trends.points} />}
-      />
+      {actor && (
+        <TeamBreakdown
+          title={role === 'master' ? 'Managers' : 'Stores'}
+          rows={metrics.teamRollup}
+          viewerId={actor.id}
+        />
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard
-          title="Top games by debit"
-          chart={<GameDotPlot rows={metrics.topGamesByDebit} measure="debit" />}
-          table={<GameTable rows={metrics.topGamesByDebit} />}
-        />
-        <ChartCard
-          title="Top games by credit"
-          chart={<GameDotPlot rows={metrics.topGamesByCredit} measure="credit" />}
-          table={<GameTable rows={metrics.topGamesByCredit} />}
-        />
+        <section aria-labelledby="games-in-title" className="bg-card rounded-xl border p-5">
+          <h2 id="games-in-title" className="mb-4 text-base font-semibold">
+            Top games by money in
+          </h2>
+          <RankedBars
+            rows={toRanked(metrics.topGamesByDebit)}
+            barClassName="bg-debit"
+            emptyText="Nothing recorded yet."
+          />
+        </section>
+        <section aria-labelledby="games-out-title" className="bg-card rounded-xl border p-5">
+          <h2 id="games-out-title" className="mb-4 text-base font-semibold">
+            Top games by money out
+          </h2>
+          <RankedBars
+            rows={toRanked(metrics.topGamesByCredit)}
+            barClassName="bg-credit"
+            emptyText="Nothing recorded yet."
+          />
+        </section>
       </div>
     </div>
   );
+}
+
+function toRanked(rows: GameTotal[]) {
+  // Entries recorded against no game come back with a null id and name.
+  // That is a real bucket, so it is labelled rather than dropped.
+  return rows.map((row) => ({
+    key: row.gameId ?? 'unassigned',
+    label: row.gameName ?? 'No game',
+    value: row.total,
+    count: row.transactionCount,
+  }));
 }
 
 function TrendTable({ points }: { points: TrendResponse['points'] }) {
@@ -158,8 +217,8 @@ function TrendTable({ points }: { points: TrendResponse['points'] }) {
         <TableHeader>
           <TableRow>
             <TableHead>Period</TableHead>
-            <TableHead className="text-right">In</TableHead>
-            <TableHead className="text-right">Out</TableHead>
+            <TableHead className="text-right">Money in</TableHead>
+            <TableHead className="text-right">Money out</TableHead>
             <TableHead className="text-right">Net</TableHead>
             <TableHead className="text-right">Entries</TableHead>
           </TableRow>
@@ -185,39 +244,5 @@ function TrendTable({ points }: { points: TrendResponse['points'] }) {
         </TableBody>
       </Table>
     </div>
-  );
-}
-
-function GameTable({ rows }: { rows: GameTotal[] }) {
-  if (rows.length === 0) {
-    return <p className="text-muted-foreground py-6 text-center text-sm">Nothing recorded yet.</p>;
-  }
-
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Game</TableHead>
-          <TableHead className="text-right">Entries</TableHead>
-          <TableHead className="text-right">Total</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row) => (
-          // Entries recorded against no game come back with a null id and
-          // name. That is a real bucket, so it is labelled rather than
-          // dropped, and the row still needs a stable key.
-          <TableRow key={row.gameId ?? 'unassigned'}>
-            <TableCell className="font-medium">{row.gameName ?? 'No game'}</TableCell>
-            <TableCell className="tabular text-right">
-              {formatCount(row.transactionCount)}
-            </TableCell>
-            <TableCell className="text-right">
-              <Money value={row.total} />
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
   );
 }

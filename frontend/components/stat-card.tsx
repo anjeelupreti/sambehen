@@ -31,7 +31,7 @@ export function StatCard({
     >
       <p className="text-muted-foreground text-sm">{label}</p>
       <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <p className="tabular text-2xl font-semibold tracking-tight [font-stretch:112%]">{value}</p>
+        <p className="text-2xl font-semibold tracking-tight [font-stretch:112%]">{value}</p>
         {hasTrend && (
           <span
             className={cn(

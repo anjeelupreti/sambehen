@@ -37,7 +37,7 @@ export function ChartTooltip({
             <span className="flex items-center gap-1.5">
               <span
                 aria-hidden
-                className="size-2 shrink-0 rounded-[2px]"
+                className="h-0.5 w-3 shrink-0 rounded-full"
                 style={{ backgroundColor: row.color }}
               />
               <span className="text-muted-foreground">{row.label}</span>

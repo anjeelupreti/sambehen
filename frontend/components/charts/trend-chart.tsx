@@ -1,30 +1,25 @@
 'use client';
 
 import { useMemo } from 'react';
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { ChartTooltip, tooltipCount } from '@/components/charts/chart-tooltip';
 import { formatMoneyCompact, toPlotValue } from '@/lib/money';
 import type { TrendPoint } from '@/lib/types';
 
 /**
- * Money in and money out over time.
+ * Money in and money out over time, as paired columns per period.
+ *
+ * Columns, not curves: each bucket is a total, and a smoothed line drawn
+ * between daily totals invents peaks and dips between days that never
+ * happened.
  *
  * Both series are money on the same scale, so they share one axis. A second
  * y-axis would let the two lines cross wherever the scales happened to put
  * them and imply a relationship that is not in the data.
  *
- * The API gap-fills empty buckets with zeros, so a quiet week draws a flat
- * line at zero rather than a straight segment joining the two active days
- * around it — which would suggest activity that never happened.
+ * The API gap-fills empty buckets with zeros, so a quiet period shows as
+ * an empty slot rather than being skipped.
  */
 const SERIES = [
   { key: 'totalIn', label: 'Money in', color: 'var(--color-debit)' },
@@ -76,7 +71,7 @@ export function TrendChart({
           <span key={series.key} className="flex items-center gap-1.5 text-xs">
             <span
               aria-hidden
-              className="h-0.5 w-4 rounded-full"
+              className="size-2.5 rounded-[3px]"
               style={{ backgroundColor: series.color }}
             />
             <span className="text-muted-foreground">{series.label}</span>
@@ -85,13 +80,18 @@ export function TrendChart({
       </div>
 
       <ResponsiveContainer width="100%" height={288}>
-        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
-          <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
+        <BarChart
+          data={data}
+          margin={{ top: 8, right: 8, bottom: 0, left: 8 }}
+          barGap={2}
+          barCategoryGap="22%"
+        >
+          <CartesianGrid vertical={false} stroke="var(--color-border)" />
 
           <XAxis
             dataKey="label"
             tickLine={false}
-            axisLine={false}
+            axisLine={{ stroke: 'var(--color-border)' }}
             minTickGap={24}
             tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
           />
@@ -104,7 +104,9 @@ export function TrendChart({
           />
 
           <Tooltip
-            cursor={{ stroke: 'var(--color-muted-foreground)', strokeWidth: 1 }}
+            // The whole period lights up, so the pointer only has to be in
+            // the right column, not on a bar.
+            cursor={{ fill: 'var(--color-muted)', opacity: 0.6 }}
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
               const datum = payload[0]?.payload as PlotDatum | undefined;
@@ -126,22 +128,17 @@ export function TrendChart({
           />
 
           {SERIES.map((series) => (
-            <Line
+            <Bar
               key={series.key}
-              type="monotone"
               dataKey={series.key}
               name={series.label}
-              stroke={series.color}
-              strokeWidth={2}
-              dot={false}
-              // Bigger than the mark so the point is easy to hit on a
-              // touch screen, and ringed in the surface colour so it
-              // reads as separate from the line it sits on.
-              activeDot={{ r: 4.5, strokeWidth: 2, stroke: 'var(--color-background)' }}
+              fill={series.color}
+              maxBarSize={24}
+              radius={[4, 4, 0, 0]}
               isAnimationActive={false}
             />
           ))}
-        </LineChart>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
