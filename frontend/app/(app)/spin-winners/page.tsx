@@ -28,7 +28,15 @@ import { RecordWinnersModal } from '@/components/spin/record-winners-modal';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/money';
 
-export const metadata: Metadata = { title: 'Spins' };
+export const metadata: Metadata = { title: 'Rewards' };
+
+/** Event state, on the shared status colours: done is success, running needs watching. */
+const EVENT_STATUS_VARIANT: Record<string, 'success' | 'warning' | 'outline' | 'secondary'> = {
+  completed: 'success',
+  live: 'warning',
+  scheduled: 'outline',
+  cancelled: 'secondary',
+};
 
 /**
  * A winner can be chosen before the draw or recorded after it. The
@@ -36,12 +44,16 @@ export const metadata: Metadata = { title: 'Spins' };
  */
 const SELECTION_OPTIONS = [
   { value: 'true', label: 'Preselected' },
-  { value: 'false', label: 'Drawn' },
+  { value: 'false', label: 'Chosen after' },
 ];
 
 const ACTIVE_FILTERS = [
   { param: 'search', label: 'Search' },
-  { param: 'isPreselected', label: 'Selection', labels: { true: 'Preselected', false: 'Drawn' } },
+  {
+    param: 'isPreselected',
+    label: 'Selection',
+    labels: { true: 'Preselected', false: 'Chosen after' },
+  },
   { param: 'dateFrom', label: 'From' },
   { param: 'dateTo', label: 'To' },
 ];
@@ -87,10 +99,7 @@ export default async function SpinWinnersPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Spins</h1>
-          <p className="text-muted-foreground text-sm">
-            Events run against an active VIP criteria, and the winners they produced.
-          </p>
+          <h1 className="text-2xl font-semibold">Rewards</h1>
         </div>
         <ExportButton exportKey="spin-winners" />
       </header>
@@ -99,17 +108,13 @@ export default async function SpinWinnersPage({
 
       {summary ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Winners" value={formatCount(summary.totalWinners)} />
-          <StatCard
-            label="Distinct customers"
-            value={formatCount(summary.distinctCustomers)}
-            hint="One customer can win more than once."
-          />
-          <StatCard label="Total prizes" value={<Money value={summary.totalPrizeAmount} />} />
+          <StatCard label="Recipients" value={formatCount(summary.totalWinners)} />
+          <StatCard label="Distinct customers" value={formatCount(summary.distinctCustomers)} />
+          <StatCard label="Total rewarded" value={<Money value={summary.totalPrizeAmount} />} />
           <StatCard
             label="Preselected"
             value={formatCount(summary.preselectedCount)}
-            hint="Chosen before the draw rather than after it."
+            hint="Chosen before the event"
           />
         </section>
       ) : null}
@@ -136,7 +141,7 @@ export default async function SpinWinnersPage({
                 <SortableHeader column="rank" align="right">
                   Rank
                 </SortableHeader>
-                <TableHead>Prize</TableHead>
+                <TableHead>Reward</TableHead>
                 <SortableHeader column="prizeAmount" align="right">
                   Amount
                 </SortableHeader>
@@ -147,7 +152,7 @@ export default async function SpinWinnersPage({
               {data.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
-                    No winners match these filters.
+                    No recipients match these filters.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -158,7 +163,7 @@ export default async function SpinWinnersPage({
                         href={`/customers/${winner.customerId}`}
                         className="font-medium hover:underline"
                       >
-                        {winner.customerUsername}
+                        {winner.customerFullName || winner.customerUsername}
                       </Link>
                       {(winner.storeUsername ?? winner.managerUsername) ? (
                         <p className="text-muted-foreground text-xs">
@@ -174,8 +179,8 @@ export default async function SpinWinnersPage({
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm">{winner.prizeLabel}</span>
                         {winner.isPreselected ? (
-                          <Badge variant="outline" title="Chosen before the draw">
-                            preselected
+                          <Badge variant="outline" title="Chosen before the event">
+                            Preselected
                           </Badge>
                         ) : null}
                       </div>
@@ -210,12 +215,7 @@ function SpinEventsSection({ events, canManage }: { events: SpinEvent[]; canMana
     <Card className="gap-0 py-0">
       <CardContent className="px-0">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b p-3">
-          <div>
-            <h2 className="text-sm font-semibold">Spin events</h2>
-            <p className="text-muted-foreground text-xs">
-              Each runs against an active VIP criteria, which decides who is eligible.
-            </p>
-          </div>
+          <h2 className="text-sm font-semibold">Reward events</h2>
           <div className="flex items-center gap-2">
             <ExportButton exportKey="spin-events" />
             {canManage ? (
@@ -227,9 +227,7 @@ function SpinEventsSection({ events, canManage }: { events: SpinEvent[]; canMana
         </div>
 
         {events.length === 0 ? (
-          <p className="text-muted-foreground p-6 text-center text-sm">
-            No spin events yet. Winners appear here once an event has run.
-          </p>
+          <p className="text-muted-foreground p-6 text-center text-sm">No reward events yet.</p>
         ) : (
           <Table>
             <TableHeader>
@@ -238,8 +236,8 @@ function SpinEventsSection({ events, canManage }: { events: SpinEvent[]; canMana
                 <TableHead>Criteria</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Selection</TableHead>
-                <TableHead className="text-right">Prize pool</TableHead>
-                <TableHead className="text-right">Winners</TableHead>
+                <TableHead className="text-right">Reward pool</TableHead>
+                <TableHead className="text-right">Recipients</TableHead>
                 <TableHead>Scheduled</TableHead>
                 <TableHead className="w-40">
                   <span className="sr-only">Actions</span>
@@ -254,14 +252,17 @@ function SpinEventsSection({ events, canManage }: { events: SpinEvent[]; canMana
                     {event.vipCriteriaName}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={event.status === 'completed' ? 'default' : 'outline'}>
+                    <Badge
+                      variant={EVENT_STATUS_VARIANT[event.status] ?? 'outline'}
+                      className="capitalize"
+                    >
                       {event.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {/* Preselected means winners were chosen before the draw
                         rather than after it. It is auditable, so it is shown. */}
-                    {event.selectionMode === 'preselected' ? 'Preselected' : 'Post-draw'}
+                    {event.selectionMode === 'preselected' ? 'Preselected' : 'Chosen after'}
                   </TableCell>
                   <TableCell className="text-right">
                     <Money value={event.prizePool} />

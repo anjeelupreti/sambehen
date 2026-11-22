@@ -104,11 +104,7 @@ export default async function ReferralsPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Referrals</h1>
-          <p className="text-muted-foreground text-sm">
-            Programs define the reward, codes are issued to customers under them, and the ledger
-            below is what those codes produced. Bonuses are tracked apart from real money.
-          </p>
+          <h1 className="text-2xl font-semibold">Referrals</h1>
         </div>
         <ExportButton exportKey="referrals" />
       </header>
@@ -116,17 +112,9 @@ export default async function ReferralsPage({
       {summary ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Referrals" value={formatCount(summary.totalReferrals)} />
-          <StatCard
-            label="Pending"
-            value={formatCount(summary.pending)}
-            hint="Shared, but the referee has not qualified yet."
-          />
+          <StatCard label="Pending" value={formatCount(summary.pending)} />
           <StatCard label="Rewarded" value={formatCount(summary.rewarded)} />
-          <StatCard
-            label="Total paid"
-            value={<Money value={summary.totalRewarded} />}
-            hint="Bonus balance, not withdrawable cash."
-          />
+          <StatCard label="Total paid" value={<Money value={summary.totalRewarded} />} />
         </section>
       ) : null}
 

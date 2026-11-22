@@ -23,14 +23,8 @@ import {
 } from '@/components/ui/table';
 import { ApiError, apiGet, apiList } from '@/lib/api';
 import { formatCount, formatDate, formatDateTime } from '@/lib/money';
-import type {
-  Customer,
-  Game,
-  Transaction,
-  TrendResponse,
-  TrendGranularity,
-} from '@/lib/types';
-import { CUSTOMER_STATUS_VARIANT } from '@/lib/status';
+import type { Customer, Game, Transaction, TrendResponse, TrendGranularity } from '@/lib/types';
+import { CUSTOMER_STATUS_VARIANT, TRANSACTION_TYPE_LABEL } from '@/lib/status';
 
 export const metadata: Metadata = { title: 'Customer' };
 
@@ -93,15 +87,15 @@ export default async function CustomerDetailPage({
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-2xl font-semibold tracking-tight">
-                {customer.username}
+              <h1 className="truncate text-2xl font-semibold">
+                {customer.fullName || customer.username}
               </h1>
               <Badge variant={CUSTOMER_STATUS_VARIANT[customer.status]} className="capitalize">
                 {customer.status}
               </Badge>
             </div>
             {customer.fullName ? (
-              <p className="text-muted-foreground text-sm">{customer.fullName}</p>
+              <p className="text-muted-foreground text-sm">{customer.username}</p>
             ) : null}
           </div>
 
@@ -123,26 +117,17 @@ export default async function CustomerDetailPage({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Balance" value={<Money value={customer.balance} />} />
+        <StatCard label="Money in" value={<Money value={customer.totalSpent} />} />
         <StatCard
-          label="Total spent"
-          value={<Money value={customer.totalSpent} />}
-          hint="Money in."
-        />
-        <StatCard
-          label="Total withdrawn"
+          label="Money out"
           value={<Money value={customer.totalWithdrawn} />}
-          hint="Excludes corrections."
+          hint="Excludes corrections"
         />
-        <StatCard
-          label="Bonus balance"
-          value={<Money value={customer.bonusBalance} />}
-          hint="Referral bonuses, kept separate from real money."
-        />
+        <StatCard label="Bonus balance" value={<Money value={customer.bonusBalance} />} />
       </section>
 
       <ChartCard
-        title="Transaction History"
-        description="Customer's money in and out over time."
+        title="Money in and out"
         controls={<TrendControls />}
         chart={<TrendChart points={trends.points} granularity={granularity} />}
         table={<TrendTable points={trends.points} />}
@@ -206,11 +191,11 @@ export default async function CustomerDetailPage({
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <Badge variant={entry.type === 'debit' ? 'debit' : 'credit'}>
-                            {entry.type}
+                            {TRANSACTION_TYPE_LABEL[entry.type] ?? entry.type}
                           </Badge>
                           {entry.isCorrection ? (
                             <Badge variant="outline" title="Corrects an earlier entry">
-                              correction
+                              Correction
                             </Badge>
                           ) : null}
                         </div>

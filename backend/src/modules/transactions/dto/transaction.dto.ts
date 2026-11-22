@@ -271,6 +271,9 @@ export class TransactionResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   customerUsername?: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true })
+  customerFullName?: string | null;
+
   @ApiProperty({ enum: TransactionType, enumName: 'TransactionType' })
   type!: TransactionType;
 

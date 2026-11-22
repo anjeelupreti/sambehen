@@ -21,7 +21,7 @@ export async function createSpinEvent(
 ): Promise<ActionResult<SpinEvent>> {
   const result = await runAction(
     () => apiMutate<SpinEvent>('/team/spin-events', 'POST', input),
-    'Spin event created.',
+    'Reward event created.',
   );
 
   if (result.ok) revalidatePath('/spin-events');
@@ -88,7 +88,7 @@ export async function removeWinner(
 ): Promise<ActionResult<unknown>> {
   const result = await runAction(
     () => apiMutate<unknown>(`/team/spin-events/${eventId}/winners/${winnerId}`, 'DELETE'),
-    'Winner removed.',
+    'Recipient removed.',
   );
 
   if (result.ok) revalidatePath('/spin-winners');

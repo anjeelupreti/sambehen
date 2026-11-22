@@ -11,6 +11,9 @@
  * ground — not an inversion: cobalt is lifted for contrast and surfaces
  * step up in lightness so cards separate from the page.
  *
+ * Status and money colours are stepped dark enough that small text on
+ * their own 10-12% tint clears WCAG AA (4.5:1) in light mode.
+ *
  * Status colours carry meaning and are never decoration: success (active,
  * done), warning (needs a person to act), destructive (blocked, failed).
  * Highlight is sunflower, reserved for VIP and reward data.
@@ -32,14 +35,14 @@
   --muted-foreground: #5b6478;
   --accent: #eef1f7;
   --accent-foreground: #121a2b;
-  --destructive: #d1343a;
+  --destructive: #b42a30;
   --destructive-foreground: #ffffff;
   --border: #e2e6ef;
   --input: #cbd2e0;
   --ring: #2f5bff;
 
-  --success: #0e8a5f;
-  --warning: #9a6b00;
+  --success: #0a6e4b;
+  --warning: #835a00;
   /* Mixing amber text colour into white turns olive; tint surfaces from sunflower instead. */
   --warning-surface: #fff3d1;
   --highlight: #ffc83d;
@@ -51,7 +54,7 @@
    * an error. Deliberately not green/red for that reason.
    */
   --debit: #2f5bff;
-  --credit: #9a6b00;
+  --credit: #835a00;
 
   --sidebar: #ffffff;
 }
@@ -147,10 +150,10 @@
   --color-lp-primary: #2f5bff;
   --color-lp-primary-hover: #1f47e6;
   --color-lp-chip: #ffc83d;
-  --color-lp-chip-text: #9a6b00;
+  --color-lp-chip-text: #835a00;
   --color-lp-signal: #2f5bff;
-  --color-lp-ok: #0e8a5f;
-  --color-lp-stop: #d1343a;
+  --color-lp-ok: #0a6e4b;
+  --color-lp-stop: #b42a30;
 }
 
 @theme inline {

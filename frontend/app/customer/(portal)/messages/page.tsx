@@ -11,10 +11,7 @@ export default async function CustomerMessagesPage() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Messages</h1>
-        <p className="text-muted-foreground text-sm">
-          One thread with the team. Replies arrive live.
-        </p>
+        <h1 className="text-2xl font-semibold">Messages</h1>
       </header>
 
       <CustomerThread initialMessages={messages} />

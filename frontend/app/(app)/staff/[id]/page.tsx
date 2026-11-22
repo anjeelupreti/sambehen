@@ -61,7 +61,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-2xl font-semibold tracking-tight">{member.username}</h1>
+              <h1 className="truncate text-2xl font-semibold">{member.username}</h1>
               <Badge variant="secondary" className="capitalize">
                 {member.role}
               </Badge>
@@ -82,11 +82,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Customers" value={formatCount(customers.summary?.totalCustomers ?? 0)} />
-        <StatCard
-          label="Active"
-          value={formatCount(customers.summary?.activeCustomers ?? 0)}
-          hint="Active within the configured activity window."
-        />
+        <StatCard label="Active" value={formatCount(customers.summary?.activeCustomers ?? 0)} />
         <StatCard
           label="Total balance"
           value={<Money value={customers.summary?.totalBalance ?? '0'} />}
@@ -94,7 +90,6 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
         <StatCard
           label="Bonus balance"
           value={<Money value={customers.summary?.totalBonusBalance ?? '0'} />}
-          hint="Referral bonuses, kept separate from real money."
         />
       </section>
 

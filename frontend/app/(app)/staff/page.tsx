@@ -92,12 +92,7 @@ export default async function StaffPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Staff</h1>
-          <p className="text-muted-foreground text-sm">
-            {actor?.role === 'master'
-              ? 'Every manager and store.'
-              : 'Your own stores. Other managers and their chains are not visible.'}
-          </p>
+          <h1 className="text-2xl font-semibold">Staff</h1>
         </div>
         <div className="flex items-center gap-2">
           <ExportButton exportKey="staff" />

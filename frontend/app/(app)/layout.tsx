@@ -8,6 +8,7 @@ import { UserMenu } from '@/components/user-menu';
 import { MessagesFab } from '@/components/messages-fab';
 import { Separator } from '@/components/ui/separator';
 import { getActor } from '@/lib/session';
+import { SkipLink } from '@/components/skip-link';
 
 /**
  * The signed-in shell.
@@ -27,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-svh overflow-hidden">
+      <SkipLink />
       <aside className="bg-sidebar hidden w-60 shrink-0 border-r md:flex md:flex-col">
         <div className="flex h-14 items-center px-5 shrink-0">
           <Link href="/dashboard" className="text-lg font-bold tracking-tight [font-stretch:125%]">
@@ -59,7 +61,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6">{children}</main>
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 p-4 sm:p-6">
+          {children}
+        </main>
       </div>
 
       <MessagesFab role={actor.role} actorId={actor.id} />

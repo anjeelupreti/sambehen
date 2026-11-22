@@ -5,6 +5,7 @@ import { LayoutDashboardIcon, LogOutIcon, MessageSquareIcon, UserIcon } from 'lu
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { getCustomerActor } from '@/lib/customer-session';
+import { SkipLink } from '@/components/skip-link';
 
 /**
  * The customer portal shell.
@@ -24,6 +25,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
 
   return (
     <div className="flex min-h-svh flex-col">
+      <SkipLink />
       <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-2 px-4 sm:px-6">
           <Link href="/customer" className="text-lg font-bold tracking-tight [font-stretch:125%]">
@@ -64,7 +66,9 @@ export default async function CustomerLayout({ children }: { children: React.Rea
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 p-4 pb-10 sm:p-6">{children}</main>
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-3xl flex-1 p-4 pb-10 sm:p-6">
+        {children}
+      </main>
     </div>
   );
 }

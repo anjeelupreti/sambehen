@@ -16,3 +16,12 @@ export const CUSTOMER_STATUS_VARIANT: Record<string, BadgeVariant> = {
   suspended: 'danger',
   banned: 'destructive',
 };
+
+/**
+ * How a transaction's direction is named on screen. The API's words are
+ * debit and credit; staff think in money in and money out.
+ */
+export const TRANSACTION_TYPE_LABEL: Record<string, string> = {
+  debit: 'Money in',
+  credit: 'Money out',
+};

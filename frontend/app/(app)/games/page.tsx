@@ -68,12 +68,7 @@ export default async function GamesPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Games</h1>
-          <p className="text-muted-foreground text-sm">
-            {actor?.role === 'master'
-              ? 'The catalogue transactions are recorded against.'
-              : 'Read-only. Only a master can change the catalogue.'}
-          </p>
+          <h1 className="text-2xl font-semibold">Games</h1>
         </div>
         <div className="flex items-center gap-2">
           <ExportButton exportKey="games" />

@@ -401,8 +401,8 @@ function Bubble({ message, fromSelf }: { message: StaffMessage; fromSelf: boolea
         ) : null}
         <p
           className={cn(
-            'text-[10px]',
-            fromSelf ? 'text-primary-foreground/70' : 'text-muted-foreground',
+            'text-[11px]',
+            fromSelf ? 'text-primary-foreground/90' : 'text-muted-foreground',
           )}
         >
           {fromSelf ? 'You' : message.senderUsername} · {formatDateTime(message.createdAt)}

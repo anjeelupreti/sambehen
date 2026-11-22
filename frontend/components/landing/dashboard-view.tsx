@@ -20,12 +20,12 @@ export function DashboardView() {
         {DASHBOARD.kpis.map((kpi) => (
           <div key={kpi.label} className="border-lp-line bg-lp-raised rounded-xl border p-4">
             <dt className="text-lp-dim text-xs">{kpi.label}</dt>
-            <dd className="tabular mt-2 text-xl font-semibold [font-stretch:112%] sm:text-2xl">
+            <dd className="mt-2 text-xl font-semibold [font-stretch:112%] sm:text-2xl">
               {typeof kpi.value === 'number'
                 ? formatMoney(kpi.value).replace(/\.00$/, '')
                 : kpi.value}
             </dd>
-            <p className="text-lp-dim mt-1 text-xs">{'delta' in kpi ? kpi.delta : kpi.note}</p>
+            <dd className="text-lp-dim mt-1 text-xs">{'delta' in kpi ? kpi.delta : kpi.note}</dd>
           </div>
         ))}
       </dl>

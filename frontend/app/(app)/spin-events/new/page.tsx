@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SpinEventForm } from '@/components/forms/spin-event-form';
 import { getActor } from '@/lib/session';
 
-export const metadata: Metadata = { title: 'New Spin Event' };
+export const metadata: Metadata = { title: 'New reward event' };
 
 export default async function NewSpinEventPage() {
   const actor = await getActor();
@@ -22,10 +22,10 @@ export default async function NewSpinEventPage() {
         <Button variant="ghost" size="icon" asChild>
           <Link href="/spin-winners">
             <ChevronLeftIcon className="size-4" />
-            <span className="sr-only">Back to Spin Events</span>
+            <span className="sr-only">Back to reward events</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">New Spin Event</h1>
+        <h1 className="text-2xl font-semibold">New reward event</h1>
       </div>
 
       <Card>

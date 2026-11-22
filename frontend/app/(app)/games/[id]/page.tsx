@@ -36,9 +36,6 @@ export default async function GameDetailsPage({ params }: { params: Promise<{ id
 
         <header>
           <h1 className="truncate text-2xl font-semibold tracking-tight">{game.name}</h1>
-          <p className="text-muted-foreground text-sm">
-            The catalogue transactions record against.
-          </p>
         </header>
       </div>
 

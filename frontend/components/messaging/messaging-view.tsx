@@ -283,8 +283,8 @@ function Bubble({ message }: { message: Message }) {
         ) : null}
         <p
           className={cn(
-            'text-[10px]',
-            fromCustomer ? 'text-muted-foreground' : 'text-primary-foreground/70',
+            'text-[11px]',
+            fromCustomer ? 'text-muted-foreground' : 'text-primary-foreground/90',
           )}
         >
           {/* Which staff member replied is recorded and shown up the chain —

@@ -145,7 +145,7 @@ export function ComposeBroadcastModal() {
             value={bodyText}
             onChange={(event) => setBodyText(event.target.value)}
             rows={7}
-            className="border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+            className="border-input focus-visible:border-ring focus-visible:ring-ring/70 aria-invalid:border-destructive w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
             placeholder="Write the message customers will receive…"
             aria-invalid={Boolean(create.fieldErrors.bodyText)}
           />

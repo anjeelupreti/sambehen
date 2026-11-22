@@ -610,7 +610,7 @@ function CustomerBubble({ message }: { message: Message }) {
         ) : null}
         <p
           className={cn(
-            'text-[10px] opacity-70',
+            'text-[11px] opacity-90',
             isCustomer ? 'text-left' : 'text-primary-foreground text-right',
           )}
         >
@@ -644,7 +644,7 @@ function TeamBubble({ message, fromSelf }: { message: StaffMessage; fromSelf: bo
         ) : null}
         <p
           className={cn(
-            'text-[10px] opacity-70',
+            'text-[11px] opacity-90',
             fromSelf ? 'text-primary-foreground text-right' : 'text-left',
           )}
         >
@@ -668,7 +668,7 @@ function ConnectionDot({ state }: { state: 'connecting' | 'live' | 'offline' }) 
   }
   return (
     <WifiOffIcon
-      className="text-primary-foreground/70 ml-1 size-3"
+      className="text-primary-foreground/90 ml-1 size-3"
       aria-label="Not live — new messages will not appear until you refresh"
     />
   );

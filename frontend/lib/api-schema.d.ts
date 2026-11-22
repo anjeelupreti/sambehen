@@ -24,6 +24,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/auth/login': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sign in as staff or customer
+     * @description One sign-in for both realms. Accepts an email address or username and reports which realm the session belongs to. The password is checked against both realms every time, so the response and its timing reveal neither which realm an identifier belongs to nor whether it exists. If the same credentials open both a staff and a customer account, the staff account is used.
+     */
+    post: operations['AuthController_login'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/auth/team/login': {
     parameters: {
       query?: never;
@@ -618,6 +638,26 @@ export interface paths {
      * @description Ids outside the actor's scope are dropped and counted in `skipped`.
      */
     post: operations['CustomersController_bulkReassign'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/me/transactions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The signed-in customer's own recent transactions
+     * @description Newest first, at most 50. Scoped to the customer in the token; there is no way to ask for anyone else. Staff-only fields (channel, reference, note, who entered it) are omitted.
+     */
+    get: operations['PortalController_transactions'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1676,6 +1716,42 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @enum {string} */
+    StaffRole: 'master' | 'manager' | 'store';
+    StaffProfileDto: {
+      /** Format: uuid */
+      id: string;
+      email: string;
+      username: string;
+      firstName: string | null;
+      lastName: string | null;
+      role: components['schemas']['StaffRole'];
+      /**
+       * Format: uuid
+       * @description Managing staff member
+       */
+      parentId: string | null;
+      isActive: boolean;
+      /** @description Client should force a password change before continuing */
+      mustChangePassword: boolean;
+      /** Format: date-time */
+      lastLoginAt: string | null;
+    };
+    CustomerProfileDto: {
+      /** Format: uuid */
+      id: string;
+      email: string;
+      username: string;
+      fullName: string | null;
+      /** @description Account status */
+      status: string;
+      /** @description Decimal serialised as a string */
+      balance: string;
+      /** @description Decimal serialised as a string */
+      bonusBalance: string;
+      /** Format: date-time */
+      lastLoginAt: string | null;
+    };
     ValidationErrorDetailDto: {
       /**
        * @description Dotted path to the offending property
@@ -1728,6 +1804,7 @@ export interface components {
         | 'CUSTOMER_SELF_UPDATE_FORBIDDEN'
         | 'CUSTOMER_INVALID_OWNER'
         | 'CUSTOMER_NOT_PENDING'
+        | 'CUSTOMER_PENDING_REQUIRES_APPROVAL'
         | 'TX_NOT_FOUND'
         | 'TX_AMOUNT_INVALID'
         | 'TX_CORRECTION_EXCEEDS_PARENT'
@@ -1815,34 +1892,17 @@ export interface components {
       correlationId: string;
     };
     /** @enum {string} */
-    StaffRole: 'master' | 'manager' | 'store';
-    StaffProfileDto: {
-      /** Format: uuid */
-      id: string;
-      email: string;
-      username: string;
-      firstName: string | null;
-      lastName: string | null;
-      role: components['schemas']['StaffRole'];
-      /**
-       * Format: uuid
-       * @description Managing staff member
-       */
-      parentId: string | null;
-      isActive: boolean;
-      /** @description Client should force a password change before continuing */
-      mustChangePassword: boolean;
-      /** Format: date-time */
-      lastLoginAt: string | null;
-    };
-    TeamLoginResponseDto: {
+    AuthRealm: 'team' | 'customer';
+    UnifiedLoginResponseDto: {
       /** @description Short-lived bearer token for the Authorization header */
       accessToken: string;
       /** @description Long-lived token, rotated on every refresh */
       refreshToken: string;
       /** @example Bearer */
       tokenType: string;
-      user: components['schemas']['StaffProfileDto'];
+      realm: components['schemas']['AuthRealm'];
+      /** @description A staff profile when realm is "team", a customer profile when it is "customer". */
+      user: components['schemas']['StaffProfileDto'] | components['schemas']['CustomerProfileDto'];
     };
     LoginDto: {
       /**
@@ -1852,6 +1912,15 @@ export interface components {
       identifier: string;
       /** @example ChangeMe123! */
       password: string;
+    };
+    TeamLoginResponseDto: {
+      /** @description Short-lived bearer token for the Authorization header */
+      accessToken: string;
+      /** @description Long-lived token, rotated on every refresh */
+      refreshToken: string;
+      /** @example Bearer */
+      tokenType: string;
+      user: components['schemas']['StaffProfileDto'];
     };
     TokenPairDto: {
       /** @description Short-lived bearer token for the Authorization header */
@@ -1884,21 +1953,6 @@ export interface components {
       city?: string;
       state?: string;
       country?: string;
-    };
-    CustomerProfileDto: {
-      /** Format: uuid */
-      id: string;
-      email: string;
-      username: string;
-      fullName: string | null;
-      /** @description Account status */
-      status: string;
-      /** @description Decimal serialised as a string */
-      balance: string;
-      /** @description Decimal serialised as a string */
-      bonusBalance: string;
-      /** Format: date-time */
-      lastLoginAt: string | null;
     };
     CustomerLoginResponseDto: {
       /** @description Short-lived bearer token for the Authorization header */
@@ -2201,6 +2255,22 @@ export interface components {
        */
       ownerStaffId: string;
     };
+    MyTransactionDto: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * @description debit = money in, credit = money out
+       * @enum {string}
+       */
+      type: 'debit' | 'credit';
+      /** @example 120.00 */
+      amount: string;
+      gameName: string | null;
+      /** Format: date-time */
+      occurredAt: string;
+      /** @description A credit that corrects an earlier entry, not a withdrawal. */
+      isCorrection: boolean;
+    };
     /** @enum {string} */
     ReferralRewardType: 'fixed' | 'percentage';
     ReferralProgramResponseDto: {
@@ -2439,6 +2509,7 @@ export interface components {
       /** Format: uuid */
       customerId: string;
       customerUsername?: string | null;
+      customerFullName?: string | null;
       type: components['schemas']['TransactionType'];
       /** @example 250.00 */
       amount: string;
@@ -3630,6 +3701,59 @@ export interface operations {
               };
             };
           };
+        };
+      };
+    };
+  };
+  AuthController_login: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LoginDto'];
+      };
+    };
+    responses: {
+      /** @description Signed in successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['UnifiedLoginResponseDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
         };
       };
     };
@@ -5636,6 +5760,52 @@ export interface operations {
       };
       /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  PortalController_transactions: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Transactions retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['MyTransactionDto'][];
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid customer access token
+       */
+      401: {
         headers: {
           [name: string]: unknown;
         };

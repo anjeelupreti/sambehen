@@ -58,7 +58,7 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
       // Criteria live on the VIPs page and events live on the Spins page —
       // configuration above the list it produces, rather than a separate
       // destination you have to hold in your head alongside it.
-      { href: '/spin-winners', label: 'Spins', icon: SparklesIcon },
+      { href: '/spin-winners', label: 'Rewards', icon: SparklesIcon },
       { href: '/referrals', label: 'Referrals', icon: GiftIcon },
       { href: '/broadcast', label: 'Broadcast', icon: MegaphoneIcon, roles: ['master', 'manager'] },
     ],
@@ -94,7 +94,7 @@ export function AppSidebar({ role }: { role: StaffRole }) {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'focus-visible:ring-ring/50 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px]',
+                  'focus-visible:ring-ring/70 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px]',
                   active
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground',

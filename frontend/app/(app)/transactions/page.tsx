@@ -28,12 +28,13 @@ import {
 import { apiList } from '@/lib/api';
 import { formatCount, formatDateTime } from '@/lib/money';
 import type { Game, Transaction, TransactionSummary } from '@/lib/types';
+import { TRANSACTION_TYPE_LABEL } from '@/lib/status';
 
 export const metadata: Metadata = { title: 'Transactions' };
 
 const TYPE_OPTIONS = [
-  { value: 'debit', label: 'Debit (in)' },
-  { value: 'credit', label: 'Credit (out)' },
+  { value: 'debit', label: 'Money in' },
+  { value: 'credit', label: 'Money out' },
 ];
 
 const STATUS_OPTIONS = [
@@ -126,11 +127,7 @@ export default async function TransactionsPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
-          <p className="text-muted-foreground text-sm">
-            Debit is money in, credit is money out. A credit against a parent entry is a correction,
-            and is counted separately from a withdrawal.
-          </p>
+          <h1 className="text-2xl font-semibold">Transactions</h1>
         </div>
         <div className="flex items-center gap-2">
           <ExportButton exportKey="transactions" />
@@ -141,16 +138,16 @@ export default async function TransactionsPage({
       {summary ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Entries" value={formatCount(summary.totalCount)} />
-          <StatCard label="Debit" value={<Money value={summary.totalIn} />} hint="Money in." />
+          <StatCard label="Money in" value={<Money value={summary.totalIn} />} />
           <StatCard
-            label="Credit"
+            label="Money out"
             value={<Money value={summary.totalOut} />}
-            hint="Money out, excluding corrections."
+            hint="Excludes corrections"
           />
           <StatCard
             label="Corrections"
             value={<Money value={summary.correctionTotal} />}
-            hint={`${formatCount(summary.correctionCount)} fixes to earlier entries, not withdrawals.`}
+            hint={`${formatCount(summary.correctionCount)} fixes to earlier entries`}
           />
         </section>
       ) : null}
@@ -204,14 +201,24 @@ export default async function TransactionsPage({
                     </TableCell>
                     <TableCell className="font-medium">
                       {entry.customerUsername ? (
-                        <CustomerHoverCard
-                          customerId={entry.customerId}
-                          username={entry.customerUsername}
-                        >
-                          <Link href={`/customers/${entry.customerId}`} className="hover:underline">
-                            {entry.customerUsername}
-                          </Link>
-                        </CustomerHoverCard>
+                        <>
+                          <CustomerHoverCard
+                            customerId={entry.customerId}
+                            username={entry.customerUsername}
+                          >
+                            <Link
+                              href={`/customers/${entry.customerId}`}
+                              className="hover:underline"
+                            >
+                              {entry.customerFullName || entry.customerUsername}
+                            </Link>
+                          </CustomerHoverCard>
+                          {entry.customerFullName ? (
+                            <p className="text-muted-foreground text-xs font-normal">
+                              {entry.customerUsername}
+                            </p>
+                          ) : null}
+                        </>
                       ) : (
                         '—'
                       )}
@@ -219,7 +226,7 @@ export default async function TransactionsPage({
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         <Badge variant={entry.type === 'debit' ? 'debit' : 'credit'}>
-                          {entry.type}
+                          {TRANSACTION_TYPE_LABEL[entry.type] ?? entry.type}
                         </Badge>
                         {/*
                           Marked explicitly rather than folded into the type,
@@ -228,7 +235,7 @@ export default async function TransactionsPage({
                         */}
                         {entry.isCorrection ? (
                           <Badge variant="outline" title="Corrects an earlier entry">
-                            correction
+                            Correction
                           </Badge>
                         ) : null}
                       </div>

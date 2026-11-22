@@ -117,10 +117,7 @@ export default async function CustomersPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground text-sm">
-            Only the customers in your chain. Totals below cover every match, not just this page.
-          </p>
+          <h1 className="text-2xl font-semibold">Customers</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild>
@@ -141,14 +138,10 @@ export default async function CustomersPage({
           <StatCard
             label="Active"
             value={formatCount(summary.activeCustomers)}
-            hint={`${formatCount(summary.inactiveCustomers)} inactive, ${formatCount(summary.suspendedCustomers)} suspended.`}
+            hint={`${formatCount(summary.inactiveCustomers)} inactive, ${formatCount(summary.suspendedCustomers)} suspended`}
           />
           <StatCard label="Total balance" value={<Money value={summary.totalBalance} />} />
-          <StatCard
-            label="Bonus balance"
-            value={<Money value={summary.totalBonusBalance} />}
-            hint="Referral bonuses, kept separate from real money."
-          />
+          <StatCard label="Bonus balance" value={<Money value={summary.totalBonusBalance} />} />
         </section>
       ) : null}
 
@@ -207,11 +200,11 @@ export default async function CustomersPage({
                           href={`/customers/${customer.id}`}
                           className="font-medium hover:underline"
                         >
-                          {customer.username}
+                          {customer.fullName || customer.username}
                         </Link>
                       </CustomerHoverCard>
                       {customer.fullName ? (
-                        <p className="text-muted-foreground text-xs">{customer.fullName}</p>
+                        <p className="text-muted-foreground text-xs">{customer.username}</p>
                       ) : null}
                     </TableCell>
                     <TableCell>
@@ -244,7 +237,7 @@ export default async function CustomersPage({
                       {customer.status === 'pending' ? (
                         <ApproveCustomerButton customerId={customer.id} owners={owners} />
                       ) : (
-                        <CustomerActions customer={customer} />
+                        <CustomerActions customer={customer} compact />
                       )}
                     </TableCell>
                   </ClickableRow>

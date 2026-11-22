@@ -25,11 +25,7 @@ export default async function CustomerProfilePage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Your profile</h1>
-        <p className="text-muted-foreground text-sm">
-          What the team has on file for you. To change any of this, contact the team — it isn&apos;t
-          editable here.
-        </p>
+        <h1 className="text-2xl font-semibold">Your profile</h1>
       </header>
 
       <Card>

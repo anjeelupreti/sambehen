@@ -70,13 +70,13 @@ export function RecordWinnersModal({
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
         <TrophyIcon className="size-4" />
-        Record winners
+        Record recipients
       </Button>
 
       <FormModal
         open={open}
         onOpenChange={close}
-        title={`Record winners — ${eventName}`}
+        title={`Record recipients: ${eventName}`}
         description="Only customers holding a qualification for this event's criteria can be entered. Rank follows the order below, so the first row is first place."
         submitLabel={rows.length ? `Record ${rows.length}` : 'Record'}
         pending={pending}
@@ -108,12 +108,14 @@ export function RecordWinnersModal({
             onClick={addRow}
             disabled={rows.length >= qualified.length}
           >
-            Add winner
+            Add recipient
           </Button>
         </div>
 
         {rows.length === 0 ? (
-          <p className="text-muted-foreground py-6 text-center text-sm">Add at least one winner.</p>
+          <p className="text-muted-foreground py-6 text-center text-sm">
+            Add at least one recipient.
+          </p>
         ) : (
           <ul className="space-y-2">
             {rows.map((row, index) => (
@@ -134,8 +136,8 @@ export function RecordWinnersModal({
                 />
                 <TextField
                   name={`label-${index}`}
-                  label={index === 0 ? 'Prize' : ''}
-                  placeholder={`Prize ${index + 1}`}
+                  label={index === 0 ? 'Reward' : ''}
+                  placeholder={`Reward ${index + 1}`}
                   value={row.prizeLabel}
                   onChange={(value) =>
                     setRows((current) =>

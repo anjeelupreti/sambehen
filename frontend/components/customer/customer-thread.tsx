@@ -128,8 +128,8 @@ export function CustomerThread({ initialMessages }: { initialMessages: Message[]
                   ) : null}
                   <p
                     className={cn(
-                      'text-[10px]',
-                      mine ? 'text-primary-foreground/70' : 'text-muted-foreground',
+                      'text-[11px]',
+                      mine ? 'text-primary-foreground/90' : 'text-muted-foreground',
                     )}
                   >
                     {mine ? 'You' : 'Team'} · {formatDateTime(message.createdAt)}

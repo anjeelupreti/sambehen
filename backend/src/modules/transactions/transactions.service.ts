@@ -501,7 +501,7 @@ export class TransactionsService {
 
     const [customerRows, gameRows, staffRows] = await Promise.all([
       this.db
-        .select({ id: customers.id, label: customers.username })
+        .select({ id: customers.id, label: customers.username, fullName: customers.fullName })
         .from(customers)
         .where(inArray(customers.id, customerIds)),
       gameIds.length
@@ -518,6 +518,11 @@ export class TransactionsService {
 
     for (const row of [...customerRows, ...gameRows, ...staffRows]) {
       labels.set(row.id, row.label ?? '');
+    }
+    // Full names ride in the same map under a prefixed key, so callers keep
+    // one lookup structure.
+    for (const row of customerRows) {
+      if (row.fullName) labels.set(`name:${row.id}`, row.fullName);
     }
     return labels;
   }
@@ -551,6 +556,7 @@ export class TransactionsService {
       id: transaction.id,
       customerId: transaction.customerId,
       customerUsername: labels?.get(transaction.customerId) ?? null,
+      customerFullName: labels?.get(`name:${transaction.customerId}`) ?? null,
       type: transaction.type,
       amount: transaction.amount,
       gameId: transaction.gameId,

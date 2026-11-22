@@ -73,11 +73,7 @@ export default async function BroadcastPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Broadcast</h1>
-          <p className="text-muted-foreground text-sm">
-            Email to many customers at once. Messaging is one thread per customer, so this is the
-            only way to reach a group — and customers read it in their inbox, not in the portal.
-          </p>
+          <h1 className="text-2xl font-semibold">Broadcast</h1>
         </div>
         <div className="flex items-center gap-2">
           <ExportButton exportKey="email-campaigns" />
@@ -87,21 +83,13 @@ export default async function BroadcastPage({
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Campaigns" value={formatCount(meta.total)} />
-        <StatCard
-          label="Delivered"
-          value={formatCount(totals.sent)}
-          hint="Across the campaigns on this page."
-        />
+        <StatCard label="Delivered" value={formatCount(totals.sent)} />
         <StatCard
           label="Failed"
           value={formatCount(totals.failed)}
-          hint="Bounced, refused, or no address."
+          hint="Bounced, refused or no address"
         />
-        <StatCard
-          label="In flight"
-          value={formatCount(totals.inFlight)}
-          hint="Queued or currently sending."
-        />
+        <StatCard label="In flight" value={formatCount(totals.inFlight)} hint="Queued or sending" />
       </section>
 
       <Card className="gap-0 py-0">

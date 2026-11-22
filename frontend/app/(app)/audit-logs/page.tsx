@@ -71,10 +71,7 @@ export default async function AuditLogsPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Audit trail</h1>
-          <p className="text-muted-foreground text-sm">
-            Append-only record of every state-changing action. Master only, and unscoped by design.
-          </p>
+          <h1 className="text-2xl font-semibold">Audit trail</h1>
         </div>
         <ExportButton exportKey="audit-logs" />
       </header>
@@ -84,11 +81,7 @@ export default async function AuditLogsPage({
           <StatCard label="Entries" value={formatCount(summary.totalEntries)} />
           <StatCard label="Distinct actors" value={formatCount(summary.distinctActors)} />
           <StatCard label="Distinct actions" value={formatCount(summary.distinctActions)} />
-          <StatCard
-            label="Failed requests"
-            value={formatCount(summary.failedRequests)}
-            hint="Recorded even when the action was refused."
-          />
+          <StatCard label="Failed requests" value={formatCount(summary.failedRequests)} />
         </section>
       ) : null}
 

@@ -123,13 +123,11 @@ function NodeButton({
           ? 'border-lp-primary bg-lp-primary/8'
           : isReachable
             ? 'border-lp-line-strong bg-lp-sunk hover:border-lp-dim'
-            : 'border-lp-line bg-lp-sunk/50 text-lp-dim/60 hover:text-lp-dim',
+            : 'border-lp-line text-lp-dim hover:text-lp-text bg-transparent',
       )}
     >
       <span className="font-medium">{node.label}</span>
-      <span className={cn('tabular', isReachable ? 'text-lp-dim' : 'text-lp-dim/50')}>
-        {node.players}
-      </span>
+      <span className="tabular text-lp-dim">{node.players}</span>
     </button>
   );
 }

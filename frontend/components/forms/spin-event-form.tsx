@@ -162,7 +162,7 @@ export function SpinEventForm() {
 
       <div className="grid gap-1.5">
         <span className="text-sm font-medium">
-          How are winners decided?
+          How are recipients chosen?
           <span className="text-muted-foreground" aria-hidden>
             *
           </span>
@@ -173,13 +173,13 @@ export function SpinEventForm() {
             [
               {
                 value: 'post_draw',
-                title: 'Recorded after the draw',
-                hint: 'Schedule now, enter winners once it has run.',
+                title: 'Recorded after the event',
+                hint: 'Schedule now, enter recipients once it has run.',
               },
               {
                 value: 'preselected',
                 title: 'Chosen now',
-                hint: 'Pick winners up front from qualified customers.',
+                hint: 'Pick recipients up front from qualified customers.',
               },
             ] as const
           ).map((option) => (
@@ -215,7 +215,7 @@ export function SpinEventForm() {
         />
         <TextField
           name="prizePool"
-          label="Prize pool"
+          label="Reward pool"
           inputMode="decimal"
           placeholder="0.00"
           value={prizePool}
@@ -226,7 +226,7 @@ export function SpinEventForm() {
 
       <TextField
         name="prizeDescription"
-        label="Prize description"
+        label="Reward description"
         value={prizeDescription}
         onChange={setPrizeDescription}
         error={fieldErrors.prizeDescription}
@@ -236,7 +236,7 @@ export function SpinEventForm() {
         <div className="space-y-3 rounded-md border p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <Label>Winners</Label>
+              <Label>Recipients</Label>
               <p className="text-muted-foreground text-xs">
                 {vipCriteriaId
                   ? `${qualified.length} customer${qualified.length === 1 ? '' : 's'} currently qualify.`
@@ -250,13 +250,13 @@ export function SpinEventForm() {
               onClick={addWinner}
               disabled={!vipCriteriaId || winners.length >= qualified.length}
             >
-              Add winner
+              Add recipient
             </Button>
           </div>
 
           {winners.length === 0 ? (
             <p className="text-muted-foreground py-2 text-center text-sm">
-              At least one winner is required when they are chosen up front.
+              At least one recipient is required when they are chosen up front.
             </p>
           ) : (
             <ul className="space-y-2">
@@ -280,8 +280,8 @@ export function SpinEventForm() {
                   />
                   <TextField
                     name={`prizeLabel-${index}`}
-                    label={index === 0 ? 'Prize' : ''}
-                    placeholder={`Prize ${index + 1}`}
+                    label={index === 0 ? 'Reward' : ''}
+                    placeholder={`Reward ${index + 1}`}
                     value={winner.prizeLabel}
                     onChange={(value) =>
                       setWinners((current) =>
@@ -310,7 +310,7 @@ export function SpinEventForm() {
                     variant="ghost"
                     size="icon"
                     className="size-9"
-                    aria-label={`Remove winner ${index + 1}`}
+                    aria-label={`Remove recipient ${index + 1}`}
                     onClick={() => setWinners((current) => current.filter((_, i) => i !== index))}
                   >
                     <Trash2Icon className="size-4" />
@@ -327,7 +327,7 @@ export function SpinEventForm() {
         </div>
       ) : (
         <p className="text-muted-foreground rounded-md border p-3 text-sm">
-          Winners are entered after the draw, from the Spins page. The event is created empty.
+          Recipients are entered after the event, from the Rewards page. The event is created empty.
         </p>
       )}
 

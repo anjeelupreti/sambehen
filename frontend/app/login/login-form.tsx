@@ -35,18 +35,18 @@ export function LoginForm({ from }: { from: string }) {
           autoComplete="current-password"
           required
           error={state.fieldErrors.password}
-          aside={
-            <button
-              type="button"
-              onClick={() => setShowHelp((current) => !current)}
-              aria-expanded={showHelp}
-              aria-controls="password-help"
-              className="text-lp-primary focus-visible:outline-lp-primary rounded text-sm font-medium hover:underline focus-visible:outline-2"
-            >
-              Forgot password?
-            </button>
-          }
         />
+        {/* After the field, not in its label row: a keyboard user tabs from
+            username straight into password, and only then to this. */}
+        <button
+          type="button"
+          onClick={() => setShowHelp((current) => !current)}
+          aria-expanded={showHelp}
+          aria-controls="password-help"
+          className="text-lp-primary focus-visible:outline-lp-primary rounded text-sm font-medium hover:underline focus-visible:outline-2"
+        >
+          Forgot password?
+        </button>
         {showHelp && (
           <p id="password-help" className="bg-lp-sunk text-lp-dim rounded-lg px-4 py-3 text-sm">
             Passwords are reset by the people who manage your account. Staff should ask their

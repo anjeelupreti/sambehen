@@ -79,11 +79,7 @@ export default async function VipsPage({
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">VIPs</h1>
-          <p className="text-muted-foreground text-sm">
-            Qualification is computed from recorded activity against a master-defined criteria — it
-            is never typed in by hand.
-          </p>
+          <h1 className="text-2xl font-semibold">VIPs</h1>
         </div>
         <ExportButton exportKey="vips" />
       </header>
@@ -136,10 +132,10 @@ export default async function VipsPage({
                         href={`/customers/${vip.customerId}`}
                         className="font-medium hover:underline"
                       >
-                        {vip.customerUsername}
+                        {vip.customerFullName || vip.customerUsername}
                       </Link>
                       {vip.customerFullName ? (
-                        <p className="text-muted-foreground text-xs">{vip.customerFullName}</p>
+                        <p className="text-muted-foreground text-xs">{vip.customerUsername}</p>
                       ) : null}
                     </TableCell>
                     <TableCell>

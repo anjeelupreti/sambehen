@@ -39,9 +39,15 @@ type Pending = { status: CustomerStatus; title: string; body: string; label: str
 export function CustomerActions({
   customer,
   hideView,
+  compact,
 }: {
   customer: Customer;
   hideView?: boolean;
+  /**
+   * For table rows: the row itself opens the customer, so only the menu is
+   * shown and editing moves into it, instead of three icons on every row.
+   */
+  compact?: boolean;
 }) {
   const { id: customerId, username, status } = customer;
   const statusAction = useAction(changeCustomerStatus);
@@ -57,7 +63,7 @@ export function CustomerActions({
   return (
     <>
       <div className="flex items-center justify-end gap-1">
-        {!hideView && (
+        {!hideView && !compact && (
           <Button
             variant="ghost"
             size="icon"
@@ -68,15 +74,17 @@ export function CustomerActions({
             <EyeIcon className="size-4" />
           </Button>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8"
-          onClick={() => setIsEditing(true)}
-          aria-label={`Edit ${username}`}
-        >
-          <EditIcon className="size-4" />
-        </Button>
+        {!compact && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={() => setIsEditing(true)}
+            aria-label={`Edit ${username}`}
+          >
+            <EditIcon className="size-4" />
+          </Button>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -93,6 +101,12 @@ export function CustomerActions({
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel className="truncate">{username}</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {compact && (
+              <DropdownMenuItem onSelect={() => setIsEditing(true)}>
+                <EditIcon className="size-4" />
+                Edit details
+              </DropdownMenuItem>
+            )}
 
             {status !== 'active' ? (
               <DropdownMenuItem
