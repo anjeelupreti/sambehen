@@ -18,13 +18,12 @@ export function AuthShell({
   artClassName,
 }: {
   children: ReactNode;
-  /** File name in public/landing/; the panel renders without it. */
+  /** Path under public/; the panel renders without it. */
   art?: string;
   /** Nudges an illustration whose subject is not centred in its canvas. */
   artClassName?: string;
 }) {
-  const artSrc =
-    art && existsSync(join(process.cwd(), 'public', 'landing', art)) ? `/landing/${art}` : null;
+  const artSrc = art && existsSync(join(process.cwd(), 'public', art)) ? `/${art}` : null;
 
   return (
     <div

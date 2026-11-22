@@ -111,6 +111,8 @@ export class EmailTemplateService implements OnModuleInit {
 
     const html = this.layout({
       brand,
+      // Served by the web app; absolute because mail clients have no base URL.
+      logoUrl: `${this.configService.get<string>('mail.publicUrl', '').replace(/\/$/, '')}/brand/logo-mark.png`,
       theme: SHADCN,
       style,
       subject: input.subject,
@@ -220,7 +222,7 @@ const LAYOUT_TEMPLATE = `<!DOCTYPE html>
             <td style="padding:24px 28px 0;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="font-size:15px;font-weight:600;letter-spacing:-0.01em;color:{{theme.foreground}};">{{brand}}</td>
+                  <td style="font-size:15px;font-weight:600;letter-spacing:-0.01em;color:{{theme.foreground}};"><img src="{{logoUrl}}" width="28" height="28" alt="" style="display:inline-block;vertical-align:middle;margin-right:8px;border:0;" />{{brand}}</td>
                   <td align="right">
                     <!-- Badge, matching shadcn's soft variant -->
                     <span style="display:inline-block;padding:3px 10px;border-radius:9999px;background-color:{{style.badgeBg}};color:{{style.badgeFg}};font-size:11px;font-weight:600;letter-spacing:0.02em;">{{style.label}}</span>

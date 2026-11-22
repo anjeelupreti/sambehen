@@ -1,14 +1,11 @@
+/* eslint-disable @next/next/no-img-element -- small static brand files; next/image adds nothing here */
 import { cn } from '@/lib/utils';
 
 /**
- * The Howdi chat logo: a monogram and the wordmark, set in Archivo.
- *
- * The monogram is the H in a speech-bubble tile: a rounded square with one
- * square corner, the same shape as the last bubble in a chat group. The
- * favicon and app icons in /app are rendered from this same design.
- *
- * `site` uses the public pages' fixed light palette; `app` follows the
- * app theme.
+ * The Howdi chat logo: the hat-wearing chat bubble and the wordmark, set in
+ * Archivo. The mark's navy hat disappears on dark backgrounds, so the app
+ * swaps in a light-hat version in dark mode. The public pages are always
+ * light. Favicon and app icons in /app are cut from the same artwork.
  */
 export function Logo({
   tone = 'app',
@@ -20,20 +17,22 @@ export function Logo({
   className?: string;
 }) {
   const accent = tone === 'site' ? 'text-lp-primary' : 'text-primary';
-  const tile = tone === 'site' ? 'bg-lp-primary text-white' : 'bg-primary text-primary-foreground';
+  const mark = size === 'sm' ? 'size-7' : 'size-8';
 
   return (
     <span className={cn('font-lp inline-flex items-center gap-2', className)}>
-      <span
-        aria-hidden
-        className={cn(
-          'grid shrink-0 place-items-center rounded-[30%] rounded-bl-[8%] leading-none font-extrabold [font-stretch:112%]',
-          tile,
-          size === 'sm' ? 'size-6 text-[13px]' : 'size-7 text-[15px]',
-        )}
-      >
-        H
-      </span>
+      {tone === 'site' ? (
+        <img src="/brand/logo-mark.png" alt="" className={cn(mark, 'shrink-0')} />
+      ) : (
+        <>
+          <img src="/brand/logo-mark.png" alt="" className={cn(mark, 'shrink-0 dark:hidden')} />
+          <img
+            src="/brand/logo-mark-dark.png"
+            alt=""
+            className={cn(mark, 'hidden shrink-0 dark:block')}
+          />
+        </>
+      )}
       <span
         className={cn(
           'leading-none font-extrabold tracking-tight whitespace-nowrap [font-stretch:125%]',
