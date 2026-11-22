@@ -112,17 +112,19 @@ function outline(img, radius) {
   fs.mkdirSync(path.join(FE, 'public/brand'), { recursive: true });
 
   const flat = trim(await raw(path.join(FE, 'design/brand/logo-flat-source.png')), 2);
-  await toPng(flat).toFile(path.join(FE, 'public/brand/logo-mark.png'));
-  await toPng(lightHat(flat)).toFile(path.join(FE, 'public/brand/logo-mark-dark.png'));
+  // Shown at 28–32px; 160px covers 4x screens and email.
+  const small = (img) => toPng(img).resize(160, null, { kernel: 'lanczos3' }).png({ compressionLevel: 9, palette: true });
+  await small(flat).toFile(path.join(FE, 'public/brand/logo-mark.png'));
+  await small(lightHat(flat)).toFile(path.join(FE, 'public/brand/logo-mark-dark.png'));
 
   const threeD = trim(removeCheckerboard(await raw(path.join(FE, 'design/brand/logo-3d-source.png'))), 2);
-  await toPng(threeD).toFile(path.join(FE, 'public/brand/logo-3d.png'));
+  await toPng(threeD).resize(720, null, { kernel: 'lanczos3' }).png({ compressionLevel: 9 }).toFile(path.join(FE, 'public/brand/logo-3d.png'));
 
   // Icons: square, a little margin, white keyline.
   const sq = square(flat, 0.06);
   const keyed = outline(sq, Math.round(sq.w * 0.035));
   const icon = (size) => toPng(keyed).resize(size, size, { kernel: 'lanczos3' }).toBuffer();
-  fs.writeFileSync(path.join(FE, 'app/icon.png'), await icon(512));
+  fs.writeFileSync(path.join(FE, 'app/icon.png'), await sharp(await icon(512)).png({ compressionLevel: 9, palette: true }).toBuffer());
 
   // Apple icon: opaque, white ground, generous padding (iOS rounds it).
   const appleSq = square(flat, 0.2);
