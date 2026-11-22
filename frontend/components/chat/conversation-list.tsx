@@ -81,6 +81,8 @@ export function ConversationList({
                       {row.name}
                     </span>
                     <span
+                      // Rendered on the server in its timezone, then in the viewer's.
+                      suppressHydrationWarning
                       className={cn(
                         'shrink-0 text-xs tabular-nums',
                         row.unread > 0 ? 'text-primary font-semibold' : 'text-muted-foreground',
