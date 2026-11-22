@@ -66,6 +66,20 @@ export interface Paginated<TRow, TSummary = undefined> {
 export type Staff = Schemas['StaffResponseDto'];
 export type StaffProfile = Schemas['StaffProfileDto'];
 export type TeamLoginResponse = Schemas['TeamLoginResponseDto'];
+
+/**
+ * The single sign-in's response. `realm` says which kind of session was
+ * issued, and so which cookies hold it and which app opens next.
+ */
+export type UnifiedLoginResponse =
+  | ({ realm: 'team' } & TeamLoginResponse)
+  | {
+      realm: 'customer';
+      accessToken: string;
+      refreshToken: string;
+      tokenType: string;
+      user: { id: string; email: string; username: string; fullName: string | null };
+    };
 export type StaffRole = Staff['role'];
 
 /* ── Customers ────────────────────────────────────────────────────────── */

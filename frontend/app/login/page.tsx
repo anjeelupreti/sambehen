@@ -1,61 +1,46 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { AuthShell } from '@/components/auth/auth-shell';
+import { getCustomerAccessToken } from '@/lib/customer-session';
 import { getAccessToken } from '@/lib/session';
 import { LoginForm } from './login-form';
 
-export const metadata: Metadata = { title: 'Sign in · Sambehen' };
+export const metadata: Metadata = { title: 'Sign in' };
 
-export default async function LoginPage() {
-  /*
-   * Keyed on the access token, never on the actor cookie.
-   *
-   * The actor cookie outlives the access token by a week, so redirecting on
-   * its presence sent people to /dashboard with no way to call the API —
-   * which bounced them back here, several times a second. Middleware has
-   * already tried to refresh by the time this renders, so a missing access
-   * token here means there is genuinely no session to resume.
-   */
+/**
+ * The single sign-in for staff and players. The API works out which kind
+ * of account the credentials belong to, so nobody has to know which door
+ * is theirs.
+ */
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
   if (await getAccessToken()) redirect('/dashboard');
+  if (await getCustomerAccessToken()) redirect('/customer');
+
+  const { from = '' } = await searchParams;
 
   return (
-    <main className="grid min-h-screen w-full lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col justify-between bg-zinc-950 text-zinc-50 p-10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-zinc-950 to-zinc-950" />
-        <div className="relative z-10 flex items-center gap-2">
-          <div className="size-8 rounded-md bg-indigo-600 grid place-items-center font-bold text-lg">
-            S
-          </div>
-          <span className="text-xl font-bold tracking-tight">Sambehen</span>
-        </div>
-        <div className="relative z-10 mt-auto">
-          <blockquote className="space-y-2">
-            <p className="text-lg">
-              &ldquo;The premier management dashboard for your business operations.&rdquo;
-            </p>
-            <footer className="text-sm text-zinc-400">Staff Portal</footer>
-          </blockquote>
-        </div>
+    <AuthShell art="closing.png">
+      <h1 className="text-3xl font-extrabold tracking-[-0.01em] [font-stretch:118%]">Sign in</h1>
+
+      <div className="mt-8">
+        <LoginForm from={from} />
       </div>
 
-      <div className="flex flex-col items-center justify-center p-6 sm:p-12 bg-background">
-        <div className="w-full max-w-sm space-y-6">
-          <div className="flex flex-col space-y-2 text-center lg:text-left">
-            <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-            <p className="text-sm text-muted-foreground">
-              Enter your credentials to access the dashboard.
-            </p>
-          </div>
-          <LoginForm />
-          <p className="text-center text-xs text-muted-foreground lg:text-left">
-            Customers should sign in through the{' '}
-            <a href="/customer/login" className="underline underline-offset-4 hover:text-primary">
-              customer portal
-            </a>
-            .
-          </p>
-        </div>
-      </div>
-    </main>
+      <p className="text-lp-dim mt-8 text-sm">
+        New player?{' '}
+        <Link
+          href="/register"
+          className="text-lp-primary focus-visible:outline-lp-primary rounded font-medium hover:underline focus-visible:outline-2"
+        >
+          Create an account
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

@@ -1,7 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, getSchemaPath } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, MaxLength, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { StaffRole } from '@common/constants/app.constants';
+import { AuthRealm, StaffRole } from '@common/constants/app.constants';
 
 export class LoginDto {
   @ApiProperty({
@@ -126,4 +126,20 @@ export class TeamLoginResponseDto extends TokenPairDto {
 export class CustomerLoginResponseDto extends TokenPairDto {
   @ApiProperty({ type: CustomerProfileDto })
   user!: CustomerProfileDto;
+}
+
+/**
+ * The single sign-in's answer. `realm` tells the client which kind of
+ * session it now holds — and so which set of cookies to store the tokens
+ * in, and which app to open.
+ */
+export class UnifiedLoginResponseDto extends TokenPairDto {
+  @ApiProperty({ enum: AuthRealm, enumName: 'AuthRealm' })
+  realm!: AuthRealm;
+
+  @ApiProperty({
+    oneOf: [{ $ref: getSchemaPath(StaffProfileDto) }, { $ref: getSchemaPath(CustomerProfileDto) }],
+    description: 'A staff profile when realm is "team", a customer profile when it is "customer".',
+  })
+  user!: StaffProfileDto | CustomerProfileDto;
 }

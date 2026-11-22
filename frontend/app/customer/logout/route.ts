@@ -18,7 +18,7 @@ const COOKIES = [
  * cookie mutations.
  */
 export async function GET(request: NextRequest) {
-  const response = NextResponse.redirect(new URL('/customer/login', request.url));
+  const response = NextResponse.redirect(new URL('/login', request.url));
   for (const name of COOKIES) {
     response.cookies.set(name, '', { path: '/', maxAge: 0 });
   }

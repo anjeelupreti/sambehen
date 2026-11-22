@@ -2,7 +2,7 @@
 
 import { ApiError, apiRequest } from '@/lib/api';
 
-export interface CustomerRegisterState {
+export interface RegisterState {
   error: string | null;
   fieldErrors: Record<string, string>;
   success: boolean;
@@ -16,10 +16,10 @@ export interface CustomerRegisterState {
  * it. Success here just means the request landed, shown as a "thanks,
  * we'll review it" message rather than a redirect.
  */
-export async function registerCustomer(
-  _previous: CustomerRegisterState,
+export async function registerPlayer(
+  _previous: RegisterState,
   formData: FormData,
-): Promise<CustomerRegisterState> {
+): Promise<RegisterState> {
   const email = String(formData.get('email') ?? '').trim();
   const username = String(formData.get('username') ?? '').trim();
   const password = String(formData.get('password') ?? '');
@@ -50,6 +50,13 @@ export async function registerCustomer(
     });
   } catch (error) {
     if (error instanceof ApiError) {
+      if (error.status === 429) {
+        return {
+          error: 'Too many attempts. Wait a minute, then try again.',
+          fieldErrors: {},
+          success: false,
+        };
+      }
       if (error.status === 409) {
         return { error: error.message, fieldErrors: {}, success: false };
       }

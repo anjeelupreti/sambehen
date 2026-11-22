@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, HttpCode, HttpStatus, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiExtraModels } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthRealm } from '@common/constants/app.constants';
@@ -19,6 +19,7 @@ import {
   ChangeOwnPasswordDto,
   StaffProfileDto,
   CustomerProfileDto,
+  UnifiedLoginResponseDto,
 } from './dto/auth.dto';
 import { RegisterCustomerDto } from '@modules/customers/dto/customer.dto';
 
@@ -30,9 +31,28 @@ import { RegisterCustomerDto } from '@modules/customers/dto/customer.dto';
  * verification rather than by a claim check.
  */
 @ApiTags('Auth')
+@ApiExtraModels(StaffProfileDto, CustomerProfileDto)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  // ── Unified gateway ─────────────────────────────────────────
+
+  @Post('login')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ResponseMessage('Signed in successfully')
+  @ApiOperation({
+    summary: 'Sign in as staff or customer',
+    description:
+      'One sign-in for both realms. Accepts an email address or username and reports which realm the session belongs to. The password is checked against both realms every time, so the response and its timing reveal neither which realm an identifier belongs to nor whether it exists. If the same credentials open both a staff and a customer account, the staff account is used.',
+  })
+  @ApiOkData(UnifiedLoginResponseDto, 'Signed in successfully')
+  @ApiErrors(401, 422, 429)
+  login(@Body() dto: LoginDto, @Req() request: Request): Promise<UnifiedLoginResponseDto> {
+    return this.authService.login(dto, this.contextOf(request));
+  }
 
   // ── Team gateway ────────────────────────────────────────────
 

@@ -20,7 +20,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
 
   // Middleware already refused anything without a customer session; reaching
   // here without an actor means the cookie is unreadable.
-  if (!actor) redirect('/customer/login');
+  if (!actor) redirect('/login');
 
   return (
     <div className="flex min-h-svh flex-col">

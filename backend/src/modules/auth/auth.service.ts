@@ -22,6 +22,7 @@ import {
   CustomerProfileDto,
   TokenPairDto,
   ChangeOwnPasswordDto,
+  UnifiedLoginResponseDto,
 } from './dto/auth.dto';
 import { RegisterCustomerDto } from '@modules/customers/dto/customer.dto';
 
@@ -57,6 +58,47 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
+  // ── Unified gateway ─────────────────────────────────────────
+
+  /**
+   * One sign-in for staff and customers.
+   *
+   * The identifier is looked up in both realms and the password is always
+   * verified against both — burning the same time when an account does not
+   * exist — so neither the response nor its latency reveals which realm an
+   * identifier belongs to, or whether it exists at all.
+   *
+   * If the same identifier and password open both a staff and a customer
+   * account, the staff account wins. The realms are separate tables, so
+   * this needs a person to have reused one password across two accounts
+   * under one name; staff is the safer default because that sign-in is the
+   * one an operator is accountable for.
+   */
+  async login(dto: LoginDto, context: IRequestContext): Promise<UnifiedLoginResponseDto> {
+    const [staff, customer] = await Promise.all([
+      this.staffRepository.findByIdentifier(dto.identifier),
+      this.customerRepository.findByIdentifier(dto.identifier),
+    ]);
+
+    const [staffValid, customerValid] = await Promise.all([
+      this.verifyOrBurnTime(staff?.passwordHash, dto.password),
+      this.verifyOrBurnTime(customer?.passwordHash, dto.password),
+    ]);
+
+    if (staff && staffValid) {
+      return { realm: AuthRealm.TEAM, ...(await this.completeTeamLogin(staff, context)) };
+    }
+
+    if (customer && customerValid) {
+      return {
+        realm: AuthRealm.CUSTOMER,
+        ...(await this.completeCustomerLogin(customer, context)),
+      };
+    }
+
+    throw new AuthenticationException(ErrorCode.AUTH_INVALID_CREDENTIALS, 'Invalid credentials');
+  }
+
   // ── Team ────────────────────────────────────────────────────
 
   async loginTeam(dto: LoginDto, context: IRequestContext): Promise<TeamLoginResponseDto> {
@@ -67,6 +109,14 @@ export class AuthService {
       throw new AuthenticationException(ErrorCode.AUTH_INVALID_CREDENTIALS, 'Invalid credentials');
     }
 
+    return this.completeTeamLogin(staff, context);
+  }
+
+  /** Everything after the password check: account state, session, profile. */
+  private async completeTeamLogin(
+    staff: StaffUser,
+    context: IRequestContext,
+  ): Promise<TeamLoginResponseDto> {
     if (!staff.isActive) {
       throw new AuthenticationException(
         ErrorCode.AUTH_ACCOUNT_DISABLED,
@@ -90,6 +140,14 @@ export class AuthService {
       throw new AuthenticationException(ErrorCode.AUTH_INVALID_CREDENTIALS, 'Invalid credentials');
     }
 
+    return this.completeCustomerLogin(customer, context);
+  }
+
+  /** Everything after the password check: account state, session, profile. */
+  private async completeCustomerLogin(
+    customer: Customer,
+    context: IRequestContext,
+  ): Promise<CustomerLoginResponseDto> {
     // A self-registered account cannot sign in until a master reviews it
     // and assigns an owner — there is no manager or store chain yet for
     // anything the account does to be scoped under.

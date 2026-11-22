@@ -379,4 +379,39 @@ describe('Cross-tenant isolation (e2e)', () => {
       await http.get('/api/v1/health').expect(200);
     });
   });
+
+  /**
+   * The single sign-in resolves the realm itself. It has its own throttle
+   * bucket, separate from the team login used above.
+   */
+  describe('unified sign-in', () => {
+    const signIn = (identifier: string, password = 'Password123!') =>
+      http.post('/api/v1/auth/login').send({ identifier, password });
+
+    it('signs a staff member into the team realm', async () => {
+      const res = await signIn('master').expect(200);
+
+      expect(res.body.data.realm).toBe('team');
+      expect(res.body.data.user.role).toBe('master');
+      await get('/api/v1/team/customers?limit=1', res.body.data.accessToken).expect(200);
+    });
+
+    it('signs a customer into the customer realm', async () => {
+      const res = await signIn('customer1').expect(200);
+
+      expect(res.body.data.realm).toBe('customer');
+      await get('/api/v1/me/profile', res.body.data.accessToken).expect(200);
+      await get('/api/v1/team/customers?limit=1', res.body.data.accessToken).expect(401);
+    });
+
+    it('reports a wrong password the same way as an unknown account', async () => {
+      const [wrongPassword, unknown] = await Promise.all([
+        signIn('master', 'not-the-password').expect(401),
+        signIn('nobody-by-this-name').expect(401),
+      ]);
+
+      expect(wrongPassword.body.error.code).toBe(ErrorCode.AUTH_INVALID_CREDENTIALS);
+      expect(unknown.body.error.code).toBe(ErrorCode.AUTH_INVALID_CREDENTIALS);
+    });
+  });
 });

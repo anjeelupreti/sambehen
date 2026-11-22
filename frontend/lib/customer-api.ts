@@ -51,7 +51,7 @@ export async function customerRequest<TData>(
 
   const token = await getCustomerAccessToken();
   if (!token) {
-    if (redirectOnUnauthorized) redirect('/customer/login');
+    if (redirectOnUnauthorized) redirect('/login');
     throw new ApiError({ status: 401, code: 'AUTH_UNAUTHENTICATED', message: 'Not signed in' });
   }
 
@@ -84,7 +84,7 @@ export async function customerRequest<TData>(
     const envelope = payload as ApiErrorEnvelope | null;
 
     if (response.status === 401 && redirectOnUnauthorized) {
-      redirect('/customer/login');
+      redirect('/login');
     }
 
     throw new ApiError({

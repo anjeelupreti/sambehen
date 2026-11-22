@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: false },
 
+  // The two realms used to have separate sign-in pages. One page now serves
+  // both, so the old addresses — bookmarks, links in old emails — land on it.
+  async redirects() {
+    return [
+      { source: '/customer/login', destination: '/login', permanent: false },
+      { source: '/customer/register', destination: '/register', permanent: false },
+    ];
+  },
+
   experimental: {
     // Server Actions receive the login form. Keep the payload small; this
     // is a credentials form, not an upload endpoint.

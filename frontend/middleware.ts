@@ -60,8 +60,7 @@ const PUBLIC_PATHS = [
   '/',
   '/login',
   '/logout',
-  '/customer/login',
-  '/customer/register',
+  '/register',
   '/customer/logout',
   '/unsubscribe',
   '/r',
@@ -257,6 +256,13 @@ export async function middleware(request: NextRequest) {
   // Bouncing on the actor cookie alone was the second half of the loop:
   // that cookie outlives the access token by a week.
   if (pathname === '/login') {
+    // One sign-in serves both realms, so a signed-in customer is also sent
+    // on to their own app rather than shown the form again.
+    const customerAccess = request.cookies.get(CUSTOMER_ACCESS_COOKIE)?.value;
+    if (customerAccess && !expiresSoon(customerAccess)) {
+      return NextResponse.redirect(new URL('/customer', request.url));
+    }
+
     if (hasUsableAccess) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
@@ -274,8 +280,10 @@ export async function middleware(request: NextRequest) {
     return actor ? clearSession(NextResponse.next()) : NextResponse.next();
   }
 
-  // ── /customer/login, /customer/register ────────────────────────────────
-  if (pathname === '/customer/login' || pathname === '/customer/register') {
+  // ── /register ──────────────────────────────────────────────────────────
+  // Player sign-up. Anyone already signed in goes to their own app.
+  if (pathname === '/register') {
+    if (hasUsableAccess) return NextResponse.redirect(new URL('/dashboard', request.url));
     const customerAccess = request.cookies.get(CUSTOMER_ACCESS_COOKIE)?.value;
     if (customerAccess && !expiresSoon(customerAccess)) {
       return NextResponse.redirect(new URL('/customer', request.url));
@@ -305,7 +313,10 @@ export async function middleware(request: NextRequest) {
       if (tokens) return applyCustomerTokens(NextResponse.next(), tokens);
     }
 
-    const response = NextResponse.redirect(new URL('/customer/login', request.url));
+    // The single sign-in, remembering where the customer was headed.
+    const target = new URL('/login', request.url);
+    if (pathname !== '/customer') target.searchParams.set('from', `${pathname}${search}`);
+    const response = NextResponse.redirect(target);
     for (const name of [CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE, CUSTOMER_ACTOR_COOKIE]) {
       response.cookies.set(name, '', { path: '/', maxAge: 0 });
     }
