@@ -154,30 +154,30 @@ export async function seedEngagement(
     .insert(spinEvents)
     .values([
       {
-        name: 'Quarterly Gold Draw',
-        description: 'Completed draw for Gold-tier customers.',
+        name: 'Gold quarter rewards',
+        description: 'Completed reward event for Gold-tier customers.',
         vipCriteriaId: goldCriteria.id,
         selectionMode: SpinSelectionMode.POST_DRAW,
         status: SpinEventStatus.COMPLETED,
         scheduledAt: daysAgo(14),
-        prizeDescription: 'Cash prizes for the top three.',
+        prizeDescription: 'Rewards for the top three.',
         prizePool: '5000.00',
         createdByStaffId: masterId,
       },
       {
-        name: 'Silver Monthly Spin',
-        description: 'Winners chosen ahead of the draw.',
+        name: 'Silver monthly rewards',
+        description: 'Recipients chosen in advance.',
         vipCriteriaId: silverCriteria.id,
         selectionMode: SpinSelectionMode.PRESELECTED,
         status: SpinEventStatus.COMPLETED,
         scheduledAt: daysAgo(7),
-        prizeDescription: 'Bonus credit for two winners.',
+        prizeDescription: 'Bonus credit for two players.',
         prizePool: '1200.00',
         createdByStaffId: masterId,
       },
       {
         // Upcoming, so the UI has a non-completed status to render.
-        name: 'Next Gold Draw',
+        name: 'Next Gold rewards',
         description: 'Scheduled — no winners yet.',
         vipCriteriaId: goldCriteria.id,
         selectionMode: SpinSelectionMode.POST_DRAW,
@@ -206,9 +206,9 @@ export async function seedEngagement(
   }[] = [];
 
   const prizes = [
-    { label: 'First prize', amount: '2500.00' },
-    { label: 'Second prize', amount: '1500.00' },
-    { label: 'Third prize', amount: '1000.00' },
+    { label: 'First reward', amount: '2500.00' },
+    { label: 'Second reward', amount: '1500.00' },
+    { label: 'Third reward', amount: '1000.00' },
   ];
 
   for (const [index, event] of insertedEvents.entries()) {

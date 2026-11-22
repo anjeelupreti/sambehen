@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, inArray, isNull, sql, SQL } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql, SQL } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
 import { DRIZZLE_PROVIDER, DrizzleDB } from '../database.provider';
 import { transactions, Transaction } from '../schema/transactions.schema';
+import { games } from '../schema/games.schema';
 import { BaseRepository } from './base.repository';
 import { TransactionType } from '@common/constants/app.constants';
 
@@ -172,6 +173,40 @@ export class TransactionRepository extends BaseRepository<typeof transactions> {
       .where(and(...conditions, eq(transactions.type, type)))
       .groupBy(transactions.gameId)
       .orderBy(sql`SUM(${transactions.amount}) DESC`)
+      .limit(limit);
+  }
+
+  /**
+   * A customer's own most recent entries, newest first, with the game's
+   * name. Deleted entries are left out; corrections are flagged so the
+   * portal can tell a correction apart from a withdrawal.
+   */
+  async recentForCustomer(
+    customerId: string,
+    limit: number,
+  ): Promise<
+    {
+      id: string;
+      type: TransactionType;
+      amount: string;
+      gameName: string | null;
+      occurredAt: Date;
+      isCorrection: boolean;
+    }[]
+  > {
+    return this.db
+      .select({
+        id: transactions.id,
+        type: transactions.type,
+        amount: transactions.amount,
+        gameName: games.name,
+        occurredAt: transactions.occurredAt,
+        isCorrection: sql<boolean>`${transactions.parentTransactionId} IS NOT NULL`,
+      })
+      .from(transactions)
+      .leftJoin(games, eq(transactions.gameId, games.id))
+      .where(and(eq(transactions.customerId, customerId), isNull(transactions.deletedAt)))
+      .orderBy(desc(transactions.occurredAt))
       .limit(limit);
   }
 }

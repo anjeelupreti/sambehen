@@ -5,7 +5,55 @@ import { DrizzleDB } from '../database.provider';
 import { customers, Customer } from '../schema/customers.schema';
 import { ISeededStaff, SEED_PASSWORD } from './staff.seed';
 
-const CITIES = ['Kathmandu', 'Pokhara', 'Lalitpur', 'Biratnagar', 'Bhaktapur', 'Birgunj'];
+const CITIES = ['Austin', 'Dallas', 'Houston', 'San Antonio', 'Fort Worth', 'Lubbock', 'Amarillo'];
+
+/** Demo player names, one per seeded customer, in seeding order. */
+const NAMES = [
+  'Savannah Pruitt',
+  'Travis McCoy',
+  'Jolene Harper',
+  'Wade Henderson',
+  'Darla Briggs',
+  'Lacey Dawson',
+  'Colt Barrett',
+  'Hank Whitfield',
+  'Rhett Calloway',
+  'Cody Wallace',
+  'Boone Gentry',
+  'Mae Ellison',
+  'Luke Tidwell',
+  'Shelby Crane',
+  'Dusty Reeves',
+  'Tammy Lockhart',
+  'Garrett Pope',
+  'Marla Sutton',
+  'Clint Haskins',
+  'Bonnie Cates',
+  'Rusty Kimbrough',
+  'Kendra Faulk',
+  'Beau Langford',
+  'Loretta Pickens',
+  'Jace Holloway',
+  'Charlene Ruiz',
+  'Dale Matthews',
+  'Reba Owens',
+  'Tucker Graves',
+  'Ivy Sandoval',
+  'Waylon Briscoe',
+  'Darlene Yates',
+  'Cash Montgomery',
+  'Peggy Rhodes',
+  'Brody Kessler',
+  'Annie Delgado',
+];
+
+/** What a seeded customer looks like at a given seeding position. */
+const demoIdentity = (position: number) => ({
+  fullName: NAMES[position % NAMES.length],
+  phone: `+1512555${String(1000 + position).slice(-4)}`,
+  city: CITIES[position % CITIES.length],
+  country: 'United States',
+});
 
 const PENDING_NAMES = [
   { username: 'newplayer1', fullName: 'Alex Rivera' },
@@ -43,6 +91,18 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
   ): Promise<void> => {
     const existing = await db.select().from(customers).where(eq(customers.email, email)).limit(1);
     if (existing[0]) {
+      // Rows seeded before the demo names existed carry "Customer N";
+      // give them their name, city and number without touching anything
+      // staff may have changed since.
+      if (/^Customer \d+$/.test(existing[0].fullName ?? '')) {
+        const [renamed] = await db
+          .update(customers)
+          .set(demoIdentity(index))
+          .where(eq(customers.id, existing[0].id))
+          .returning();
+        seeded.push(renamed);
+        return;
+      }
       seeded.push(existing[0]);
       return;
     }
@@ -53,10 +113,7 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
         email,
         username,
         passwordHash,
-        fullName: `Customer ${index}`,
-        phone: `+97798${String(10000000 + index).slice(-8)}`,
-        city: CITIES[index % CITIES.length],
-        country: 'Nepal',
+        ...demoIdentity(index),
         ...ownership,
         status,
         lastActivityAt: new Date(now - daysSinceActivity * 86_400_000),

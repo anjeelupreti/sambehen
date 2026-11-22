@@ -404,6 +404,19 @@ describe('Cross-tenant isolation (e2e)', () => {
       await get('/api/v1/team/customers?limit=1', res.body.data.accessToken).expect(401);
     });
 
+    it("lists only the signed-in customer's own transactions", async () => {
+      const session = await signIn('customer2').expect(200);
+      const res = await get(
+        '/api/v1/me/transactions?limit=5',
+        session.body.data.accessToken,
+      ).expect(200);
+
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.length).toBeLessThanOrEqual(5);
+      // A staff token cannot reach the customer-only route.
+      await get('/api/v1/me/transactions', tokens.master).expect(401);
+    });
+
     it('reports a wrong password the same way as an unknown account', async () => {
       const [wrongPassword, unknown] = await Promise.all([
         signIn('master', 'not-the-password').expect(401),

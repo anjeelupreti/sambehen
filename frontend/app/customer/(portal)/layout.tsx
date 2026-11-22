@@ -25,7 +25,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   return (
     <div className="flex min-h-svh flex-col">
       <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-4xl items-center justify-between gap-2 px-4">
+        <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-2 px-4 sm:px-6">
           <Link href="/customer" className="text-lg font-bold tracking-tight [font-stretch:125%]">
             Sambehen
           </Link>
@@ -64,11 +64,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl flex-1 p-4 sm:p-6">{children}</main>
-
-      <footer className="text-muted-foreground mx-auto w-full max-w-4xl px-4 pb-6 text-xs">
-        Signed in as {actor.username}. To change any of your details, contact the team.
-      </footer>
+      <main className="mx-auto w-full max-w-3xl flex-1 p-4 pb-10 sm:p-6">{children}</main>
     </div>
   );
 }

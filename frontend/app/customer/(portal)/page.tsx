@@ -1,177 +1,66 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { CrownIcon, MessageSquareIcon, TrophyIcon } from 'lucide-react';
 
-import { Money } from '@/components/money';
 import { ReferralCodeCard } from '@/components/customer/referral-code-card';
-import { StatCard } from '@/components/stat-card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { ActivityList, type MyTransaction } from '@/components/portal/activity-list';
+import { BalanceCard } from '@/components/portal/balance-card';
+import { LatestMessage } from '@/components/portal/latest-message';
+import { VipProgress, type VipCriterion } from '@/components/portal/vip-progress';
 import { customerGet } from '@/lib/customer-api';
 import { getCustomerActor } from '@/lib/customer-session';
-import { formatCount, formatDate } from '@/lib/money';
 import type { components } from '@/lib/api-schema';
+import type { Message } from '@/lib/types';
 
 type CustomerDashboard = components['schemas']['CustomerDashboardDto'];
 type VipStatus = components['schemas']['VipStatusDto'];
 type MyReferral = components['schemas']['MyReferralDto'];
-type RecentWinner = components['schemas']['RecentWinnerDto'];
 
 export const metadata: Metadata = { title: 'Your account' };
 
+/**
+ * The player's home: balance first, then where they stand on VIP, their
+ * latest message, what was recorded recently, and their referral link.
+ * Laid out for a phone first; on wider screens VIP and messages sit side
+ * by side.
+ */
 export default async function CustomerOverviewPage() {
   const actor = await getCustomerActor();
 
-  /*
-   * Fetched together rather than in sequence — they are independent reads
-   * and the portal is one screen. Referrals and VIP status are allowed to
-   * fail softly: a customer with neither should still see their balance
-   * rather than an error page.
-   */
-  const [dashboard, vip, referral, wins] = await Promise.all([
+  // Each section degrades on its own: a failed VIP or message request
+  // should not take the balance down with it.
+  const [dashboard, vip, referral, thread, activity] = await Promise.all([
     customerGet<CustomerDashboard>('/me/dashboard'),
     customerGet<VipStatus>('/me/vip-status').catch(() => null),
     customerGet<MyReferral>('/me/referral').catch(() => null),
-    customerGet<RecentWinner[]>('/me/recent-winners', { limit: 5 }).catch(() => []),
+    customerGet<{ data: Message[] }>('/me/messages', { limit: 1 }).catch(() => null),
+    customerGet<MyTransaction[]>('/me/transactions', { limit: 8 }).catch(() => []),
   ]);
 
+  const firstName = actor?.fullName?.trim().split(/\s+/)[0];
+
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Welcome{actor?.fullName ? `, ${actor.fullName.split(' ')[0]}` : ''}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Your balance, activity and messages. Everything here is read-only — the team maintains
-          your details for you.
-        </p>
-      </header>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-semibold">{firstName ? `Hi ${firstName}` : 'Your account'}</h1>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Balance" value={<Money value={dashboard.balance} />} />
-        <StatCard
-          label="Bonus balance"
-          value={<Money value={dashboard.bonusBalance} />}
-          hint="Referral bonuses, kept separate from your balance."
-        />
-        <StatCard
-          label="Total deposited"
-          value={<Money value={dashboard.totalSpent} />}
-          hint={`${formatCount(dashboard.transactionCount)} entries on your record.`}
-        />
-        <StatCard
-          label="Total withdrawn"
-          value={<Money value={dashboard.totalWithdrawn} />}
-          hint="Excludes corrections to earlier entries."
-        />
-      </section>
+      <BalanceCard
+        balance={dashboard.balance}
+        bonusBalance={dashboard.bonusBalance}
+        moneyIn={dashboard.totalSpent}
+        moneyOut={dashboard.totalWithdrawn}
+      />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CrownIcon className="size-4" />
-              VIP standing
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {dashboard.isVip ? (
-              <>
-                <Badge variant="default">Tier {dashboard.vipTier ?? vip?.currentTier ?? 1}</Badge>
-                <p className="text-muted-foreground text-sm">
-                  Standing is worked out from your recorded activity — nobody sets it by hand.
-                </p>
-              </>
-            ) : (
-              <p className="text-muted-foreground text-sm">
-                Not currently qualifying. VIP standing is computed from your activity over the
-                current period.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MessageSquareIcon className="size-4" />
-              Messages
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm">
-              {dashboard.unreadMessages > 0 ? (
-                <>
-                  You have{' '}
-                  <span className="font-semibold">
-                    {formatCount(dashboard.unreadMessages)} unread
-                  </span>{' '}
-                  {dashboard.unreadMessages === 1 ? 'message' : 'messages'}.
-                </>
-              ) : (
-                'No unread messages.'
-              )}
-            </p>
-            <Button asChild size="sm" variant="outline">
-              <Link href="/customer/messages">Open messages</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <VipProgress
+          // The API documents criteria as a bare object array; this is its
+          // real shape (VipStatusDto in the backend).
+          criteria={(vip?.criteria ?? []) as unknown as VipCriterion[]}
+          rewardsReceived={dashboard.totalWins}
+        />
+        <LatestMessage message={thread?.data?.[0] ?? null} unread={dashboard.unreadMessages} />
       </div>
 
-      <ReferralCodeCard referral={referral} />
+      <ActivityList items={activity} total={dashboard.transactionCount} />
 
-      <Card className="gap-0 py-0">
-        <CardHeader className="py-4">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <TrophyIcon className="size-4" />
-            Your wins
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-0 pb-2">
-          {wins.length === 0 ? (
-            <p className="text-muted-foreground px-6 py-6 text-center text-sm">
-              No wins recorded yet.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Prize</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Announced</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {wins.map((win, index) => (
-                  <TableRow key={`${win.eventName}-${index}`}>
-                    <TableCell className="font-medium">{win.eventName}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {win.prizeLabel}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Money value={win.prizeAmount} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                      {formatDate(win.announcedAt)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <ReferralCodeCard referral={referral} />
     </div>
   );
 }

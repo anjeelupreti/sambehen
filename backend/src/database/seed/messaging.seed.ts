@@ -174,7 +174,7 @@ export async function seedMessaging(
       [
         {
           from: 'customer',
-          body: 'Hi, my last deposit hasn’t shown up in my balance yet.',
+          body: 'Hi, my last top-up hasn’t shown up in my balance yet.',
           minutesAgo: 180,
         },
         { from: 'staff', body: 'Checking now — can you confirm the amount?', minutesAgo: 175 },
@@ -194,7 +194,7 @@ export async function seedMessaging(
       db,
       storeOwned[1],
       storeOwned[1].storeId as string,
-      [{ from: 'customer', body: 'Is there a spin event running this week?', minutesAgo: 20 }],
+      [{ from: 'customer', body: 'Are there any rewards running this week?', minutesAgo: 20 }],
       false,
     );
     customerThreads += 1;

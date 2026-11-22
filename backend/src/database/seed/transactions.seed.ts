@@ -1,38 +1,54 @@
-import { inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { subDays } from 'date-fns';
 import { TransactionType } from '@common/constants/app.constants';
 import { DrizzleDB } from '../database.provider';
 import { games, transactions, Customer } from '../schema';
 
+/**
+ * Demo games. Neutral titles on purpose: the product serves gaming
+ * operators, but the demo should not read as a casino.
+ */
 const GAMES = [
   {
-    code: 'SLOT-001',
-    name: 'Mega Fortune',
-    category: 'slots',
+    code: 'GAME-001',
+    name: 'Ocean Quest',
+    category: 'adventure',
     isActive: true,
-    description: 'Popular slot game',
+    description: 'Underwater adventure game',
   },
   {
-    code: 'SLOT-002',
-    name: 'Starburst',
-    category: 'slots',
+    code: 'GAME-002',
+    name: 'Puzzle Rush',
+    category: 'puzzle',
     isActive: true,
-    description: 'Classic slot',
+    description: 'Fast-paced puzzle game',
   },
   {
-    code: 'TABL-001',
-    name: 'Blackjack Pro',
-    category: 'table',
+    code: 'GAME-003',
+    name: 'Turbo Kart',
+    category: 'racing',
     isActive: true,
-    description: 'Table game',
+    description: 'Arcade racing game',
   },
   {
-    code: 'LIVE-001',
-    name: 'Live Roulette',
-    category: 'live',
+    code: 'GAME-004',
+    name: 'Star Arena',
+    category: 'arena',
     isActive: true,
-    description: 'Live dealer',
+    description: 'Team arena game',
   },
+];
+
+/**
+ * Codes the demo games were first seeded under. A database seeded before
+ * the rename has these; they are re-coded in place so each game keeps its
+ * id, and with it every transaction already recorded against it.
+ */
+const RENAMED_CODES: [from: string, to: string][] = [
+  ['SLOT-001', 'GAME-001'],
+  ['SLOT-002', 'GAME-002'],
+  ['TABL-001', 'GAME-003'],
+  ['LIVE-001', 'GAME-004'],
 ];
 
 /**
@@ -78,7 +94,22 @@ export async function seedGamesAndTransactions(
   db: DrizzleDB,
   seededCustomers: Customer[],
 ): Promise<void> {
-  await db.insert(games).values(GAMES).onConflictDoNothing();
+  for (const [from, to] of RENAMED_CODES) {
+    await db.execute(
+      sql`UPDATE games SET code = ${to} WHERE code = ${from} AND NOT EXISTS (SELECT 1 FROM games WHERE code = ${to})`,
+    );
+  }
+  // Update-or-insert by code, so a re-seed also refreshes names and
+  // categories. Not ON CONFLICT: the code's unique index is partial (it
+  // ignores soft-deleted games), and ON CONFLICT cannot target it.
+  for (const game of GAMES) {
+    const updated = await db
+      .update(games)
+      .set({ name: game.name, category: game.category, description: game.description })
+      .where(and(eq(games.code, game.code), isNull(games.deletedAt)))
+      .returning({ id: games.id });
+    if (updated.length === 0) await db.insert(games).values(game);
+  }
   const allGames = await db.select().from(games);
 
   const customerIds = seededCustomers.map((c) => c.id);

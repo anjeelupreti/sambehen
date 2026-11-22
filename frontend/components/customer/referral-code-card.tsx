@@ -51,10 +51,7 @@ export function ReferralCodeCard({ referral }: { referral: MyReferral | null }) 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">
-            You don&apos;t have a referral link yet — the team sets these up. Ask them for one and
-            you&apos;ll both earn a bonus when someone you refer signs up and deposits.
-          </p>
+          <p className="text-muted-foreground text-sm">Ask your store for a referral link.</p>
         </CardContent>
       </Card>
     );
@@ -65,15 +62,10 @@ export function ReferralCodeCard({ referral }: { referral: MyReferral | null }) 
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <GiftIcon className="size-4" />
-          Your referral link
+          Refer a friend
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-muted-foreground text-sm">
-          Share this with a friend. When they sign up through it and make a qualifying deposit, you
-          both earn a bonus under {referral.programName ?? 'the current program'}.
-        </p>
-
         {referral.referralLink ? (
           <div className="flex items-center gap-2">
             <code className="bg-muted tabular flex-1 truncate rounded-md px-3 py-2 text-sm">
@@ -93,11 +85,10 @@ export function ReferralCodeCard({ referral }: { referral: MyReferral | null }) 
         ) : null}
 
         <p className="text-muted-foreground text-xs">
-          Or give them the code directly:{' '}
-          <code className="bg-muted tabular rounded px-1.5 py-0.5">{referral.code}</code>
+          Code <code className="bg-muted tabular rounded px-1.5 py-0.5">{referral.code}</code>
         </p>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3">
           <Figure label="Referred" value={formatCount(referral.totalReferred)} />
           <Figure label="Rewarded" value={formatCount(referral.totalRewarded)} />
           <Figure label="Earned" value={<Money value={referral.totalEarned} />} />
