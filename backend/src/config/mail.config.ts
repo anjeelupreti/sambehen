@@ -16,7 +16,7 @@ export default registerAs('mail', () => ({
   /** When set, mail goes through Resend's HTTPS API and the SMTP_* values are ignored. */
   resendApiKey: process.env.RESEND_API_KEY || '',
   from: process.env.MAIL_FROM || 'no-reply@sambehen.local',
-  fromName: process.env.MAIL_FROM_NAME || 'Sambehen',
+  fromName: process.env.MAIL_FROM_NAME || 'Howdi chat',
   /** Public origin used to build unsubscribe and download links in emails. */
   publicUrl: process.env.APP_PUBLIC_URL || 'http://localhost:3000',
 }));

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { archivo } from '@/lib/fonts';
+import { Logo } from '@/components/logo';
 
 /**
  * The frame every sign-in page shares: the form on the left and, on large
@@ -32,16 +33,16 @@ export function AuthShell({
       <div className="flex min-h-svh flex-col px-4 py-6 sm:px-10 lg:px-14">
         <Link
           href="/"
-          className="focus-visible:outline-lp-primary w-fit rounded text-lg font-bold tracking-tight [font-stretch:125%] focus-visible:outline-2 focus-visible:outline-offset-4"
+          className="focus-visible:outline-lp-primary w-fit rounded focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          Sambehen
+          <Logo tone="site" />
         </Link>
 
         <main className="flex flex-1 items-center py-12">
           <div className="mx-auto w-full max-w-sm">{children}</div>
         </main>
 
-        <p className="text-lp-dim text-xs">© {new Date().getFullYear()} Sambehen</p>
+        <p className="text-lp-dim text-xs">© {new Date().getFullYear()} Howdi chat</p>
       </div>
 
       <aside className="hidden p-3 lg:block">

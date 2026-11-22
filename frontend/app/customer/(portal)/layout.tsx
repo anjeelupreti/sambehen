@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { getCustomerActor } from '@/lib/customer-session';
 import { SkipLink } from '@/components/skip-link';
 import { ChatSocketProvider } from '@/components/chat/socket';
+import { Logo } from '@/components/logo';
 
 /**
  * The customer portal shell.
@@ -30,8 +31,8 @@ export default async function CustomerLayout({ children }: { children: React.Rea
         <SkipLink />
         <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
           <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-2 px-4 sm:px-6">
-            <Link href="/customer" className="text-lg font-bold tracking-tight [font-stretch:125%]">
-              Sambehen
+            <Link href="/customer" className="rounded">
+              <Logo />
             </Link>
 
             <nav className="flex items-center gap-1" aria-label="Portal">

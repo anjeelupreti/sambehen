@@ -10,6 +10,7 @@ import { ChatSocketProvider } from '@/components/chat/socket';
 import { Separator } from '@/components/ui/separator';
 import { getActor } from '@/lib/session';
 import { SkipLink } from '@/components/skip-link';
+import { Logo } from '@/components/logo';
 
 /**
  * The signed-in shell.
@@ -35,9 +36,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex h-14 items-center px-5 shrink-0">
             <Link
               href="/dashboard"
-              className="text-lg font-bold tracking-tight [font-stretch:125%]"
+              className="focus-visible:ring-ring/70 rounded outline-none focus-visible:ring-[3px]"
             >
-              Sambehen
+              <Logo />
             </Link>
           </div>
           <Separator />
@@ -52,11 +53,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               {/* Below md the sidebar is hidden, so this drawer is the only
                 way off the current page. */}
               <MobileNav role={actor.role} />
-              <Link
-                href="/dashboard"
-                className="text-lg font-bold tracking-tight [font-stretch:125%] md:hidden"
-              >
-                Sambehen
+              <Link href="/dashboard" className="md:hidden">
+                <Logo size="sm" />
               </Link>
             </div>
 

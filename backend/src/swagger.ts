@@ -18,7 +18,7 @@ import {
  */
 export function createSwaggerDocument(app: INestApplication, config: ConfigService): OpenAPIObject {
   const documentConfig = new DocumentBuilder()
-    .setTitle(config.get<string>('swagger.title', 'Sambehen API'))
+    .setTitle(config.get<string>('swagger.title', 'Howdi chat API'))
     .setDescription(
       [
         config.get<string>('swagger.description', 'Data Entry Management System API'),

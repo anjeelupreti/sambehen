@@ -43,7 +43,7 @@ export function HeroRecord() {
 
   return (
     <figure
-      aria-label="Example player record in Sambehen"
+      aria-label="Example player record in Howdi chat"
       className="border-lp-line bg-lp-raised overflow-hidden rounded-2xl border shadow-[0_30px_70px_-40px_rgb(18_26_43/0.45)]"
     >
       {/* Record header */}

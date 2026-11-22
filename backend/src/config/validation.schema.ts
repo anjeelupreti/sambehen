@@ -69,7 +69,7 @@ export const validationSchema = Joi.object({
   MAIL_FROM: Joi.string()
     .email({ tlds: { allow: false } })
     .default('no-reply@sambehen.local'),
-  MAIL_FROM_NAME: Joi.string().default('Sambehen'),
+  MAIL_FROM_NAME: Joi.string().default('Howdi chat'),
   EMAIL_BATCH_SIZE: Joi.number().min(1).max(1000).default(50),
 
   // ── Business rules ─────────────────────────────────────────
@@ -90,7 +90,7 @@ export const validationSchema = Joi.object({
   // Off by default in production: the docs expose the full surface area,
   // including every error code and filter parameter.
   SWAGGER_ENABLED: Joi.boolean().default(process.env.NODE_ENV !== 'production'),
-  SWAGGER_TITLE: Joi.string().default('Sambehen API'),
+  SWAGGER_TITLE: Joi.string().default('Howdi chat API'),
   SWAGGER_DESCRIPTION: Joi.string().default('Data Entry Management System API'),
   SWAGGER_VERSION: Joi.string().default('1.0'),
 });

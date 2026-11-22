@@ -1,4 +1,4 @@
-# Sambehen — Data Entry Management System API
+# Howdi chat — Data Entry Management System API
 
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)

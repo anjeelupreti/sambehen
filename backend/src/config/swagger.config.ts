@@ -10,7 +10,7 @@ import { registerAs } from '@nestjs/config';
  */
 export default registerAs('swagger', () => ({
   enabled: process.env.SWAGGER_ENABLED === 'true',
-  title: process.env.SWAGGER_TITLE || 'Sambehen API',
+  title: process.env.SWAGGER_TITLE || 'Howdi chat API',
   description: process.env.SWAGGER_DESCRIPTION || 'Data Entry Management System API',
   version: process.env.SWAGGER_VERSION || '1.0',
 }));

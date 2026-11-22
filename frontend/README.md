@@ -1,4 +1,4 @@
-# Sambehen — Frontend
+# Howdi chat — Frontend
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
@@ -6,7 +6,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-new--york-000000)
 
-Staff-facing web client for the [Sambehen API](../backend). Next.js App
+Staff-facing web client for the [Howdi chat API](../backend). Next.js App
 Router, React Server Components, Tailwind v4 and shadcn/ui.
 
 > **Status: both the staff app and the customer portal are complete and

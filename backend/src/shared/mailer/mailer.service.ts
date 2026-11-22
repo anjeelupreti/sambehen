@@ -70,7 +70,7 @@ export class MailerService implements OnModuleInit {
 
   async send(input: ISendMailInput): Promise<ISendMailResult> {
     const from = this.configService.get<string>('mail.from', 'no-reply@sambehen.local');
-    const fromName = this.configService.get<string>('mail.fromName', 'Sambehen');
+    const fromName = this.configService.get<string>('mail.fromName', 'Howdi chat');
 
     if (this.resendApiKey) return this.sendViaResend(input, `${fromName} <${from}>`);
 

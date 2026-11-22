@@ -8,8 +8,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Sambehen',
-    template: '%s · Sambehen',
+    default: 'Howdi chat',
+    template: '%s · Howdi chat',
   },
   description: 'Player data and messaging for gaming operators.',
 };

@@ -1,4 +1,4 @@
-# Sambehen — Architecture Notes
+# Howdi chat — Architecture Notes
 
 Companion to `IMPLEMENTATION_PLAN.md`. That file describes what was built;
 this one records the decisions a new contributor most needs to know before

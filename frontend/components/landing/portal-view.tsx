@@ -1,11 +1,12 @@
 import { PORTAL, formatMoney } from './landing-data';
+import { Logo } from '@/components/logo';
 
 /** The player portal as a player sees it on their phone. */
 export function PortalView() {
   return (
     <div className="border-lp-line bg-lp-raised mx-auto w-full max-w-sm overflow-hidden rounded-[1.75rem] border shadow-[0_30px_70px_-40px_rgb(18_26_43/0.45)]">
       <div className="border-lp-line flex items-center justify-between border-b px-5 py-4">
-        <p className="font-bold [font-stretch:125%]">Sambehen</p>
+        <Logo tone="site" size="sm" />
         <p className="text-lp-dim text-xs">{PORTAL.store}</p>
       </div>
 

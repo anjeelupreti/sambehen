@@ -107,7 +107,7 @@ export class EmailTemplateService implements OnModuleInit {
 
   render(input: IRenderInput): IRenderedEmail {
     const style = KIND_STYLES[input.kind] ?? KIND_STYLES[EmailKind.INFORMATIONAL];
-    const brand = this.configService.get<string>('mail.fromName', 'Sambehen');
+    const brand = this.configService.get<string>('mail.fromName', 'Howdi chat');
 
     const html = this.layout({
       brand,

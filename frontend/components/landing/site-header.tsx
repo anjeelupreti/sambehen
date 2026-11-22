@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Logo } from '@/components/logo';
 
 const NAV = [
   { href: '#platform', label: 'Platform' },
@@ -14,9 +15,9 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="focus-visible:outline-lp-primary rounded text-lg font-bold tracking-tight [font-stretch:125%] focus-visible:outline-2 focus-visible:outline-offset-4"
+          className="focus-visible:outline-lp-primary rounded focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          Sambehen
+          <Logo tone="site" />
         </Link>
 
         <nav aria-label="Sections" className="hidden items-center gap-7 text-sm md:flex">

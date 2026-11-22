@@ -1,4 +1,4 @@
-# Deploying Sambehen
+# Deploying Howdi chat
 
 This project is two separate deployables that happen to live in one repo:
 
@@ -96,7 +96,7 @@ SMTP_SECURE=false
 SMTP_USER=<your SMTP user>
 SMTP_PASSWORD=<your SMTP app password>
 MAIL_FROM=no-reply@yourdomain.com
-MAIL_FROM_NAME=Sambehen
+MAIL_FROM_NAME="Howdi chat"
 EMAIL_BATCH_SIZE=50
 
 ACTIVE_CUSTOMER_WINDOW_DAYS=30

@@ -1,4 +1,4 @@
-# Sambehen — User Guide
+# Howdi chat — User Guide
 
 How to actually use the system: every role, every feature, step by step.
 For getting the system *running* on a machine, see [README.md](README.md).

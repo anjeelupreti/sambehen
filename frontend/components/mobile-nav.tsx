@@ -8,6 +8,7 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import type { StaffRole } from '@/lib/types';
+import { Logo } from '@/components/logo';
 
 /**
  * Navigation for viewports below `md`, where the fixed sidebar is hidden.
@@ -33,7 +34,9 @@ export function MobileNav({ role }: { role: StaffRole }) {
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
         <SheetHeader className="h-14 justify-center border-b px-5">
-          <SheetTitle className="text-left text-base tracking-tight">Sambehen</SheetTitle>
+          <SheetTitle className="text-left text-base">
+            <Logo size="sm" />
+          </SheetTitle>
         </SheetHeader>
         <div className="overflow-y-auto">
           <AppSidebar role={role} />

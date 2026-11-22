@@ -1,4 +1,4 @@
-# Sambehen
+# Howdi chat
 
 Data entry management system. A team records customer activity, and the
 system derives everything else from it — spending totals, VIP standing,

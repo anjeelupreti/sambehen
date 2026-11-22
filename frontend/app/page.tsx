@@ -15,9 +15,10 @@ import { SiteHeader } from '@/components/landing/site-header';
 import { getCustomerAccessToken } from '@/lib/customer-session';
 import { archivo } from '@/lib/fonts';
 import { getAccessToken } from '@/lib/session';
+import { Logo } from '@/components/logo';
 
 export const metadata: Metadata = {
-  title: 'Sambehen',
+  title: 'Howdi chat',
   description:
     'Player data and messaging for gaming operators: transactions, VIP tiers, reward events, referrals and live messages, scoped to every store.',
 };
@@ -129,7 +130,7 @@ const TRUST_ART = landingAsset('trust.png');
 const CLOSING_ART = landingAsset('closing.png');
 
 /**
- * The public front door, for operators evaluating Sambehen.
+ * The public front door, for operators evaluating Howdi chat.
  *
  * A signed-in visitor goes straight to their own app. Every view on this
  * page is built from the product's own components with example data, and
@@ -166,7 +167,7 @@ export default async function LandingPage() {
             <div className="mt-9 flex flex-wrap gap-3">
               {contactEmail ? (
                 <a
-                  href={`mailto:${contactEmail}?subject=Sambehen%20demo`}
+                  href={`mailto:${contactEmail}?subject=Howdi%20chat%20demo`}
                   className="bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   Book a demo
@@ -386,7 +387,7 @@ export default async function LandingPage() {
               <div className="flex flex-wrap gap-3">
                 {contactEmail && (
                   <a
-                    href={`mailto:${contactEmail}?subject=Sambehen%20demo`}
+                    href={`mailto:${contactEmail}?subject=Howdi%20chat%20demo`}
                     className="bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     Book a demo
@@ -420,7 +421,7 @@ export default async function LandingPage() {
       <footer className="border-lp-line border-t">
         <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-14 text-sm sm:px-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] lg:px-8">
           <div className="max-w-xs">
-            <p className="text-lg font-bold [font-stretch:125%]">Sambehen</p>
+            <Logo tone="site" />
             <p className="text-lp-dim mt-3 leading-relaxed">
               Player data and messaging for gaming operators, scoped to every store.
             </p>
@@ -457,7 +458,7 @@ export default async function LandingPage() {
           </nav>
         </div>
         <div className="border-lp-line text-lp-dim mx-auto w-full max-w-7xl border-t px-4 py-6 text-xs sm:px-6 lg:px-8">
-          © {new Date().getFullYear()} Sambehen
+          © {new Date().getFullYear()} Howdi chat
         </div>
       </footer>
     </div>
