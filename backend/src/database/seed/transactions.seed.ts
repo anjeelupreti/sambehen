@@ -131,24 +131,35 @@ export async function seedGamesAndTransactions(
     // this is called), and both shapes carry at least one of these.
     const enteredBy = (customer.storeId ?? customer.managerId ?? customer.ownerStaffId) as string;
 
-    for (let i = 0; i < txCount; i += 1) {
-      const daysAgo = Math.floor(random() * 90);
-      const occurredAt = subDays(new Date(), daysAgo);
+    const draws = Array.from({ length: txCount }, () => ({
+      daysAgo: Math.floor(random() * 90),
+      wantsCredit: random() <= 0.4,
+      amount: Math.floor(random() * 990) + 10,
+      game: allGames[Math.floor(random() * allGames.length)],
+    })).sort((a, b) => b.daysAgo - a.daysAgo);
 
-      // Debits (money in) outnumber credits (money out) roughly 3:2, so
-      // most customers end up with a positive balance rather than a
-      // coin-flip between wildly positive and negative.
-      const type = random() > 0.4 ? TransactionType.DEBIT : TransactionType.CREDIT;
-      const amount = (Math.floor(random() * 990) + 10).toFixed(2);
-      const game = allGames[Math.floor(random() * allGames.length)];
+    // Walked oldest first so the running balance never dips below zero:
+    // money out is only ever drawn from money already in, the way a real
+    // account behaves. A credit the balance can't cover becomes a smaller
+    // one, or money in when there's almost nothing to take out.
+    let running = 0;
+    for (const draw of draws) {
+      let type = draw.wantsCredit ? TransactionType.CREDIT : TransactionType.DEBIT;
+      let amount = draw.amount;
+      if (type === TransactionType.CREDIT) {
+        const cap = Math.floor(running * 0.8);
+        if (cap < 10) type = TransactionType.DEBIT;
+        else amount = Math.min(amount, cap);
+      }
+      running += type === TransactionType.DEBIT ? amount : -amount;
 
       rows.push({
         customerId: customer.id,
         type,
-        amount,
+        amount: amount.toFixed(2),
         parentTransactionId: null,
-        gameId: game.id,
-        occurredAt,
+        gameId: draw.game.id,
+        occurredAt: subDays(new Date(), draw.daysAgo),
         note: 'Seeded transaction',
         enteredByStaffId: enteredBy,
       });
