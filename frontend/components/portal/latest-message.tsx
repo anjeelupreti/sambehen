@@ -25,7 +25,7 @@ export function LatestMessage({ message, unread }: { message: Message | null; un
       {message ? (
         <figure className="bg-muted mt-4 rounded-lg p-4">
           <figcaption className="text-muted-foreground flex justify-between gap-3 text-xs">
-            <span>{message.senderType === 'customer' ? 'You' : 'Your store'}</span>
+            <span>{message.senderType === 'customer' ? 'You' : 'Your team'}</span>
             <time dateTime={message.createdAt}>{formatDate(message.createdAt)}</time>
           </figcaption>
           <blockquote className="mt-2 line-clamp-3 text-sm leading-relaxed">
@@ -38,7 +38,7 @@ export function LatestMessage({ message, unread }: { message: Message | null; un
 
       <div className="mt-auto pt-5">
         <Button asChild className="w-full sm:w-fit" variant={unread > 0 ? 'default' : 'outline'}>
-          <Link href="/customer/messages">{message ? 'Open messages' : 'Message your store'}</Link>
+          <Link href="/customer/messages">{message ? 'Open messages' : 'Message your team'}</Link>
         </Button>
       </div>
     </section>
