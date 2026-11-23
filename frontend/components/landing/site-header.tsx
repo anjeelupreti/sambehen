@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/logo';
 
 const NAV = [
+  { href: '#chat', label: 'Chat' },
   { href: '#platform', label: 'Platform' },
   { href: '#dashboard', label: 'Dashboard' },
   { href: '#players', label: 'Players' },

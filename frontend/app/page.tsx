@@ -1,5 +1,3 @@
-import { existsSync } from 'fs';
-import { join } from 'path';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,8 +6,8 @@ import { redirect } from 'next/navigation';
 import { AccessMap } from '@/components/landing/access-map';
 import { DashboardView } from '@/components/landing/dashboard-view';
 import { ImportExportView } from '@/components/landing/import-export-view';
-import { PortalView } from '@/components/landing/portal-view';
-import { HeroRecord } from '@/components/landing/hero-record';
+import { ChatDemo } from '@/components/landing/chat-demo';
+import { PlayerProgressView } from '@/components/landing/player-progress-view';
 import { PlatformTour } from '@/components/landing/platform-tour';
 import { SiteHeader } from '@/components/landing/site-header';
 import { getCustomerAccessToken } from '@/lib/customer-session';
@@ -20,7 +18,7 @@ import { Logo } from '@/components/logo';
 export const metadata: Metadata = {
   title: 'Howdi chat',
   description:
-    'Player data and messaging for gaming operators: transactions, VIP tiers, reward events, referrals and live messages, scoped to every store.',
+    'Live chat and player records for gaming operators: messaging, VIP tiers, milestones, referrals and transactions, scoped to every store.',
 };
 
 const LIFECYCLE = [
@@ -38,14 +36,33 @@ const LIFECYCLE = [
   { title: 'Referral pays', body: 'Both bonuses post once the new player spends enough.' },
 ];
 
+const CHAT_POINTS = [
+  {
+    title: 'Online, typing, read',
+    body: 'Both sides see who is around and when a message has been read.',
+  },
+  { title: 'Photos and files', body: 'Paste, drop or attach. Images open full size in the chat.' },
+  {
+    title: 'One message to everyone',
+    body: 'Broadcast email to every player, or only the ones you pick.',
+  },
+  { title: 'Team threads', body: 'Stores, managers and the master talk to each other too.' },
+];
+
 const PORTAL_POINTS = [
   {
     title: 'Their balance, always current',
     body: 'Every entry a store records shows up the moment it is saved.',
   },
-  { title: 'Progress they can see', body: 'Players know how close they are to the next tier.' },
-  { title: 'Referrals in their pocket', body: 'A personal code and link, ready to share.' },
-  { title: 'A direct line to their store', body: 'Messages go to the team that looks after them.' },
+  {
+    title: 'A route to the next tier',
+    body: 'Each tier is a stop, and the next one says what is left.',
+  },
+  {
+    title: 'Milestones for showing up',
+    body: 'Joining, chatting, inviting friends, time with the store. None for spending.',
+  },
+  { title: 'Friends, as a goal', body: 'A personal invite link and a count of who joined.' },
 ];
 
 const GET_STARTED = [
@@ -117,17 +134,14 @@ const QUESTIONS = [
   },
 ];
 
-/**
- * Illustrations are generated outside the codebase and dropped into
- * `public/landing/`. Each slot renders only once its file exists, so the
- * page is complete with or without them.
- */
-const landingAsset = (file: string): string | null =>
-  existsSync(join(process.cwd(), 'public', 'landing', file)) ? `/landing/${file}` : null;
-
-const HERO_ART = landingAsset('hero-objects.png');
-const TRUST_ART = landingAsset('trust.png');
-const CLOSING_ART = landingAsset('closing.png');
+/** Mascot artwork, built from design/brand/ by build-art.cjs. */
+const ART = {
+  waving: '/brand/mascot/waving.webp',
+  megaphone: '/brand/mascot/megaphone.webp',
+  trophy: '/brand/mascot/trophy.webp',
+  shield: '/brand/mascot/shield.webp',
+  logo: '/brand/logo-3d.png',
+};
 
 /**
  * The public front door, for operators evaluating Howdi chat.
@@ -158,11 +172,11 @@ export default async function LandingPage() {
         <section className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 pt-14 pb-20 sm:px-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,7fr)] lg:gap-14 lg:px-8 lg:pt-20 lg:pb-28">
           <div className="max-w-xl">
             <h1 className="text-[2.25rem] leading-[1.04] font-extrabold tracking-[-0.02em] text-balance [font-stretch:112%] sm:text-5xl sm:[font-stretch:125%] xl:text-[3.4rem]">
-              Run every player, store and reward from one system.
+              Say howdy to every player.
             </h1>
             <p className="text-lp-dim mt-6 max-w-md text-lg leading-relaxed">
-              Record play, track VIP tiers, run rewards and referrals, and message players. Each
-              store sees only its own.
+              Live chat, player records, VIP tiers and rewards for gaming operators. Every store
+              sees only its own players.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               {contactEmail ? (
@@ -189,19 +203,42 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          <div className={`relative ${HERO_ART ? 'lg:pt-20 lg:pr-16' : ''}`}>
-            {HERO_ART && (
-              <Image
-                src={HERO_ART}
-                alt=""
-                width={1200}
-                height={1200}
-                priority
-                className="pointer-events-none absolute -top-4 -right-6 hidden w-[18rem] select-none lg:block"
+          <div className="relative mx-auto w-full max-w-lg lg:pt-10">
+            <Image
+              src={ART.waving}
+              alt=""
+              width={480}
+              height={480}
+              priority
+              className="pointer-events-none absolute -top-16 -right-4 z-10 w-32 select-none sm:-right-10 sm:w-40 lg:-top-6 lg:-right-20 lg:w-48"
+            />
+            <ChatDemo />
+          </div>
+        </section>
+
+        {/* Chat */}
+        <section id="chat" className="border-lp-line scroll-mt-16 border-t">
+          <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16 lg:px-8 lg:py-28">
+            <Image
+              src={ART.megaphone}
+              alt=""
+              width={480}
+              height={480}
+              className="mx-auto w-56 select-none sm:w-72 lg:w-full lg:max-w-sm"
+            />
+            <div>
+              <SectionHeading
+                title="Conversations, not tickets"
+                body="Players message the team that looks after them, and get an answer while they are still there."
               />
-            )}
-            <div className="relative">
-              <HeroRecord />
+              <dl className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
+                {CHAT_POINTS.map((item) => (
+                  <div key={item.title} className="border-lp-line-strong border-t pt-5">
+                    <dt className="font-semibold">{item.title}</dt>
+                    <dd className="text-lp-dim mt-2 text-sm leading-relaxed">{item.body}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           </div>
         </section>
@@ -258,8 +295,8 @@ export default async function LandingPage() {
           <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-28">
             <div>
               <SectionHeading
-                title="Players get a view of their own"
-                body="A separate sign-in where players check their standing and talk to their store."
+                title="Something to come back for"
+                body="Players get a portal of their own: their standing, their progress and a direct line to their store."
               />
               <dl className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
                 {PORTAL_POINTS.map((item) => (
@@ -270,7 +307,16 @@ export default async function LandingPage() {
                 ))}
               </dl>
             </div>
-            <PortalView />
+            <div className="relative">
+              <Image
+                src={ART.trophy}
+                alt=""
+                width={480}
+                height={480}
+                className="pointer-events-none absolute -top-10 -left-6 z-10 hidden w-36 select-none sm:block lg:-left-16 lg:w-44"
+              />
+              <PlayerProgressView />
+            </div>
           </div>
         </section>
 
@@ -303,25 +349,21 @@ export default async function LandingPage() {
         {/* Trust */}
         <section className="border-lp-line border-t">
           <div
-            className={`mx-auto grid w-full max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:px-8 lg:py-28 ${TRUST_ART ? 'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center' : ''}`}
+            className={`mx-auto grid w-full max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:px-8 lg:py-28 ${'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center'}`}
           >
-            {TRUST_ART && (
-              <Image
-                src={TRUST_ART}
-                alt=""
-                width={1200}
-                height={1200}
-                className="mx-auto w-full max-w-sm select-none lg:max-w-none"
-              />
-            )}
+            <Image
+              src={ART.shield}
+              alt=""
+              width={480}
+              height={480}
+              className="mx-auto w-56 select-none sm:w-72 lg:w-full lg:max-w-sm"
+            />
             <div>
               <SectionHeading
                 title="Built to be trusted with money"
                 body="The rules that matter are enforced by the system, not left to habit."
               />
-              <dl
-                className={`mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 ${TRUST_ART ? '' : 'lg:grid-cols-4'}`}
-              >
+              <dl className={`mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 `}>
                 {TRUST.map((item) => (
                   <div key={item.title} className="border-lp-line-strong border-t pt-5">
                     <dt className="font-semibold">{item.title}</dt>
@@ -405,15 +447,13 @@ export default async function LandingPage() {
                 </Link>
               </div>
             </div>
-            {CLOSING_ART && (
-              <Image
-                src={CLOSING_ART}
-                alt=""
-                width={1000}
-                height={1000}
-                className="mx-auto w-64 select-none sm:w-72 lg:w-96"
-              />
-            )}
+            <Image
+              src={ART.logo}
+              alt=""
+              width={720}
+              height={763}
+              className="mx-auto w-56 select-none sm:w-64 lg:w-80"
+            />
           </div>
         </section>
       </main>
@@ -423,12 +463,13 @@ export default async function LandingPage() {
           <div className="max-w-xs">
             <Logo tone="site" />
             <p className="text-lp-dim mt-3 leading-relaxed">
-              Player data and messaging for gaming operators, scoped to every store.
+              Live chat and player records for gaming operators, scoped to every store.
             </p>
           </div>
           <nav aria-label="Product" className="flex flex-col gap-2.5">
             <p className="font-semibold">Product</p>
             {[
+              ['#chat', 'Chat'],
               ['#platform', 'Platform'],
               ['#dashboard', 'Dashboard'],
               ['#players', 'Player portal'],

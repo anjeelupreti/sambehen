@@ -26,7 +26,15 @@ export function Frame({
           action
         )}
       </div>
-      <div className="overflow-x-auto">{children}</div>
+      {/* Focusable so keyboard users can scroll a table wider than a phone. */}
+      <div
+        className="focus-visible:outline-lp-primary overflow-x-auto focus-visible:outline-2 focus-visible:-outline-offset-2"
+        tabIndex={0}
+        role="region"
+        aria-label={title}
+      >
+        {children}
+      </div>
     </div>
   );
 }
