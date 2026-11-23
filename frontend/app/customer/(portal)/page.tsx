@@ -54,9 +54,9 @@ export default async function CustomerOverviewPage() {
   ]);
 
   const firstName = actor?.fullName?.trim().split(/\s+/)[0];
-  const waving = publicAsset('brand/mascot/waving.png');
+  const waving = publicAsset('brand/mascot/waving.webp');
   const badgeArt = Object.fromEntries(
-    BADGE_KEYS.map((key) => [key, publicAsset(`brand/badges/${key}.png`)]),
+    BADGE_KEYS.map((key) => [key, publicAsset(`brand/badges/${key}.webp`)]),
   );
 
   return (
@@ -80,7 +80,7 @@ export default async function CustomerOverviewPage() {
           // The API documents criteria as a bare object array; this is its
           // real shape (VipStatusDto in the backend).
           criteria={(vip?.criteria ?? []) as unknown as VipCriterion[]}
-          trophyArt={publicAsset('brand/mascot/trophy.png')}
+          trophyArt={publicAsset('brand/mascot/trophy.webp')}
         />
         <LatestMessage message={thread?.data?.[0] ?? null} unread={dashboard.unreadMessages} />
       </div>
@@ -92,7 +92,7 @@ export default async function CustomerOverviewPage() {
       <ActivityList
         items={activity}
         total={dashboard.transactionCount}
-        emptyArt={publicAsset('brand/mascot/resting.png')}
+        emptyArt={publicAsset('brand/mascot/resting.webp')}
       />
     </div>
   );

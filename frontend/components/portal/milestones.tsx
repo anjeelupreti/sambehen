@@ -92,7 +92,7 @@ export function Milestones({
                 )}
               >
                 {image ? (
-                  <img src={image} alt="" className="size-14" />
+                  <img src={image} alt="" className="size-16 max-w-none" />
                 ) : (
                   <Icon className="size-6" strokeWidth={done ? 2.25 : 1.75} aria-hidden />
                 )}
