@@ -13,7 +13,7 @@ export function BalanceCard({
   moneyOut: string;
 }) {
   return (
-    <section aria-labelledby="balance-title" className="bg-card rounded-xl border p-6">
+    <section aria-labelledby="balance-title" className="bg-card rounded-2xl border p-6">
       <h2 id="balance-title" className="text-muted-foreground text-sm font-normal">
         Balance
       </h2>

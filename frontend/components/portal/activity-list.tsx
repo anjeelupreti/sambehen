@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- small static artwork */
 import { formatCount, formatDate, formatMoney } from '@/lib/money';
 
 export interface MyTransaction {
@@ -15,9 +16,17 @@ const KIND = {
 } as const;
 
 /** The player's latest entries, newest first, as a list that reads on a phone. */
-export function ActivityList({ items, total }: { items: MyTransaction[]; total: number }) {
+export function ActivityList({
+  items,
+  total,
+  emptyArt,
+}: {
+  items: MyTransaction[];
+  total: number;
+  emptyArt?: string | null;
+}) {
   return (
-    <section aria-labelledby="activity-title" className="bg-card rounded-xl border">
+    <section aria-labelledby="activity-title" className="bg-card rounded-2xl border">
       <div className="flex items-baseline justify-between gap-3 px-5 pt-5">
         <h2 id="activity-title" className="text-base font-semibold">
           Recent activity
@@ -30,7 +39,10 @@ export function ActivityList({ items, total }: { items: MyTransaction[]; total: 
       </div>
 
       {items.length === 0 ? (
-        <p className="text-muted-foreground px-5 py-6 text-sm">Nothing recorded yet.</p>
+        <div className="flex flex-col items-center px-5 py-8 text-center">
+          {emptyArt && <img src={emptyArt} alt="" className="mb-3 size-24" />}
+          <p className="text-muted-foreground text-sm">Nothing recorded yet.</p>
+        </div>
       ) : (
         <ul className="mt-3 divide-y">
           {items.map((item) => (

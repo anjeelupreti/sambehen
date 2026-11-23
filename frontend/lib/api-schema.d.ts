@@ -644,6 +644,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/me/milestones': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The signed-in customer's milestones
+     * @description Earned and upcoming milestones: joining, first message, referrals, reaching VIP and time with the store. None are based on amounts deposited.
+     */
+    get: operations['PortalController_milestones'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/me/transactions': {
     parameters: {
       query?: never;
@@ -2274,6 +2294,24 @@ export interface components {
        * @description New owning manager or store
        */
       ownerStaffId: string;
+    };
+    MilestoneDto: {
+      /** @enum {string} */
+      key:
+        | 'joined'
+        | 'first_message'
+        | 'first_referral'
+        | 'five_referrals'
+        | 'vip'
+        | 'three_months'
+        | 'six_months'
+        | 'one_year';
+      /** Format: date-time */
+      achievedAt: string | null;
+      /** @description Progress so far, for milestones that count something. */
+      current: number;
+      /** @description What completes the milestone. */
+      target: number;
     };
     MyTransactionDto: {
       /** Format: uuid */
@@ -5789,6 +5827,50 @@ export interface operations {
       };
       /** @description Validation failed, or a business rule rejected semantically valid input */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  PortalController_milestones: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Milestones retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['MilestoneDto'][];
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid customer access token
+       */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
         headers: {
           [name: string]: unknown;
         };

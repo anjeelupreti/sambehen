@@ -9,7 +9,7 @@ export function LatestMessage({ message, unread }: { message: Message | null; un
   return (
     <section
       aria-labelledby="messages-title"
-      className="bg-card flex flex-col rounded-xl border p-5"
+      className="bg-card flex flex-col rounded-2xl border p-5"
     >
       <div className="flex items-center justify-between gap-3">
         <h2 id="messages-title" className="text-base font-semibold">

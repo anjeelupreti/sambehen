@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CustomersController } from './customers.controller';
+import { MilestonesService } from './milestones.service';
 import { PortalController } from './portal.controller';
 import { CustomersService } from './customers.service';
 import { CustomerImportService } from './customer-import.service';
@@ -14,7 +15,7 @@ import { TransactionRepository } from '@database/repositories/transaction.reposi
 @Module({
   imports: [StaffModule, ReferralsModule],
   controllers: [CustomersController, PortalController],
-  providers: [CustomersService, CustomerImportService, TransactionRepository],
+  providers: [CustomersService, CustomerImportService, TransactionRepository, MilestonesService],
   exports: [CustomersService],
 })
 export class CustomersModule {}

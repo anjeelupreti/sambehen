@@ -21,6 +21,7 @@ import { TransactionType } from '@common/constants/app.constants';
 import { ErrorCode } from '@common/constants/error-codes';
 import { ResourceNotFoundException } from '@common/exceptions/business.exception';
 import { CustomerProfileDto } from '@modules/auth/dto/auth.dto';
+import { MilestoneDto, MilestonesService } from './milestones.service';
 
 /**
  * Customer-facing portal.
@@ -72,7 +73,31 @@ export class PortalController {
   constructor(
     private readonly customerRepository: CustomerRepository,
     private readonly transactionRepository: TransactionRepository,
+    private readonly milestonesService: MilestonesService,
   ) {}
+
+  @Get('milestones')
+  @CustomerAuth()
+  @ResponseMessage('Milestones retrieved successfully')
+  @ApiOperation({
+    summary: "The signed-in customer's milestones",
+    description:
+      'Earned and upcoming milestones: joining, first message, referrals, reaching VIP and time with the store. None are based on amounts deposited.',
+  })
+  @ApiExtraModels(ApiResponseDto, MilestoneDto)
+  @ApiOkResponse({
+    description: 'Milestones retrieved successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseDto) },
+        { properties: { data: { type: 'array', items: { $ref: getSchemaPath(MilestoneDto) } } } },
+      ],
+    },
+  })
+  @ApiErrors(401, 404)
+  milestones(@CurrentCustomer() actor: ICurrentCustomer): Promise<MilestoneDto[]> {
+    return this.milestonesService.forCustomer(actor.id);
+  }
 
   @Get('transactions')
   @CustomerAuth()
