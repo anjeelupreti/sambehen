@@ -58,8 +58,12 @@ export function SiteHeader() {
             : 'border-white/80 bg-white/85 shadow-[0_8px_24px_-20px_rgb(18_26_43/0.4)] backdrop-blur-lg',
         )}
       >
-        <div className="flex h-14 items-center gap-6 pr-2 pl-4">
-          <Link href="/" className={cn('rounded-md', focusRing)} aria-label="Howdi chat home">
+        <div className="flex h-14 items-center gap-3 pr-2 pl-3 sm:gap-6 sm:pl-4">
+          <Link
+            href="/"
+            className={cn('shrink-0 rounded-md', focusRing)}
+            aria-label="Howdi chat home"
+          >
             <Logo tone="site" />
           </Link>
 
@@ -95,7 +99,7 @@ export function SiteHeader() {
             <Link
               href="/contact"
               className={cn(
-                'bg-lp-primary hover:bg-lp-primary-hover inline-flex h-10 items-center rounded-xl px-4 text-[15px] font-semibold text-white transition-colors',
+                'bg-lp-primary hover:bg-lp-primary-hover hidden h-9 shrink-0 min-[350px]:inline-flex items-center rounded-xl px-3 text-sm font-semibold whitespace-nowrap text-white transition-colors sm:h-10 sm:px-4 sm:text-[15px]',
                 focusRing,
               )}
             >
@@ -141,6 +145,12 @@ export function SiteHeader() {
               className="hover:bg-lp-sunk rounded-lg px-3 py-3 text-base font-medium"
             >
               Sign in
+            </Link>
+            <Link
+              href="/contact"
+              className="bg-lp-primary rounded-lg px-3 py-3 text-base font-semibold text-white min-[350px]:hidden"
+            >
+              Book a demo
             </Link>
             <Link
               href="/register"
