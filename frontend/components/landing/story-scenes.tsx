@@ -22,56 +22,6 @@ const card =
 const at = (progress: number, from: number) => progress >= from;
 const ease = 'transition-all duration-500 ease-out';
 
-/* 1. A new face walks in ----------------------------------------------- */
-
-export function SignupScene({ progress }: SceneProps) {
-  const assigned = at(progress, 0.5);
-  return (
-    <div className={cn(card, 'w-full max-w-sm p-6')}>
-      <div className="flex items-center gap-3">
-        <span className="bg-lp-chip/40 grid size-12 place-items-center rounded-full font-bold">
-          SP
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold">Savannah Pruitt</p>
-          <p className="text-lp-dim truncate text-sm">savannah.p@example.com</p>
-        </div>
-        <span
-          className={cn(
-            'rounded-full px-2.5 py-0.5 text-xs font-bold',
-            ease,
-            assigned ? 'bg-lp-ok/12 text-lp-ok' : 'bg-lp-chip/40 text-lp-chip-text',
-          )}
-        >
-          {assigned ? 'Active' : 'Pending'}
-        </span>
-      </div>
-      <dl className="border-lp-line mt-5 grid grid-cols-2 gap-4 border-t pt-5 text-sm">
-        <div>
-          <dt className="text-lp-dim text-xs">Joined</dt>
-          <dd className="mt-1 font-medium">Today, 5:48 PM</dd>
-        </div>
-        <div>
-          <dt className="text-lp-dim text-xs">Store</dt>
-          <dd className="mt-1 font-medium">
-            <span
-              className={cn(
-                'inline-block',
-                ease,
-                assigned ? 'scale-100 opacity-100' : 'scale-150 -rotate-6 opacity-0',
-              )}
-            >
-              <span className="border-lp-primary text-lp-primary rounded-md border-2 px-2 py-0.5 text-xs font-extrabold tracking-wide uppercase">
-                Store 11
-              </span>
-            </span>
-          </dd>
-        </div>
-      </dl>
-    </div>
-  );
-}
-
 /* 2. Howdy, Savannah --------------------------------------------------- */
 
 const CHAT = [
@@ -103,7 +53,7 @@ export function ChatScene({ progress }: SceneProps) {
           <p className="text-lp-ok text-xs">{typingFrom === 'player' ? 'typing…' : 'Online'}</p>
         </div>
       </div>
-      <div className="bg-lp-sunk flex h-[19rem] flex-col justify-end gap-2 p-4">
+      <div className="bg-lp-sunk flex h-[19rem] flex-col justify-end gap-2 overflow-hidden p-4">
         {CHAT.slice(0, shown).map((line, index) => {
           const mine = line.from === 'staff';
           // The player reads each reply once they answer it, or at the end.
@@ -345,77 +295,5 @@ export function FriendsScene({ progress }: SceneProps) {
         ))}
       </ul>
     </div>
-  );
-}
-
-/* 6. Behind the counter ------------------------------------------------ */
-
-const CHAIN = [
-  { name: 'Manager 1', stores: ['Store 11', 'Store 12'] },
-  { name: 'Manager 2', stores: ['Store 21'] },
-];
-
-export function AccessScene({ progress }: SceneProps) {
-  // The view narrows from the master's whole chain down to one store.
-  const focus = at(progress, 0.66) ? 'store' : at(progress, 0.33) ? 'manager' : 'master';
-  const lit = (name: string) =>
-    focus === 'master' ||
-    (focus === 'manager' && ['Manager 1', 'Store 11', 'Store 12'].includes(name)) ||
-    (focus === 'store' && name === 'Store 11');
-
-  const node = (name: string) => (
-    <span
-      className={cn(
-        'rounded-lg border px-3 py-2 text-center text-sm font-semibold',
-        ease,
-        lit(name)
-          ? 'border-lp-primary bg-lp-primary/8 text-lp-text'
-          : 'border-lp-line bg-lp-sunk text-lp-dim',
-      )}
-    >
-      {name}
-    </span>
-  );
-
-  return (
-    <div className={cn(card, 'w-full max-w-md p-6')}>
-      <div className="flex justify-center">{node('Master')}</div>
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        {CHAIN.map((manager) => (
-          <div key={manager.name} className="flex flex-col items-center gap-3">
-            {node(manager.name)}
-            <div className="flex flex-wrap justify-center gap-2">
-              {manager.stores.map((store) => (
-                <span key={store}>{node(store)}</span>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <p className="bg-lp-sunk mt-6 rounded-xl p-3 text-center text-sm">
-        Signed in as{' '}
-        <span className="font-semibold">
-          {focus === 'master' ? 'the master' : focus === 'manager' ? 'Manager 1' : 'Store 11'}
-        </span>
-        :{' '}
-        <span className="font-semibold tabular-nums">
-          {focus === 'master' ? '36' : focus === 'manager' ? '17' : '9'}
-        </span>{' '}
-        players
-      </p>
-    </div>
-  );
-}
-
-/* The mascot in the corner of each scene. */
-export function SceneArt({ src, className }: { src: string; className?: string }) {
-  return (
-    <Image
-      src={src}
-      alt=""
-      width={480}
-      height={480}
-      className={cn('pointer-events-none w-full select-none', className)}
-    />
   );
 }

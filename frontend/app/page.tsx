@@ -10,16 +10,27 @@ import {
   secondaryButton,
   SiteShell,
 } from '@/components/landing/site-shell';
-import { Story, type ChapterKey } from '@/components/landing/story';
+import { Bento } from '@/components/landing/bento';
+import { ProductTour } from '@/components/landing/product-tour';
+import { Roles } from '@/components/landing/roles';
 import { getCustomerAccessToken } from '@/lib/customer-session';
-import { publicAsset } from '@/lib/public-asset';
 import { getAccessToken } from '@/lib/session';
 
 export const metadata: Metadata = {
   title: 'Howdi chat',
   description:
-    'Live chat and player records for gaming operators. Follow one player from sign-up to friends, store by store.',
+    'Live chat and player records for gaming operators: messaging, visits, VIP tiers, milestones and referrals, store by store.',
 };
+
+const SECURITY = [
+  [
+    'Each store sees only its own',
+    'Access is checked on every request, including exports and live chat.',
+  ],
+  ['Separate sign-ins', 'Staff and players use different keys and can never act as each other.'],
+  ['Every change on record', 'The audit trail keeps who changed what, and what it was before.'],
+  ['Money is exact', 'Amounts are stored to the cent and never rounded.'],
+] as const;
 
 const QUESTIONS = [
   {
@@ -48,10 +59,6 @@ const QUESTIONS = [
   },
 ];
 
-/** A mascot pose, or a stand-in until the pose has been added. */
-const pose = (name: string, fallback: string) =>
-  publicAsset(`brand/mascot/${name}.webp`) ?? `/brand/mascot/${fallback}.webp`;
-
 /**
  * The public front door: one player's first months with a store, told in
  * chapters, each showing the part of the product that made it happen.
@@ -65,15 +72,6 @@ export default async function LandingPage() {
 
   if (staffToken) redirect('/dashboard');
   if (customerToken) redirect('/customer');
-
-  const art: Record<ChapterKey, string> = {
-    arrives: pose('door', 'waving'),
-    chat: pose('megaphone', 'waving'),
-    record: pose('clipboard', 'shield'),
-    progress: pose('trophy', 'waving'),
-    friends: pose('friends', 'trophy'),
-    operators: pose('shield', 'waving'),
-  };
 
   const cta = (light = false) => (
     <div className="flex flex-wrap justify-center gap-3">
@@ -155,26 +153,76 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <div id="story" className="border-lp-line scroll-mt-16 border-t">
-        <Story art={art} />
-      </div>
+      {/* Product tour */}
+      <section id="product" className="scroll-mt-24">
+        <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+          <SectionHeading
+            title="The whole operation, in one place"
+            body="Real screens from Howdi chat, with demo data."
+          />
+          <div className="mt-12">
+            <ProductTour />
+          </div>
+        </div>
+      </section>
 
-      {/* Closing */}
-      <section className="border-lp-line bg-lp-sunk border-t">
-        <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-24 text-center sm:px-6 lg:py-32">
-          <Parallax distance={40} tilt={5} className="w-36 sm:w-44">
+      {/* What it does */}
+      <section className="border-lp-line bg-lp-sunk/60 border-t">
+        <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+          <SectionHeading
+            title="Built around the player"
+            body="Conversations, visits and progress, kept together so every store knows its players."
+          />
+          <div className="mt-12">
+            <Bento />
+          </div>
+        </div>
+      </section>
+
+      {/* Roles */}
+      <section className="border-lp-line border-t">
+        <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+          <SectionHeading
+            title="Built for every role"
+            body="Everyone sees exactly their share of the chain. Pick a role to see its reach."
+          />
+          <div className="mt-12">
+            <Roles />
+          </div>
+        </div>
+      </section>
+
+      {/* Security */}
+      <section className="bg-lp-text text-white">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16 lg:px-8 lg:py-24">
+          <Parallax distance={40} tilt={4} className="mx-auto w-48 sm:w-60 lg:w-full lg:max-w-xs">
             <Image
-              src="/brand/mascot/resting.webp"
+              src="/brand/mascot/shield.webp"
               alt=""
               width={480}
               height={480}
               className="w-full select-none"
             />
           </Parallax>
-          <h2 className="mt-6 text-4xl leading-[1.04] font-extrabold tracking-[-0.02em] text-balance [font-stretch:125%] sm:text-6xl">
-            Say howdy to your players.
-          </h2>
-          <div className="mt-9">{cta()}</div>
+          <div>
+            <h2 className="text-3xl leading-[1.08] font-extrabold tracking-[-0.015em] text-balance [font-stretch:118%] sm:text-4xl">
+              Built to be trusted with money
+            </h2>
+            <dl className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
+              {SECURITY.map(([title, body]) => (
+                <div key={title} className="border-t border-white/20 pt-5">
+                  <dt className="font-semibold">{title}</dt>
+                  <dd className="mt-2 leading-relaxed text-white/75">{body}</dd>
+                </div>
+              ))}
+            </dl>
+            <Link
+              href="/security"
+              className="mt-10 inline-flex h-11 items-center rounded-lg border border-white/40 px-5 font-semibold transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              How we protect data
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -202,6 +250,43 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+      {/* Closing, back under the sky */}
+      <section className="lp-grain relative overflow-hidden">
+        <Image
+          src="/brand/sky.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          unoptimized
+          className="-z-10 object-cover object-top"
+        />
+        <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-24 text-center sm:px-6 lg:py-32">
+          <Parallax distance={40} tilt={5} className="w-36 sm:w-44">
+            <Image
+              src="/brand/mascot/waving.webp"
+              alt=""
+              width={480}
+              height={480}
+              className="w-full select-none"
+            />
+          </Parallax>
+          <h2 className="mt-6 text-4xl leading-[1.04] font-extrabold tracking-[-0.02em] text-balance text-white [font-stretch:125%] sm:text-6xl">
+            Say howdy to your players.
+          </h2>
+          <div className="mt-9">{cta(true)}</div>
+        </div>
+      </section>
     </SiteShell>
+  );
+}
+
+function SectionHeading({ title, body }: { title: string; body?: string }) {
+  return (
+    <div className="max-w-2xl">
+      <h2 className="text-3xl leading-[1.08] font-extrabold tracking-[-0.015em] text-balance [font-stretch:118%] sm:text-5xl">
+        {title}
+      </h2>
+      {body && <p className="text-lp-dim mt-4 text-lg leading-relaxed">{body}</p>}
+    </div>
   );
 }
