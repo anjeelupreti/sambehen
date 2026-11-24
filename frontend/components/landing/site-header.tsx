@@ -73,7 +73,7 @@ export function SiteHeader() {
                   'rounded-lg px-3.5 py-2 text-[15px] font-medium transition-colors',
                   focusRing,
                   active(item.href)
-                    ? 'bg-lp-primary/10 text-lp-primary'
+                    ? 'bg-lp-primary/10 text-lp-primary-hover'
                     : 'text-lp-text/80 hover:bg-lp-sunk hover:text-lp-text',
                 )}
               >
@@ -130,7 +130,7 @@ export function SiteHeader() {
                 aria-current={active(item.href) ? 'page' : undefined}
                 className={cn(
                   'rounded-lg px-3 py-3 text-base font-medium',
-                  active(item.href) ? 'bg-lp-primary/10 text-lp-primary' : 'hover:bg-lp-sunk',
+                  active(item.href) ? 'bg-lp-primary/10 text-lp-primary-hover' : 'hover:bg-lp-sunk',
                 )}
               >
                 {item.label}
