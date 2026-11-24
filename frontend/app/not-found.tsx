@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
 
-import { NotFoundCard } from '@/components/not-found-card';
+import { primaryButton, secondaryButton, SiteShell } from '@/components/landing/site-shell';
 
 export const metadata: Metadata = { title: 'Not found' };
 
@@ -14,13 +16,38 @@ export const metadata: Metadata = { title: 'Not found' };
  *    every page there in Suspense, so a `notFound()` thrown from *inside*
  *    that tree ships the loading shell — status 200 — before the check
  *    even runs; the real status can't change after that. Landing here
- *    instead skips `(app)`'s tree entirely, so this renders as the very
- *    first thing Next does for the request and the 404 status is real.
+ *    instead skips `(app)`'s tree entirely, so the 404 status is real.
  *
- * No sidebar, since a role-forbidden request never reaches the layout that
- * would render one — showing it here would be reaching into a tree this
- * response deliberately never entered.
+ * The wording must not become "you do not have access": telling a missing
+ * page from a forbidden one would confirm the page exists. "Home" works
+ * for everyone, since the home page sends signed-in people to their app.
  */
 export default function RootNotFound() {
-  return <NotFoundCard backHref="/dashboard" />;
+  return (
+    <SiteShell>
+      <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-24 text-center sm:py-32">
+        <Image
+          src="/brand/mascot/resting.webp"
+          alt=""
+          width={480}
+          height={480}
+          className="w-40 select-none"
+        />
+        <h1 className="mt-6 text-4xl font-extrabold [font-stretch:118%] sm:text-5xl">
+          Page not found
+        </h1>
+        <p className="text-lp-dim mt-4 text-lg">
+          This page does not exist, or it is not one of yours.
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Link href="/" className={primaryButton}>
+            Go home
+          </Link>
+          <Link href="/contact" className={secondaryButton}>
+            Contact us
+          </Link>
+        </div>
+      </div>
+    </SiteShell>
+  );
 }

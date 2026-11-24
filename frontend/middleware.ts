@@ -64,6 +64,15 @@ const PUBLIC_PATHS = [
   '/customer/logout',
   '/unsubscribe',
   '/r',
+  // The public website.
+  '/product',
+  '/security',
+  '/pricing',
+  '/about',
+  '/contact',
+  '/legal',
+  '/sitemap.xml',
+  '/robots.txt',
 ];
 
 function isPublic(pathname: string): boolean {

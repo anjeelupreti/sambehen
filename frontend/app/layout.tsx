@@ -4,14 +4,18 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { archivo } from '@/lib/fonts';
+import { SITE_URL } from '@/lib/site';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'Howdi chat',
     template: '%s · Howdi chat',
   },
-  description: 'Player data and messaging for gaming operators.',
+  description: 'Live chat and player records for gaming operators, store by store.',
+  openGraph: { siteName: 'Howdi chat', type: 'website' },
+  twitter: { card: 'summary_large_image' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1752,6 +1752,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/contact': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Request a demo */
+    post: operations['ContactController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3627,6 +3644,19 @@ export interface components {
        * @example 4
        */
       failedRequests: number;
+    };
+    ContactRequestDto: {
+      /** @example Cody Wallace */
+      name: string;
+      /** @example cody@example.com */
+      email: string;
+      /** @example Lone Oak Gaming */
+      company: string;
+      /** @description How many stores the operator runs. */
+      stores?: number;
+      message?: string;
+      /** @description Leave empty. */
+      website?: string;
     };
   };
   responses: never;
@@ -9885,6 +9915,51 @@ export interface operations {
       };
       /** @description Validation failed, or a business rule rejected semantically valid input */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  ContactController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ContactRequestDto'];
+      };
+    };
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            /** @example null */
+            data?: Record<string, never> | null;
+          };
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
         headers: {
           [name: string]: unknown;
         };
