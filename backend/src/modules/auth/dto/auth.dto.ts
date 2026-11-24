@@ -105,6 +105,9 @@ export class CustomerProfileDto {
   @ApiProperty({ type: String, nullable: true })
   fullName!: string | null;
 
+  @ApiProperty({ type: String, nullable: true })
+  avatarUrl!: string | null;
+
   @ApiProperty({ description: 'Account status' })
   status!: string;
 

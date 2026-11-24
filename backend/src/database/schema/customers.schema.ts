@@ -50,6 +50,8 @@ export const customers = pgTable(
     passwordHash: text('password_hash').notNull(),
 
     fullName: varchar('full_name', { length: 200 }),
+    /** Profile photo, as a URL or a path on the web app. */
+    avatarUrl: varchar('avatar_url', { length: 500 }),
     phone: varchar('phone', { length: 32 }),
     city: varchar('city', { length: 120 }),
     state: varchar('state', { length: 120 }),

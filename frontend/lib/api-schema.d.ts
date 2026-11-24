@@ -1800,6 +1800,7 @@ export interface components {
       email: string;
       username: string;
       fullName: string | null;
+      avatarUrl: string | null;
       /** @description Account status */
       status: string;
       /** @description Decimal serialised as a string */
@@ -2092,6 +2093,8 @@ export interface components {
       email: string;
       username: string;
       fullName: string | null;
+      /** @description Profile photo URL. */
+      avatarUrl: string | null;
       phone: string | null;
       city: string | null;
       state: string | null;
@@ -3002,6 +3005,7 @@ export interface components {
       customerId: string;
       customerUsername: string | null;
       customerFullName: string | null;
+      customerAvatarUrl: string | null;
       status: components['schemas']['ConversationStatus'];
       /** Format: uuid */
       assignedStaffId: string | null;

@@ -708,6 +708,7 @@ export class CustomersService {
       email: customer.email,
       username: customer.username,
       fullName: customer.fullName,
+      avatarUrl: customer.avatarUrl,
       phone: customer.phone,
       city: customer.city,
       state: customer.state,

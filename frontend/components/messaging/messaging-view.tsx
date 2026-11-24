@@ -124,6 +124,7 @@ export function MessagingView({
       .map((c) => ({
         id: c.id,
         name: c.customerFullName || c.customerUsername || 'Customer',
+        avatarUrl: c.customerAvatarUrl,
         preview: c.lastMessagePreview,
         time: c.lastMessageAt,
         unread: c.unreadCount,
@@ -136,6 +137,7 @@ export function MessagingView({
   const pane = selected ? (
     <ChatPane
       title={selected.customerFullName || selected.customerUsername || 'Customer'}
+      avatarUrl={selected.customerAvatarUrl}
       presence={presence[`customer:${selected.customerId}`]}
       typing={typing.isTyping(selected.customerId)}
       thread={thread}

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ChatAvatar } from '@/components/chat/avatar';
 import Link from 'next/link';
 import { BuildingIcon, DownloadIcon, GlobeIcon } from 'lucide-react';
 
@@ -191,21 +192,31 @@ export default async function CustomersPage({
                 data.map((customer) => (
                   <ClickableRow key={customer.id} href={`/customers/${customer.id}`}>
                     <TableCell>
-                      <CustomerHoverCard
-                        customerId={customer.id}
-                        username={customer.username}
-                        fullName={customer.fullName}
-                      >
-                        <Link
-                          href={`/customers/${customer.id}`}
-                          className="font-medium hover:underline"
-                        >
-                          {customer.fullName || customer.username}
-                        </Link>
-                      </CustomerHoverCard>
-                      {customer.fullName ? (
-                        <p className="text-muted-foreground text-xs">{customer.username}</p>
-                      ) : null}
+                      <div className="flex items-center gap-3">
+                        <ChatAvatar
+                          name={customer.fullName || customer.username}
+                          src={customer.avatarUrl}
+                          size="sm"
+                        />
+                        <div className="min-w-0">
+                          <CustomerHoverCard
+                            customerId={customer.id}
+                            username={customer.username}
+                            fullName={customer.fullName}
+                            avatarUrl={customer.avatarUrl}
+                          >
+                            <Link
+                              href={`/customers/${customer.id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {customer.fullName || customer.username}
+                            </Link>
+                          </CustomerHoverCard>
+                          {customer.fullName ? (
+                            <p className="text-muted-foreground text-xs">{customer.username}</p>
+                          ) : null}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge

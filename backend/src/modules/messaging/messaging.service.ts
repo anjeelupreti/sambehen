@@ -184,6 +184,7 @@ export class MessagingService {
           customerId: conversations.customerId,
           customerUsername: customers.username,
           customerFullName: customers.fullName,
+          customerAvatarUrl: customers.avatarUrl,
           status: conversations.status,
           assignedStaffId: conversations.assignedStaffId,
           lastMessagePreview: conversations.lastMessagePreview,

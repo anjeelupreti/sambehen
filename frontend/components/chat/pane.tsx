@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
  */
 export function ChatPane({
   title,
+  avatarUrl,
   subtitle,
   presence,
   typing,
@@ -30,6 +31,7 @@ export function ChatPane({
   compact,
 }: {
   title: string;
+  avatarUrl?: string | null;
   /** Shown under the name when there is no presence to report. */
   subtitle?: string | null;
   presence?: Presence;
@@ -89,7 +91,12 @@ export function ChatPane({
             <ArrowLeftIcon className="size-5" />
           </button>
         )}
-        <ChatAvatar name={title} online={presence?.online} size={compact ? 'sm' : 'md'} />
+        <ChatAvatar
+          name={title}
+          src={avatarUrl}
+          online={presence?.online}
+          size={compact ? 'sm' : 'md'}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{title}</p>
           {status && (

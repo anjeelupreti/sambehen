@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 export interface ConversationRow {
   id: string;
   name: string;
+  avatarUrl?: string | null;
   preview: string | null;
   time: string | null;
   unread: number;
@@ -69,7 +70,7 @@ export function ConversationList({
                   row.id === selectedId && 'bg-accent',
                 )}
               >
-                <ChatAvatar name={row.name} online={row.online} />
+                <ChatAvatar name={row.name} src={row.avatarUrl} online={row.online} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline justify-between gap-2">
                     <span

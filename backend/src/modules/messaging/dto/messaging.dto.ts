@@ -219,6 +219,9 @@ export class ConversationResponseDto {
   @ApiProperty({ type: String, nullable: true })
   customerFullName!: string | null;
 
+  @ApiProperty({ type: String, nullable: true })
+  customerAvatarUrl!: string | null;
+
   @ApiProperty({ enum: ConversationStatus, enumName: 'ConversationStatus' })
   status!: ConversationStatus;
 

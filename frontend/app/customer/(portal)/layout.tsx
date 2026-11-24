@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { LayoutDashboardIcon, LogOutIcon, MessageSquareIcon, UserIcon } from 'lucide-react';
+import { LogOutIcon } from 'lucide-react';
 
+import { PortalBottomNav, PortalTopNav } from '@/components/customer/portal-nav';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { customerGet } from '@/lib/customer-api';
 import { Button } from '@/components/ui/button';
 import { getCustomerActor } from '@/lib/customer-session';
 import { SkipLink } from '@/components/skip-link';
@@ -25,6 +27,10 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   // here without an actor means the cookie is unreadable.
   if (!actor) redirect('/login');
 
+  const unread = await customerGet<{ unreadCount: number }>('/me/messages/unread-count')
+    .then((result) => result.unreadCount)
+    .catch(() => 0);
+
   return (
     <ChatSocketProvider realm="customer">
       <div className="flex min-h-svh flex-col">
@@ -35,28 +41,10 @@ export default async function CustomerLayout({ children }: { children: React.Rea
               <Logo />
             </Link>
 
-            <nav className="flex items-center gap-1" aria-label="Portal">
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/customer">
-                  <LayoutDashboardIcon className="size-4" />
-                  <span className="hidden sm:inline">Overview</span>
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/customer/messages">
-                  <MessageSquareIcon className="size-4" />
-                  <span className="hidden sm:inline">Messages</span>
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/customer/profile">
-                  <UserIcon className="size-4" />
-                  <span className="hidden sm:inline">Profile</span>
-                </Link>
-              </Button>
+            <PortalTopNav unread={unread} />
 
+            <div className="flex items-center gap-1">
               <ThemeToggle />
-
               {/* A plain <a>, not <Link>: production Next.js prefetches visible
                 links, and prefetching this route runs it, which clears the
                 session cookies the moment any portal page renders. */}
@@ -65,13 +53,19 @@ export default async function CustomerLayout({ children }: { children: React.Rea
                   <LogOutIcon className="size-4" />
                 </a>
               </Button>
-            </nav>
+            </div>
           </div>
         </header>
 
-        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-3xl flex-1 p-4 pb-10 sm:p-6">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-3xl flex-1 p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-10"
+        >
           {children}
         </main>
+
+        <PortalBottomNav unread={unread} />
       </div>
     </ChatSocketProvider>
   );

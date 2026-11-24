@@ -47,9 +47,17 @@ const NAMES = [
   'Annie Delgado',
 ];
 
+/**
+ * A stock portrait for each demo name, served by the web app from
+ * public/avatars/players/ and matched to the name's order in NAMES.
+ */
+const demoAvatar = (position: number) =>
+  `/avatars/players/${String((position % NAMES.length) + 1).padStart(2, '0')}.webp`;
+
 /** What a seeded customer looks like at a given seeding position. */
 const demoIdentity = (position: number) => ({
   fullName: NAMES[position % NAMES.length],
+  avatarUrl: demoAvatar(position),
   phone: `+1512555${String(1000 + position).slice(-4)}`,
   city: CITIES[position % CITIES.length],
   country: 'United States',
@@ -101,6 +109,16 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
           .where(eq(customers.id, existing[0].id))
           .returning();
         seeded.push(renamed);
+        return;
+      }
+      // Demo players seeded before photos existed get theirs.
+      if (!existing[0].avatarUrl) {
+        const [pictured] = await db
+          .update(customers)
+          .set({ avatarUrl: demoAvatar(index) })
+          .where(eq(customers.id, existing[0].id))
+          .returning();
+        seeded.push(pictured);
         return;
       }
       seeded.push(existing[0]);

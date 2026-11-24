@@ -351,6 +351,9 @@ export class CustomerResponseDto {
   @ApiProperty({ type: String, nullable: true })
   fullName!: string | null;
 
+  @ApiProperty({ type: String, nullable: true, description: 'Profile photo URL.' })
+  avatarUrl!: string | null;
+
   @ApiProperty({ type: String, nullable: true })
   phone!: string | null;
 

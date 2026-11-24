@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { CrownIcon } from 'lucide-react';
 
 import { getCustomerHoverProfile, type CustomerHoverProfile } from '@/app/(app)/customers/actions';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Money } from '@/components/money';
@@ -42,11 +42,13 @@ export function CustomerHoverCard({
   customerId,
   username,
   fullName,
+  avatarUrl,
   children,
 }: {
   customerId: string;
   username: string;
   fullName?: string | null;
+  avatarUrl?: string | null;
   children: React.ReactNode;
 }) {
   const [profile, setProfile] = useState<CustomerHoverProfile | null>(null);
@@ -71,6 +73,7 @@ export function CustomerHoverCard({
         <div className="flex items-start gap-3">
           <div className="relative shrink-0">
             <Avatar className="size-10">
+              {avatarUrl ? <AvatarImage src={avatarUrl} alt="" className="object-cover" /> : null}
               <AvatarFallback>{initials(fullName || username)}</AvatarFallback>
             </Avatar>
             {profile?.isVip ? (

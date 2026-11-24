@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { loadMyThread, markMyThreadRead, sendMine } from '@/app/customer/(portal)/messages/actions';
 import { fromCustomerThreadForCustomer } from '@/components/chat/mappers';
@@ -25,9 +26,11 @@ export function CustomerThread() {
     send: (body, attachments) => sendMine(body, attachments),
   });
 
+  const router = useRouter();
   useEffect(() => {
-    void markMyThreadRead();
-  }, []);
+    // Refresh once read, so the tab bar's unread badge clears.
+    void markMyThreadRead().then(() => router.refresh());
+  }, [router]);
 
   useEffect(() => {
     if (state === 'live') requestPresence({});

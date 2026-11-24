@@ -73,6 +73,10 @@ const PUBLIC_PATHS = [
   '/legal',
   '/sitemap.xml',
   '/robots.txt',
+  // Installable app.
+  '/manifest.webmanifest',
+  '/sw.js',
+  '/offline.html',
 ];
 
 function isPublic(pathname: string): boolean {

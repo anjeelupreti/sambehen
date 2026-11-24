@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ChatAvatar } from '@/components/chat/avatar';
 import { MailIcon, UserIcon } from 'lucide-react';
 
 import { Money } from '@/components/money';
@@ -24,8 +25,12 @@ export default async function CustomerProfilePage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Your profile</h1>
+      <header className="flex items-center gap-4">
+        <ChatAvatar name={profile.fullName || profile.username} src={profile.avatarUrl} size="xl" />
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-semibold">{profile.fullName || 'Your profile'}</h1>
+          <p className="text-muted-foreground text-sm">{profile.username}</p>
+        </div>
       </header>
 
       <Card>

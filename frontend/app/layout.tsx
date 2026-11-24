@@ -1,5 +1,6 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
+import { ServiceWorker } from '@/components/service-worker';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -15,7 +16,18 @@ export const metadata: Metadata = {
   },
   description: 'Live chat and player records for gaming operators, store by store.',
   openGraph: { siteName: 'Howdi chat', type: 'website' },
+  applicationName: 'Howdi chat',
+  appleWebApp: { capable: true, title: 'Howdi', statusBarStyle: 'default' },
   twitter: { card: 'summary_large_image' },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f6f7fb' },
+    { media: '(prefers-color-scheme: dark)', color: '#0d1322' },
+  ],
+  // Lets the portal's tab bar sit above the home indicator on phones.
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <TooltipProvider delayDuration={300}>{children}</TooltipProvider>
           <Toaster richColors closeButton position="top-right" />
+          <ServiceWorker />
         </ThemeProvider>
       </body>
     </html>

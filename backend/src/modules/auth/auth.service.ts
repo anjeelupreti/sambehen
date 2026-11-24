@@ -501,6 +501,7 @@ export class AuthService {
       email: customer.email,
       username: customer.username,
       fullName: customer.fullName,
+      avatarUrl: customer.avatarUrl,
       status: customer.status,
       balance: customer.balance,
       bonusBalance: customer.bonusBalance,
