@@ -81,6 +81,18 @@ export function RegisterForm() {
           error={state.fieldErrors.password}
         />
 
+        <p className="text-lp-dim text-xs leading-relaxed">
+          By creating an account, you agree to the{' '}
+          <Link href="/legal/terms" className="text-lp-text underline underline-offset-2">
+            Terms of service
+          </Link>{' '}
+          and{' '}
+          <Link href="/legal/privacy" className="text-lp-text underline underline-offset-2">
+            Privacy policy
+          </Link>
+          .
+        </p>
+
         <SubmitButton label="Create account" pendingLabel="Creating account…" />
       </form>
 

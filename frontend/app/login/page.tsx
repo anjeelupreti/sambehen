@@ -25,7 +25,7 @@ export default async function LoginPage({
   const { from = '' } = await searchParams;
 
   return (
-    <AuthShell art="brand/logo-3d.png">
+    <AuthShell mascot="waving">
       <h1 className="text-3xl font-extrabold tracking-[-0.01em] [font-stretch:118%]">Sign in</h1>
 
       <div className="mt-8">

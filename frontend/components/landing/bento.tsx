@@ -78,7 +78,7 @@ function Tile({
         className,
       )}
     >
-      <div className="relative z-10 p-7 sm:p-8">
+      <div className={cn('relative z-10 p-7 sm:p-8', art && 'pr-28 sm:pr-36')}>
         <h3 className="text-xl leading-tight font-extrabold [font-stretch:112%] sm:text-2xl">
           {title}
         </h3>
@@ -90,7 +90,7 @@ function Tile({
           alt=""
           width={480}
           height={480}
-          className="pointer-events-none absolute top-5 right-5 z-10 hidden w-24 select-none sm:block lg:w-28"
+          className="pointer-events-none absolute top-4 right-4 z-10 w-20 select-none sm:w-28"
         />
       )}
       <div className="bg-lp-sunk mx-4 mb-4 flex flex-1 items-end justify-center overflow-hidden rounded-2xl px-4 pt-6 sm:mx-5 sm:mb-5 sm:px-6 sm:pt-8">
@@ -115,6 +115,7 @@ export function Bento() {
       <Tile
         title="Every visit, on the record"
         body="Balances update the moment a store records play."
+        art="/brand/mascot/clipboard.webp"
         className="md:col-span-2"
       >
         <OnView Scene={RecordScene} />
@@ -122,6 +123,7 @@ export function Bento() {
       <Tile
         title="Tiers and milestones"
         body="Players see their route to the next tier and the moments they’ve earned."
+        art="/brand/mascot/trophy.webp"
         className="md:col-span-3"
       >
         <OnView Scene={ProgressScene} />
@@ -129,6 +131,7 @@ export function Bento() {
       <Tile
         title="Friends bring friends"
         body="Personal invite links, with bonuses posted once a friend plays."
+        art="/brand/mascot/friends.webp"
         className="md:col-span-3"
       >
         <OnView Scene={FriendsScene} />

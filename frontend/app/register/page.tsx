@@ -14,7 +14,7 @@ export default async function RegisterPage() {
   if (await getCustomerAccessToken()) redirect('/customer');
 
   return (
-    <AuthShell art="landing/hero-objects.png" artClassName="-translate-x-[18%] translate-y-[6%]">
+    <AuthShell mascot="door">
       <RegisterForm />
     </AuthShell>
   );

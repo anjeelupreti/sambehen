@@ -182,10 +182,21 @@ export default async function LandingPage() {
       {/* Roles */}
       <section className="border-lp-line border-t">
         <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-          <SectionHeading
-            title="Built for every role"
-            body="Everyone sees exactly their share of the chain. Pick a role to see its reach."
-          />
+          <div className="flex items-end justify-between gap-6">
+            <SectionHeading
+              title="Built for every role"
+              body="Everyone sees exactly their share of the chain. Pick a role to see its reach."
+            />
+            <Parallax distance={30} tilt={4} className="hidden w-36 shrink-0 sm:block lg:w-44">
+              <Image
+                src="/brand/mascot/door.webp"
+                alt=""
+                width={480}
+                height={480}
+                className="w-full select-none"
+              />
+            </Parallax>
+          </div>
           <div className="mt-12">
             <Roles />
           </div>
@@ -229,9 +240,18 @@ export default async function LandingPage() {
       {/* Questions */}
       <section id="questions" className="border-lp-line scroll-mt-16 border-t">
         <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:px-8 lg:py-28">
-          <h2 className="text-3xl leading-[1.08] font-extrabold tracking-[-0.015em] text-balance [font-stretch:118%] sm:text-4xl">
-            Questions operators ask
-          </h2>
+          <div>
+            <h2 className="text-3xl leading-[1.08] font-extrabold tracking-[-0.015em] text-balance [font-stretch:118%] sm:text-4xl">
+              Questions operators ask
+            </h2>
+            <Image
+              src="/brand/mascot/resting.webp"
+              alt=""
+              width={480}
+              height={480}
+              className="mt-10 hidden w-44 select-none lg:block"
+            />
+          </div>
           <div className="divide-lp-line border-lp-line divide-y border-y">
             {QUESTIONS.map((item) => (
               <details key={item.q} className="group">
