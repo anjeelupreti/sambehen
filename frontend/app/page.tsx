@@ -7,6 +7,7 @@ import { AccessMap } from '@/components/landing/access-map';
 import { DashboardView } from '@/components/landing/dashboard-view';
 import { ImportExportView } from '@/components/landing/import-export-view';
 import { ChatDemo } from '@/components/landing/chat-demo';
+import { LifecycleSteps, Parallax, SmoothScroll } from '@/components/landing/motion';
 import { PlayerProgressView } from '@/components/landing/player-progress-view';
 import { PlatformTour } from '@/components/landing/platform-tour';
 import { SiteHeader } from '@/components/landing/site-header';
@@ -165,6 +166,7 @@ export default async function LandingPage() {
     <div
       className={`${archivo.variable} font-lp bg-lp-ground text-lp-text min-h-svh antialiased [color-scheme:light]`}
     >
+      <SmoothScroll />
       <SiteHeader />
 
       <main>
@@ -204,14 +206,20 @@ export default async function LandingPage() {
           </div>
 
           <div className="relative mx-auto w-full max-w-lg lg:pt-10">
-            <Image
-              src={ART.waving}
-              alt=""
-              width={480}
-              height={480}
-              priority
-              className="pointer-events-none absolute -top-16 -right-4 z-10 w-32 select-none sm:-right-10 sm:w-40 lg:-top-6 lg:-right-20 lg:w-48"
-            />
+            <Parallax
+              distance={50}
+              tilt={6}
+              className="pointer-events-none absolute -top-16 -right-4 z-10 w-32  sm:-right-10 sm:w-40 lg:-top-6 lg:-right-20 lg:w-48"
+            >
+              <Image
+                src={ART.waving}
+                alt=""
+                width={480}
+                height={480}
+                priority
+                className="w-full select-none"
+              />
+            </Parallax>
             <ChatDemo />
           </div>
         </section>
@@ -219,13 +227,19 @@ export default async function LandingPage() {
         {/* Chat */}
         <section id="chat" className="border-lp-line scroll-mt-16 border-t">
           <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16 lg:px-8 lg:py-28">
-            <Image
-              src={ART.megaphone}
-              alt=""
-              width={480}
-              height={480}
-              className="mx-auto w-56 select-none sm:w-72 lg:w-full lg:max-w-sm"
-            />
+            <Parallax
+              distance={70}
+              tilt={5}
+              className="mx-auto w-56 sm:w-72 lg:w-full lg:max-w-sm"
+            >
+              <Image
+                src={ART.megaphone}
+                alt=""
+                width={480}
+                height={480}
+                className="w-full select-none"
+              />
+            </Parallax>
             <div>
               <SectionHeading
                 title="Conversations, not tickets"
@@ -276,17 +290,7 @@ export default async function LandingPage() {
               title="From sign-up to reward"
               body="Each step triggers the next. Staff only enter the play."
             />
-            <ol className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-lp-line bg-lp-line sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              {LIFECYCLE.map((step, index) => (
-                <li key={step.title} className="bg-lp-raised flex flex-col gap-3 p-6">
-                  <span className="tabular text-lp-chip-text text-sm font-semibold">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <h3 className="font-semibold">{step.title}</h3>
-                  <p className="text-lp-dim text-sm leading-relaxed">{step.body}</p>
-                </li>
-              ))}
-            </ol>
+            <LifecycleSteps steps={LIFECYCLE} />
           </div>
         </section>
 
@@ -308,13 +312,19 @@ export default async function LandingPage() {
               </dl>
             </div>
             <div className="relative">
-              <Image
-                src={ART.trophy}
-                alt=""
-                width={480}
-                height={480}
-                className="pointer-events-none absolute -top-10 -left-6 z-10 hidden w-36 select-none sm:block lg:-left-16 lg:w-44"
-              />
+              <Parallax
+                distance={60}
+                tilt={-6}
+                className="pointer-events-none absolute -top-10 -left-6 z-10 hidden w-36  sm:block lg:-left-16 lg:w-44"
+              >
+                <Image
+                  src={ART.trophy}
+                  alt=""
+                  width={480}
+                  height={480}
+                  className="w-full select-none"
+                />
+              </Parallax>
               <PlayerProgressView />
             </div>
           </div>
@@ -351,13 +361,19 @@ export default async function LandingPage() {
           <div
             className={`mx-auto grid w-full max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:px-8 lg:py-28 ${'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center'}`}
           >
-            <Image
-              src={ART.shield}
-              alt=""
-              width={480}
-              height={480}
-              className="mx-auto w-56 select-none sm:w-72 lg:w-full lg:max-w-sm"
-            />
+            <Parallax
+              distance={70}
+              tilt={4}
+              className="mx-auto w-56 sm:w-72 lg:w-full lg:max-w-sm"
+            >
+              <Image
+                src={ART.shield}
+                alt=""
+                width={480}
+                height={480}
+                className="w-full select-none"
+              />
+            </Parallax>
             <div>
               <SectionHeading
                 title="Built to be trusted with money"
@@ -447,13 +463,15 @@ export default async function LandingPage() {
                 </Link>
               </div>
             </div>
-            <Image
-              src={ART.logo}
-              alt=""
-              width={720}
-              height={763}
-              className="mx-auto w-56 select-none sm:w-64 lg:w-80"
-            />
+            <Parallax distance={50} tilt={5} className="mx-auto w-56 sm:w-64 lg:w-80">
+              <Image
+                src={ART.logo}
+                alt=""
+                width={720}
+                height={763}
+                className="w-full select-none"
+              />
+            </Parallax>
           </div>
         </section>
       </main>

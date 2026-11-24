@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { CheckIcon } from 'lucide-react';
 
 import { Logo } from '@/components/logo';
+import { Seen } from './motion';
 import { cn } from '@/lib/utils';
 
 const TIERS = [
@@ -20,7 +21,7 @@ const MEDALS = [
 /** The player portal's home as a player sees it on their phone, with example data. */
 export function PlayerProgressView() {
   return (
-    <div className="border-lp-line bg-lp-raised mx-auto w-full max-w-sm overflow-hidden rounded-[1.75rem] border shadow-[0_30px_70px_-40px_rgb(18_26_43/0.45)]">
+    <Seen className="border-lp-line bg-lp-raised mx-auto w-full max-w-sm overflow-hidden rounded-[1.75rem] border shadow-[0_30px_70px_-40px_rgb(18_26_43/0.45)]">
       <div className="border-lp-line flex items-center justify-between border-b px-5 py-3.5">
         <Logo tone="site" size="sm" />
         <span className="text-lp-dim text-xs">Store 11</span>
@@ -77,7 +78,10 @@ export function PlayerProgressView() {
               <span className="text-lp-dim tabular">72%</span>
             </div>
             <div className="bg-lp-raised mt-1.5 h-2 overflow-hidden rounded-full">
-              <div className="bg-lp-primary h-full w-[72%] rounded-full" />
+              <div
+                className="bg-lp-primary lp-grow-x h-full w-[72%] rounded-full"
+                style={{ ['--d' as string]: '200ms' }}
+              />
             </div>
           </div>
         </div>
@@ -88,8 +92,12 @@ export function PlayerProgressView() {
             <span className="text-lp-dim tabular text-xs">3 of 8</span>
           </div>
           <ul className="mt-3 grid grid-cols-4 gap-1">
-            {MEDALS.map((medal) => (
-              <li key={medal.key} className="flex flex-col items-center text-center">
+            {MEDALS.map((medal, index) => (
+              <li
+                key={medal.key}
+                className="lp-pop flex flex-col items-center text-center"
+                style={{ ['--d' as string]: `${400 + index * 110}ms` }}
+              >
                 <Image
                   src={`/brand/badges/${medal.key}.webp`}
                   alt=""
@@ -120,10 +128,13 @@ export function PlayerProgressView() {
             <span className="text-lp-dim"> of 5 friends joined</span>
           </p>
           <div className="bg-lp-sunk mt-1.5 h-2 overflow-hidden rounded-full">
-            <div className="bg-lp-ok h-full w-3/5 rounded-full" />
+            <div
+              className="bg-lp-ok lp-grow-x h-full w-3/5 rounded-full"
+              style={{ ['--d' as string]: '850ms' }}
+            />
           </div>
         </div>
       </div>
-    </div>
+    </Seen>
   );
 }

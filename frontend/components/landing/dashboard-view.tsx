@@ -1,4 +1,5 @@
 import { DASHBOARD, formatMoney } from './landing-data';
+import { CountUp, Seen } from './motion';
 import { Frame } from './product-frame';
 
 /** The chart's ceiling; ticks sit at 0, half and full so every label is a value drawn to scale. */
@@ -21,9 +22,11 @@ export function DashboardView() {
           <div key={kpi.label} className="border-lp-line bg-lp-raised rounded-xl border p-4">
             <dt className="text-lp-dim text-xs">{kpi.label}</dt>
             <dd className="mt-2 text-xl font-semibold [font-stretch:112%] sm:text-2xl">
-              {typeof kpi.value === 'number'
-                ? formatMoney(kpi.value).replace(/\.00$/, '')
-                : kpi.value}
+              {typeof kpi.value === 'number' ? (
+                <CountUp value={kpi.value} format="dollars" />
+              ) : (
+                kpi.value
+              )}
             </dd>
             <dd className="text-lp-dim mt-1 text-xs">{'delta' in kpi ? kpi.delta : kpi.note}</dd>
           </div>
@@ -61,46 +64,59 @@ export function DashboardView() {
                   <span key={tick} className="border-lp-line block border-t" />
                 ))}
               </div>
-              <ol className="relative grid h-44 grid-cols-8 gap-2">
-                {DASHBOARD.weeks.map((week) => (
-                  <li key={week.label} className="flex flex-col items-center gap-1.5">
-                    <div className="flex w-full flex-1 items-end justify-center gap-1">
-                      <span
-                        className="bg-lp-signal w-2.5 rounded-t-sm sm:w-3"
-                        style={{ height: `${(week.moneyIn / SCALE_MAX) * 100}%` }}
-                        title={`${week.label} in: ${formatMoney(week.moneyIn)}`}
-                      />
-                      <span
-                        className="bg-lp-line-strong w-2.5 rounded-t-sm sm:w-3"
-                        style={{ height: `${(week.moneyOut / SCALE_MAX) * 100}%` }}
-                        title={`${week.label} out: ${formatMoney(week.moneyOut)}`}
-                      />
-                    </div>
-                    <span className="text-lp-dim text-[11px] leading-none">{week.label}</span>
-                  </li>
-                ))}
-              </ol>
+              <Seen>
+                <ol className="relative grid h-44 grid-cols-8 gap-2">
+                  {DASHBOARD.weeks.map((week, index) => (
+                    <li key={week.label} className="flex flex-col items-center gap-1.5">
+                      <div className="flex w-full flex-1 items-end justify-center gap-1">
+                        <span
+                          className="bg-lp-signal lp-grow-y w-2.5 rounded-t-sm sm:w-3"
+                          style={{
+                            height: `${(week.moneyIn / SCALE_MAX) * 100}%`,
+                            ['--d' as string]: `${index * 60}ms`,
+                          }}
+                          title={`${week.label} in: ${formatMoney(week.moneyIn)}`}
+                        />
+                        <span
+                          className="bg-lp-line-strong lp-grow-y w-2.5 rounded-t-sm sm:w-3"
+                          style={{
+                            height: `${(week.moneyOut / SCALE_MAX) * 100}%`,
+                            ['--d' as string]: `${index * 60 + 30}ms`,
+                          }}
+                          title={`${week.label} out: ${formatMoney(week.moneyOut)}`}
+                        />
+                      </div>
+                      <span className="text-lp-dim text-[11px] leading-none">{week.label}</span>
+                    </li>
+                  ))}
+                </ol>
+              </Seen>
             </div>
           </div>
         </Frame>
 
         <Frame title="Top games by money in">
-          <ul className="space-y-4 p-4">
-            {DASHBOARD.topGames.map((game) => (
-              <li key={game.name}>
-                <div className="flex justify-between text-sm">
-                  <span>{game.name}</span>
-                  <span className="tabular text-lp-dim">{Math.round(game.share * 100)}%</span>
-                </div>
-                <div className="bg-lp-sunk mt-1.5 h-1.5 overflow-hidden rounded-full">
-                  <div
-                    className="bg-lp-signal h-full rounded-full"
-                    style={{ width: `${game.share * 100}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+          <Seen>
+            <ul className="space-y-4 p-4">
+              {DASHBOARD.topGames.map((game, index) => (
+                <li key={game.name}>
+                  <div className="flex justify-between text-sm">
+                    <span>{game.name}</span>
+                    <span className="tabular text-lp-dim">{Math.round(game.share * 100)}%</span>
+                  </div>
+                  <div className="bg-lp-sunk mt-1.5 h-1.5 overflow-hidden rounded-full">
+                    <div
+                      className="bg-lp-signal lp-grow-x h-full rounded-full"
+                      style={{
+                        width: `${game.share * 100}%`,
+                        ['--d' as string]: `${index * 90}ms`,
+                      }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Seen>
         </Frame>
       </div>
     </div>
