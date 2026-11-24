@@ -3,102 +3,20 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { AccessMap } from '@/components/landing/access-map';
-import { DashboardView } from '@/components/landing/dashboard-view';
-import { ImportExportView } from '@/components/landing/import-export-view';
-import { ChatDemo } from '@/components/landing/chat-demo';
-import { LifecycleSteps, Parallax, SmoothScroll } from '@/components/landing/motion';
-import { PlayerProgressView } from '@/components/landing/player-progress-view';
-import { PlatformTour } from '@/components/landing/platform-tour';
+import { Parallax, SmoothScroll } from '@/components/landing/motion';
 import { SiteHeader } from '@/components/landing/site-header';
+import { Story, type ChapterKey } from '@/components/landing/story';
+import { Logo } from '@/components/logo';
 import { getCustomerAccessToken } from '@/lib/customer-session';
 import { archivo } from '@/lib/fonts';
+import { publicAsset } from '@/lib/public-asset';
 import { getAccessToken } from '@/lib/session';
-import { Logo } from '@/components/logo';
 
 export const metadata: Metadata = {
   title: 'Howdi chat',
   description:
-    'Live chat and player records for gaming operators: messaging, VIP tiers, milestones, referrals and transactions, scoped to every store.',
+    'Live chat and player records for gaming operators. Follow one player from sign-up to friends, store by store.',
 };
-
-const LIFECYCLE = [
-  { title: 'Player registers', body: 'Online, or added by staff from a spreadsheet.' },
-  {
-    title: 'Store takes them on',
-    body: 'The master assigns a manager or store before first sign-in.',
-  },
-  {
-    title: 'Play is recorded',
-    body: 'Each debit and credit updates the balance as it is entered.',
-  },
-  { title: 'VIP qualifies', body: 'Spend in the period moves the player into a tier.' },
-  { title: 'Rewards go out', body: 'Only players who qualified can receive a reward.' },
-  { title: 'Referral pays', body: 'Both bonuses post once the new player spends enough.' },
-];
-
-const CHAT_POINTS = [
-  {
-    title: 'Online, typing, read',
-    body: 'Both sides see who is around and when a message has been read.',
-  },
-  { title: 'Photos and files', body: 'Paste, drop or attach. Images open full size in the chat.' },
-  {
-    title: 'One message to everyone',
-    body: 'Broadcast email to every player, or only the ones you pick.',
-  },
-  { title: 'Team threads', body: 'Stores, managers and the master talk to each other too.' },
-];
-
-const PORTAL_POINTS = [
-  {
-    title: 'Their balance, always current',
-    body: 'Every entry a store records shows up the moment it is saved.',
-  },
-  {
-    title: 'A route to the next tier',
-    body: 'Each tier is a stop, and the next one says what is left.',
-  },
-  {
-    title: 'Milestones for showing up',
-    body: 'Joining, chatting, inviting friends, time with the store. None for spending.',
-  },
-  { title: 'Friends, as a goal', body: 'A personal invite link and a count of who joined.' },
-];
-
-const GET_STARTED = [
-  {
-    title: 'Set up your chain',
-    body: 'Add your managers and stores. Each one gets its own sign-in.',
-  },
-  {
-    title: 'Bring in your players',
-    body: 'Import a spreadsheet or add players one at a time, then assign them to stores.',
-  },
-  {
-    title: 'Start recording',
-    body: 'Stores enter play as it happens. Tiers, rewards and referrals follow on their own.',
-  },
-];
-
-const TRUST = [
-  {
-    title: 'Every change is on record',
-    body: 'The audit trail keeps who changed what, with before and after values.',
-  },
-  {
-    title: 'Staff and players sign in apart',
-    body: 'Their sessions use separate keys, so one can never act as the other.',
-  },
-  {
-    title: 'Exports follow access',
-    body: 'A spreadsheet only ever contains rows the person exporting can see.',
-  },
-  {
-    title: 'Money is never rounded',
-    body: 'Amounts are stored to the cent and totalled in the database.',
-  },
-];
 
 const QUESTIONS = [
   {
@@ -106,50 +24,40 @@ const QUESTIONS = [
     a: 'No. A store sees its own players, a manager sees their stores, and only the master sees everything.',
   },
   {
-    q: 'How are VIP tiers decided?',
-    a: 'The master sets a spend target for a period. Qualification updates on every transaction, so nobody maintains a list by hand.',
-  },
-  {
     q: 'Can we bring our existing players?',
     a: 'Yes. Upload a spreadsheet, review each row, and import only the ones you keep.',
   },
   {
+    q: 'How are VIP tiers decided?',
+    a: 'The master sets a target for a period. Qualification updates with every recorded visit, so nobody keeps a list by hand.',
+  },
+  {
     q: 'Do players get their own login?',
-    a: 'Yes. Players see their balance, VIP progress, recent rewards and referral link, and can message their store.',
+    a: 'Yes. Players see their balance, tiers, milestones and invite link, and can message their store.',
+  },
+  {
+    q: 'Can staff message each other?',
+    a: 'Yes. Stores, managers and the master have their own threads, visible only to the people in them.',
   },
   {
     q: 'Can we get our data out?',
     a: 'Every list exports to a spreadsheet that matches the filters on screen.',
   },
-  {
-    q: 'What happens when a player is suspended?',
-    a: 'They can no longer sign in. Their record and history stay intact, and staff can reactivate them at any time.',
-  },
-  {
-    q: 'Can staff message each other?',
-    a: 'Yes. Staff have their own threads, and each one is visible only to the people in it.',
-  },
-  {
-    q: 'Does it work on a phone?',
-    a: 'Yes. Staff and players can use every page on a phone, including messaging.',
-  },
 ];
 
-/** Mascot artwork, built from design/brand/ by build-art.cjs. */
-const ART = {
-  waving: '/brand/mascot/waving.webp',
-  megaphone: '/brand/mascot/megaphone.webp',
-  trophy: '/brand/mascot/trophy.webp',
-  shield: '/brand/mascot/shield.webp',
-  logo: '/brand/logo-3d.png',
-};
+/** A mascot pose, or a stand-in until the pose has been added. */
+const pose = (name: string, fallback: string) =>
+  publicAsset(`brand/mascot/${name}.webp`) ?? `/brand/mascot/${fallback}.webp`;
+
+const primaryButton =
+  'bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2';
+const secondaryButton =
+  'border-lp-line-strong hover:border-lp-dim focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg border px-6 font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2';
 
 /**
- * The public front door, for operators evaluating Howdi chat.
- *
- * A signed-in visitor goes straight to their own app. Every view on this
- * page is built from the product's own components with example data, and
- * every claim describes something the product does today.
+ * The public front door: one player's first months with a store, told in
+ * chapters, each showing the part of the product that made it happen.
+ * A signed-in visitor goes straight to their own app.
  */
 export default async function LandingPage() {
   const [staffToken, customerToken] = await Promise.all([
@@ -161,6 +69,27 @@ export default async function LandingPage() {
   if (customerToken) redirect('/customer');
 
   const contactEmail = process.env.CONTACT_EMAIL;
+  const art: Record<ChapterKey, string> = {
+    arrives: pose('door', 'waving'),
+    chat: pose('megaphone', 'waving'),
+    record: pose('clipboard', 'shield'),
+    progress: pose('trophy', 'waving'),
+    friends: pose('friends', 'trophy'),
+    operators: pose('shield', 'waving'),
+  };
+
+  const cta = (
+    <div className="flex flex-wrap justify-center gap-3">
+      {contactEmail ? (
+        <a href={`mailto:${contactEmail}?subject=Howdi%20chat%20demo`} className={primaryButton}>
+          Book a demo
+        </a>
+      ) : null}
+      <Link href="/login" className={contactEmail ? secondaryButton : primaryButton}>
+        Sign in
+      </Link>
+    </div>
+  );
 
   return (
     <div
@@ -170,252 +99,57 @@ export default async function LandingPage() {
       <SiteHeader />
 
       <main>
-        {/* Hero */}
-        <section className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 pt-14 pb-20 sm:px-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,7fr)] lg:gap-14 lg:px-8 lg:pt-20 lg:pb-28">
-          <div className="max-w-xl">
-            <h1 className="text-[2.25rem] leading-[1.04] font-extrabold tracking-[-0.02em] text-balance [font-stretch:112%] sm:text-5xl sm:[font-stretch:125%] xl:text-[3.4rem]">
-              Say howdy to every player.
-            </h1>
-            <p className="text-lp-dim mt-6 max-w-md text-lg leading-relaxed">
-              Live chat, player records, VIP tiers and rewards for gaming operators. Every store
-              sees only its own players.
-            </p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              {contactEmail ? (
-                <a
-                  href={`mailto:${contactEmail}?subject=Howdi%20chat%20demo`}
-                  className="bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  Book a demo
-                </a>
-              ) : (
-                <Link
-                  href="/login"
-                  className="bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  Sign in
-                </Link>
-              )}
-              <a
-                href="#platform"
-                className="border-lp-line-strong hover:border-lp-dim focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg border px-6 font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                See the platform
-              </a>
-            </div>
-          </div>
-
-          <div className="relative mx-auto w-full max-w-lg lg:pt-10">
-            <Parallax
-              distance={50}
-              tilt={6}
-              className="pointer-events-none absolute -top-16 -right-4 z-10 w-32  sm:-right-10 sm:w-40 lg:-top-6 lg:-right-20 lg:w-48"
-            >
-              <Image
-                src={ART.waving}
-                alt=""
-                width={480}
-                height={480}
-                priority
-                className="w-full select-none"
-              />
-            </Parallax>
-            <ChatDemo />
-          </div>
-        </section>
-
-        {/* Chat */}
-        <section id="chat" className="border-lp-line scroll-mt-16 border-t">
-          <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16 lg:px-8 lg:py-28">
-            <Parallax
-              distance={70}
-              tilt={5}
-              className="mx-auto w-56 sm:w-72 lg:w-full lg:max-w-sm"
-            >
-              <Image
-                src={ART.megaphone}
-                alt=""
-                width={480}
-                height={480}
-                className="w-full select-none"
-              />
-            </Parallax>
-            <div>
-              <SectionHeading
-                title="Conversations, not tickets"
-                body="Players message the team that looks after them, and get an answer while they are still there."
-              />
-              <dl className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
-                {CHAT_POINTS.map((item) => (
-                  <div key={item.title} className="border-lp-line-strong border-t pt-5">
-                    <dt className="font-semibold">{item.title}</dt>
-                    <dd className="text-lp-dim mt-2 text-sm leading-relaxed">{item.body}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
-        </section>
-
-        {/* Platform */}
-        <section id="platform" className="border-lp-line scroll-mt-16 border-t">
-          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-            <SectionHeading
-              title="The whole operation in six tools"
-              body="They share one record per player, so nothing is entered twice."
+        {/* Opening */}
+        <section className="mx-auto flex min-h-[calc(100svh-4rem)] w-full max-w-5xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
+          <Parallax distance={50} tilt={6} className="w-40 sm:w-52">
+            <Image
+              src="/brand/mascot/waving.webp"
+              alt=""
+              width={480}
+              height={480}
+              priority
+              className="w-full select-none"
             />
-            <div className="mt-12">
-              <PlatformTour />
-            </div>
-          </div>
+          </Parallax>
+          <h1 className="mt-6 text-[2.6rem] leading-[1.02] font-extrabold tracking-[-0.025em] text-balance [font-stretch:112%] sm:text-6xl sm:[font-stretch:125%] lg:text-7xl">
+            Every player has a story.
+          </h1>
+          <p className="text-lp-dim mt-6 max-w-xl text-lg leading-relaxed sm:text-xl">
+            Howdi chat keeps it: their conversations, their visits, their progress. For gaming
+            operators, store by store.
+          </p>
+          <div className="mt-9">{cta}</div>
         </section>
 
-        {/* Dashboard */}
-        <section id="dashboard" className="border-lp-line bg-lp-sunk scroll-mt-16 border-t">
-          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-            <SectionHeading
-              title="Know where every store stands"
-              body="Money in, money out and top games, for the stores you can see."
-            />
-            <div className="mt-12">
-              <DashboardView />
-            </div>
-          </div>
-        </section>
+        <div id="story" className="border-lp-line scroll-mt-16 border-t">
+          <Story art={art} />
+        </div>
 
-        {/* Lifecycle */}
-        <section id="lifecycle" className="border-lp-line scroll-mt-16 border-t">
-          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-            <SectionHeading
-              title="From sign-up to reward"
-              body="Each step triggers the next. Staff only enter the play."
-            />
-            <LifecycleSteps steps={LIFECYCLE} />
-          </div>
-        </section>
-
-        {/* Player portal */}
-        <section id="players" className="border-lp-line bg-lp-sunk scroll-mt-16 border-t">
-          <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-28">
-            <div>
-              <SectionHeading
-                title="Something to come back for"
-                body="Players get a portal of their own: their standing, their progress and a direct line to their store."
-              />
-              <dl className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2">
-                {PORTAL_POINTS.map((item) => (
-                  <div key={item.title} className="border-lp-line-strong border-t pt-5">
-                    <dt className="font-semibold">{item.title}</dt>
-                    <dd className="text-lp-dim mt-2 text-sm leading-relaxed">{item.body}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-            <div className="relative">
-              <Parallax
-                distance={60}
-                tilt={-6}
-                className="pointer-events-none absolute -top-10 -left-6 z-10 hidden w-36  sm:block lg:-left-16 lg:w-44"
-              >
-                <Image
-                  src={ART.trophy}
-                  alt=""
-                  width={480}
-                  height={480}
-                  className="w-full select-none"
-                />
-              </Parallax>
-              <PlayerProgressView />
-            </div>
-          </div>
-        </section>
-
-        {/* Access */}
-        <section id="access" className="border-lp-line scroll-mt-16 border-t">
-          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-            <SectionHeading
-              title="Each store sees its own players"
-              body="Pick a role to see exactly what it can reach."
-            />
-            <div className="mt-12">
-              <AccessMap />
-            </div>
-          </div>
-        </section>
-
-        {/* Import and export */}
+        {/* Closing */}
         <section className="border-lp-line bg-lp-sunk border-t">
-          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-            <SectionHeading
-              title="Bring your players. Take your data."
-              body="Check every row before it is imported, and export any list exactly as it appears."
-            />
-            <div className="mt-12">
-              <ImportExportView />
-            </div>
-          </div>
-        </section>
-
-        {/* Trust */}
-        <section className="border-lp-line border-t">
-          <div
-            className={`mx-auto grid w-full max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:px-8 lg:py-28 ${'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center'}`}
-          >
-            <Parallax
-              distance={70}
-              tilt={4}
-              className="mx-auto w-56 sm:w-72 lg:w-full lg:max-w-sm"
-            >
+          <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-24 text-center sm:px-6 lg:py-32">
+            <Parallax distance={40} tilt={5} className="w-36 sm:w-44">
               <Image
-                src={ART.shield}
+                src="/brand/mascot/resting.webp"
                 alt=""
                 width={480}
                 height={480}
                 className="w-full select-none"
               />
             </Parallax>
-            <div>
-              <SectionHeading
-                title="Built to be trusted with money"
-                body="The rules that matter are enforced by the system, not left to habit."
-              />
-              <dl className={`mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 `}>
-                {TRUST.map((item) => (
-                  <div key={item.title} className="border-lp-line-strong border-t pt-5">
-                    <dt className="font-semibold">{item.title}</dt>
-                    <dd className="text-lp-dim mt-2 text-sm leading-relaxed">{item.body}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
-        </section>
-
-        {/* Getting started */}
-        <section className="border-lp-line bg-lp-sunk border-t">
-          <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-            <SectionHeading
-              title="Getting started"
-              body="Three steps from an empty system to stores recording play."
-            />
-            <ol className="mt-12 grid gap-10 md:grid-cols-3">
-              {GET_STARTED.map((step, index) => (
-                <li key={step.title} className="border-lp-primary border-t-2 pt-6">
-                  <span className="tabular text-lp-primary text-4xl font-extrabold [font-stretch:125%]">
-                    {index + 1}
-                  </span>
-                  <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
-                  <p className="text-lp-dim mt-2 leading-relaxed">{step.body}</p>
-                </li>
-              ))}
-            </ol>
+            <h2 className="mt-6 text-4xl leading-[1.04] font-extrabold tracking-[-0.02em] text-balance [font-stretch:125%] sm:text-6xl">
+              Say howdy to your players.
+            </h2>
+            <div className="mt-9">{cta}</div>
           </div>
         </section>
 
         {/* Questions */}
         <section id="questions" className="border-lp-line scroll-mt-16 border-t">
           <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:px-8 lg:py-28">
-            <SectionHeading title="Questions operators ask" />
+            <h2 className="text-3xl leading-[1.08] font-extrabold tracking-[-0.015em] text-balance [font-stretch:118%] sm:text-4xl">
+              Questions operators ask
+            </h2>
             <div className="divide-lp-line border-lp-line divide-y border-y">
               {QUESTIONS.map((item) => (
                 <details key={item.q} className="group">
@@ -434,103 +168,28 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
-
-        {/* Closing */}
-        <section className="border-lp-line bg-lp-sunk border-t">
-          <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8 lg:py-24">
-            <div className="flex flex-col items-start gap-8">
-              <h2 className="max-w-2xl text-4xl leading-[1.05] font-extrabold tracking-[-0.02em] text-balance [font-stretch:125%] sm:text-5xl">
-                See it with your own players.
-              </h2>
-              <div className="flex flex-wrap gap-3">
-                {contactEmail && (
-                  <a
-                    href={`mailto:${contactEmail}?subject=Howdi%20chat%20demo`}
-                    className="bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2"
-                  >
-                    Book a demo
-                  </a>
-                )}
-                <Link
-                  href="/login"
-                  className={
-                    contactEmail
-                      ? 'border-lp-line-strong hover:border-lp-dim focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg border px-6 font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2'
-                      : 'bg-lp-primary text-white focus-visible:outline-lp-primary inline-flex h-12 items-center rounded-lg px-6 font-semibold transition-colors hover:bg-lp-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2'
-                  }
-                >
-                  Sign in
-                </Link>
-              </div>
-            </div>
-            <Parallax distance={50} tilt={5} className="mx-auto w-56 sm:w-64 lg:w-80">
-              <Image
-                src={ART.logo}
-                alt=""
-                width={720}
-                height={763}
-                className="w-full select-none"
-              />
-            </Parallax>
-          </div>
-        </section>
       </main>
 
       <footer className="border-lp-line border-t">
-        <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-14 text-sm sm:px-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] lg:px-8">
-          <div className="max-w-xs">
-            <Logo tone="site" />
-            <p className="text-lp-dim mt-3 leading-relaxed">
-              Live chat and player records for gaming operators, scoped to every store.
-            </p>
-          </div>
-          <nav aria-label="Product" className="flex flex-col gap-2.5">
-            <p className="font-semibold">Product</p>
-            {[
-              ['#chat', 'Chat'],
-              ['#platform', 'Platform'],
-              ['#dashboard', 'Dashboard'],
-              ['#players', 'Player portal'],
-              ['#access', 'Access'],
-              ['#questions', 'Questions'],
-            ].map(([href, label]) => (
-              <a
-                key={href}
-                href={href}
-                className="text-lp-dim hover:text-lp-text w-fit transition-colors"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-          <nav aria-label="Sign in" className="flex flex-col gap-2.5">
-            <p className="font-semibold">Sign in</p>
-            <Link href="/login" className="text-lp-dim hover:text-lp-text w-fit transition-colors">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-10 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <Logo tone="site" />
+          <nav aria-label="Footer" className="text-lp-dim flex flex-wrap gap-x-6 gap-y-2">
+            <a href="#story" className="hover:text-lp-text transition-colors">
+              The story
+            </a>
+            <a href="#questions" className="hover:text-lp-text transition-colors">
+              Questions
+            </a>
+            <Link href="/login" className="hover:text-lp-text transition-colors">
               Sign in
             </Link>
-            <Link
-              href="/register"
-              className="text-lp-dim hover:text-lp-text w-fit transition-colors"
-            >
+            <Link href="/register" className="hover:text-lp-text transition-colors">
               Create a player account
             </Link>
           </nav>
-        </div>
-        <div className="border-lp-line text-lp-dim mx-auto w-full max-w-7xl border-t px-4 py-6 text-xs sm:px-6 lg:px-8">
-          © {new Date().getFullYear()} Howdi chat
+          <p className="text-lp-dim text-xs">© {new Date().getFullYear()} Howdi chat</p>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function SectionHeading({ title, body }: { title: string; body?: string }) {
-  return (
-    <div className="max-w-2xl">
-      <h2 className="text-3xl leading-[1.08] font-extrabold tracking-[-0.015em] text-balance [font-stretch:118%] sm:text-4xl">
-        {title}
-      </h2>
-      {body && <p className="text-lp-dim mt-4 text-lg leading-relaxed">{body}</p>}
     </div>
   );
 }

@@ -11,7 +11,7 @@ const FE = path.resolve(__dirname, '../..');
 const sharp = createRequire(path.join(FE, 'package.json'))('sharp');
 
 const OUT = path.join(FE, 'public/brand');
-const POSES = ['waving', 'trophy', 'resting', 'megaphone', 'shield'];
+const POSES = ['waving', 'trophy', 'resting', 'megaphone', 'shield', 'door', 'clipboard', 'friends'];
 // Medals in the strip, left to right, and which milestones use each.
 const MEDALS = [
   ['joined'],
@@ -64,6 +64,8 @@ const square = (pipeline, size) =>
   fs.mkdirSync(path.join(OUT, 'badges'), { recursive: true });
 
   for (const pose of POSES) {
+    // Poses are added over time; build the ones that exist.
+    if (!fs.existsSync(path.join(__dirname, `mascot-${pose}.png`))) continue;
     const cleaned = largestShape(await raw(path.join(__dirname, `mascot-${pose}.png`)));
     // Re-encode first so trim sees the cleaned alpha.
     const png = await fromRaw(cleaned).png().toBuffer();

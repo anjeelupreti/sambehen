@@ -213,36 +213,3 @@
     font-variant-numeric: tabular-nums;
   }
 }
-
-/*
- * Landing-page reveal states. The "before" state only applies under
- * .lp-motion, which SmoothScroll adds when motion is allowed, so without
- * JavaScript or with reduced motion everything renders finished.
- */
-.lp-motion .lp-grow-y,
-.lp-motion .lp-grow-x,
-.lp-motion .lp-pop {
-  transition:
-    transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 0.5s ease-out;
-  transition-delay: var(--d, 0ms);
-}
-.lp-motion .lp-grow-y {
-  transform: scaleY(0);
-  transform-origin: bottom;
-}
-.lp-motion .lp-grow-x {
-  transform: scaleX(0);
-  transform-origin: left;
-}
-.lp-motion .lp-pop {
-  opacity: 0;
-  transform: scale(0.6) translateY(6px);
-  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1), ease-out;
-}
-.lp-motion [data-seen] .lp-grow-y,
-.lp-motion [data-seen] .lp-grow-x,
-.lp-motion [data-seen] .lp-pop {
-  opacity: 1;
-  transform: none;
-}

@@ -2,11 +2,10 @@ import Link from 'next/link';
 import { Logo } from '@/components/logo';
 
 const NAV = [
+  { href: '#arrives', label: 'The story' },
   { href: '#chat', label: 'Chat' },
-  { href: '#platform', label: 'Platform' },
-  { href: '#dashboard', label: 'Dashboard' },
-  { href: '#players', label: 'Players' },
-  { href: '#access', label: 'Access' },
+  { href: '#progress', label: 'Players' },
+  { href: '#operators', label: 'Operators' },
   { href: '#questions', label: 'Questions' },
 ];
 
