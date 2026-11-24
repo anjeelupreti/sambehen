@@ -51,10 +51,11 @@ const FOOTER = [
  */
 export function SiteShell({
   children,
-  overlayHeader = false,
+  underHeader = false,
 }: {
   children: ReactNode;
-  overlayHeader?: boolean;
+  /** The page's first section runs up behind the floating header (the home page's sky). */
+  underHeader?: boolean;
 }) {
   return (
     <div
@@ -66,8 +67,8 @@ export function SiteShell({
       >
         Skip to content
       </a>
-      <SiteHeader overlay={overlayHeader} />
-      <main id="main" tabIndex={-1} className="flex-1 outline-none">
+      <SiteHeader />
+      <main id="main" tabIndex={-1} className={`flex-1 outline-none ${underHeader ? '' : 'pt-20'}`}>
         {children}
       </main>
       <SiteFooter />
@@ -122,7 +123,7 @@ function SiteFooter() {
 export function PageIntro({ title, body }: { title: string; body?: ReactNode }) {
   return (
     <div className="border-lp-line border-b">
-      <div className="mx-auto w-full max-w-7xl px-4 pt-16 pb-12 sm:px-6 lg:px-8 lg:pt-24 lg:pb-16">
+      <div className="mx-auto w-full max-w-7xl px-4 pt-12 pb-12 sm:px-6 lg:px-8 lg:pt-16 lg:pb-16">
         <h1 className="max-w-3xl text-4xl leading-[1.04] font-extrabold tracking-[-0.02em] text-balance [font-stretch:118%] sm:text-6xl">
           {title}
         </h1>

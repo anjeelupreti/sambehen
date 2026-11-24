@@ -101,5 +101,15 @@ const square = (pipeline, size) =>
       await square(sharp(png), 192).toFile(path.join(OUT, 'badges', `${key}.webp`));
     }
   }
+  // The home page sky: nudged off lavender toward the brand blue so the clouds read
+  // white next to the white headline, and enlarged once here with a sharp
+  // filter rather than by the browser.
+  if (fs.existsSync(path.join(__dirname, 'sky-source.png'))) {
+    await sharp(path.join(__dirname, 'sky-source.png'))
+      .modulate({ hue: -10, saturation: 1.05 })
+      .resize(2880, null, { kernel: 'lanczos3' })
+      .webp({ quality: 90, smartSubsample: true })
+      .toFile(path.join(OUT, 'sky.webp'));
+  }
   console.log('Built', POSES.length, 'mascot poses and', medals.length, 'medals.');
 })();

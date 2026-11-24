@@ -101,7 +101,7 @@ export default async function LandingPage() {
   );
 
   return (
-    <SiteShell>
+    <SiteShell underHeader>
       <SmoothScroll />
       {/* Opening: the product under an open sky. */}
       <section className="lp-grain overflow-hidden">
@@ -111,10 +111,12 @@ export default async function LandingPage() {
           fill
           priority
           sizes="100vw"
+          quality={92}
+          unoptimized
           className="-z-10 object-cover object-top"
         />
-        <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center px-4 pt-20 text-center sm:px-6 lg:pt-24">
-          <h1 className="max-w-3xl text-[2.75rem] leading-[1.02] font-extrabold tracking-[-0.025em] text-balance text-white [font-stretch:112%] drop-shadow-[0_2px_12px_rgb(18_26_43/0.25)] sm:text-6xl sm:[font-stretch:125%] lg:text-7xl">
+        <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center px-4 pt-36 text-center sm:px-6 lg:pt-44">
+          <h1 className="max-w-3xl text-[2.75rem] leading-[1.02] font-extrabold tracking-[-0.025em] text-balance text-white [font-stretch:112%] sm:text-6xl sm:[font-stretch:125%] lg:text-7xl">
             Every player has a story.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/90 sm:text-xl">

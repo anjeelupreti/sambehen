@@ -126,7 +126,7 @@ export function Story({ art }: { art: Record<ChapterKey, string> }) {
               chapterRefs.current[index] = el;
             }}
             aria-labelledby={`${chapter.key}-title`}
-            className="flex scroll-mt-16 flex-col justify-center py-16 lg:min-h-[95svh] lg:py-24"
+            className="flex scroll-mt-20 flex-col justify-center py-16 lg:min-h-[95svh] lg:py-24"
           >
             <p className="text-lp-primary tabular text-sm font-bold">
               {String(index + 1).padStart(2, '0')}
@@ -158,7 +158,7 @@ export function Story({ art }: { art: Record<ChapterKey, string> }) {
       </div>
 
       <div className="hidden lg:block">
-        <div className="sticky top-16 flex h-[calc(100svh-4rem)] items-center justify-center">
+        <div className="sticky top-20 flex h-[calc(100svh-5rem)] items-center justify-center">
           {CHAPTERS.map((chapter, index) => (
             <div
               key={chapter.key}
