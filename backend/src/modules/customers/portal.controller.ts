@@ -1,4 +1,5 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Query } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ApiTags,
   ApiOperation,
@@ -9,7 +10,16 @@ import {
 } from '@nestjs/swagger';
 import { ApiResponseDto } from '@common/dto/api-response.dto';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 import { CustomerAuth } from '@common/decorators/composite-auth.decorator';
 import { CurrentCustomer } from '@common/decorators/auth.decorators';
 import { ResponseMessage } from '@common/decorators/response-message.decorator';
@@ -19,8 +29,12 @@ import { CustomerRepository } from '@database/repositories/customer.repository';
 import { TransactionRepository } from '@database/repositories/transaction.repository';
 import { TransactionType } from '@common/constants/app.constants';
 import { ErrorCode } from '@common/constants/error-codes';
-import { ResourceNotFoundException } from '@common/exceptions/business.exception';
+import {
+  ValidationException,
+  ResourceNotFoundException,
+} from '@common/exceptions/business.exception';
 import { CustomerProfileDto } from '@modules/auth/dto/auth.dto';
+import { Customer } from '@database/schema/customers.schema';
 import { MilestoneDto, MilestonesService } from './milestones.service';
 
 /**
@@ -47,6 +61,55 @@ class MyTransactionsQueryDto {
   limit?: number;
 }
 
+/**
+ * What a player may change about themselves. Email and username are how
+ * they sign in, so those stay with staff; so do status and money.
+ */
+export class UpdateMyProfileDto {
+  @ApiProperty({ required: false, maxLength: 200 })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(200)
+  fullName?: string;
+
+  @ApiProperty({ required: false, maxLength: 32 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  phone?: string;
+
+  @ApiProperty({ required: false, maxLength: 120 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  city?: string;
+
+  @ApiProperty({ required: false, maxLength: 120 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  state?: string;
+
+  @ApiProperty({ required: false, maxLength: 120 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  country?: string;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    type: String,
+    description: 'A photo uploaded through the portal, or null to remove it.',
+  })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(500)
+  avatarUrl?: string | null;
+}
+
 export class MyTransactionDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
@@ -71,6 +134,7 @@ export class MyTransactionDto {
 @Controller('me')
 export class PortalController {
   constructor(
+    private readonly config: ConfigService,
     private readonly customerRepository: CustomerRepository,
     private readonly transactionRepository: TransactionRepository,
     private readonly milestonesService: MilestonesService,
@@ -147,12 +211,79 @@ export class PortalController {
       throw new ResourceNotFoundException(ErrorCode.CUSTOMER_NOT_FOUND, 'Customer not found');
     }
 
+    return this.toProfile(customer);
+  }
+
+  @Patch('profile')
+  @CustomerAuth()
+  @ResponseMessage('Profile updated')
+  @ApiOperation({
+    summary: 'Update the signed-in customer’s own profile',
+    description:
+      'Name, phone, location and photo. Email, username, status and money stay with staff. A photo must be one uploaded through the portal.',
+  })
+  @ApiOkData(CustomerProfileDto)
+  @ApiErrors(401, 404, 422)
+  async updateProfile(
+    @CurrentCustomer() actor: ICurrentCustomer,
+    @Body() body: UpdateMyProfileDto,
+  ): Promise<CustomerProfileDto> {
+    if (body.avatarUrl && !this.isPortalPhoto(body.avatarUrl)) {
+      throw new ValidationException([
+        {
+          field: 'avatarUrl',
+          constraint: 'portalPhoto',
+          message: 'Upload a photo through your profile page.',
+        },
+      ]);
+    }
+
+    const blankToNull = (value?: string) =>
+      value === undefined ? undefined : value.trim() === '' ? null : value.trim();
+    const changes: Partial<Customer> = {
+      ...(body.fullName !== undefined ? { fullName: body.fullName.trim() } : {}),
+      ...(body.phone !== undefined ? { phone: blankToNull(body.phone) } : {}),
+      ...(body.city !== undefined ? { city: blankToNull(body.city) } : {}),
+      ...(body.state !== undefined ? { state: blankToNull(body.state) } : {}),
+      ...(body.country !== undefined ? { country: blankToNull(body.country) } : {}),
+      ...(body.avatarUrl !== undefined ? { avatarUrl: body.avatarUrl } : {}),
+      updatedAt: new Date(),
+    };
+
+    const updated = await this.customerRepository.update(actor.id, changes);
+    if (!updated) {
+      throw new ResourceNotFoundException(ErrorCode.CUSTOMER_NOT_FOUND, 'Customer not found');
+    }
+    return this.toProfile(updated);
+  }
+
+  /**
+   * Photos may only point at files this product stores: the demo
+   * portraits, local uploads in development, or the R2 bucket. Anything
+   * else (an arbitrary URL) would let a player load a third-party image,
+   * or a tracking pixel, in every staff member's browser.
+   */
+  private isPortalPhoto(url: string): boolean {
+    const file = /\/avatars\/[0-9a-f-]{36}\.(webp|jpg|png)$/;
+    const r2 = (this.config.get<string>('R2_PUBLIC_URL') ?? '').replace(/\/+$/, '');
+    return (
+      /^\/avatars\/players\/\d{2}\.webp$/.test(url) ||
+      (url.startsWith('/uploads/avatars/') && file.test(url)) ||
+      (r2 !== '' && url.startsWith(`${r2}/avatars/`) && file.test(url))
+    );
+  }
+
+  private toProfile(customer: Customer): CustomerProfileDto {
     return {
       id: customer.id,
       email: customer.email,
       username: customer.username,
       fullName: customer.fullName,
       avatarUrl: customer.avatarUrl,
+      phone: customer.phone,
+      city: customer.city,
+      state: customer.state,
+      country: customer.country,
       status: customer.status,
       balance: customer.balance,
       bonusBalance: customer.bonusBalance,

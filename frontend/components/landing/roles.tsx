@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import Image from 'next/image';
+
 import { cn } from '@/lib/utils';
 
 type Role = 'master' | 'manager' | 'store' | 'player';
@@ -32,6 +34,16 @@ const ROLES: { key: Role; name: string; body: string; sees: string }[] = [
     sees: 'Only themselves',
   },
 ];
+
+/** Each player in the example chain, with a stock portrait. */
+const PHOTOS: Record<string, string> = {
+  SP: '/avatars/players/01.webp',
+  p2: '/avatars/players/04.webp',
+  p3: '/avatars/players/05.webp',
+  p4: '/avatars/players/08.webp',
+  p5: '/avatars/players/12.webp',
+  p6: '/avatars/players/10.webp',
+};
 
 /** Which nodes of the example chain each role can reach. */
 const REACH: Record<Role, string[]> = {
@@ -86,16 +98,17 @@ export function Roles() {
     </span>
   );
   const player = (id: string) => (
-    <span
+    <Image
       key={id}
+      src={PHOTOS[id]}
+      alt=""
+      width={128}
+      height={128}
       className={cn(
-        'grid size-8 place-items-center rounded-full text-[11px] font-bold transition-colors duration-300',
-        reach.has(id) ? 'bg-lp-chip text-lp-text' : 'bg-lp-sunk text-lp-dim',
+        'size-9 rounded-full object-cover ring-2 transition-[opacity,filter,box-shadow] duration-300',
+        reach.has(id) ? 'ring-lp-chip opacity-100' : 'opacity-35 ring-transparent grayscale',
       )}
-    >
-      {id === 'SP' ? 'SP' : ''}
-      <span className="sr-only">{id === 'SP' ? '' : 'A player'}</span>
-    </span>
+    />
   );
 
   return (

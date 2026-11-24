@@ -701,7 +701,11 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Update the signed-in customer’s own profile
+     * @description Name, phone, location and photo. Email, username, status and money stay with staff. A photo must be one uploaded through the portal.
+     */
+    patch: operations['PortalController_updateProfile'];
     trace?: never;
   };
   '/api/team/referral-programs': {
@@ -1801,6 +1805,10 @@ export interface components {
       username: string;
       fullName: string | null;
       avatarUrl: string | null;
+      phone?: string | null;
+      city?: string | null;
+      state?: string | null;
+      country?: string | null;
       /** @description Account status */
       status: string;
       /** @description Decimal serialised as a string */
@@ -2348,6 +2356,15 @@ export interface components {
       occurredAt: string;
       /** @description A credit that corrects an earlier entry, not a withdrawal. */
       isCorrection: boolean;
+    };
+    UpdateMyProfileDto: {
+      fullName?: string;
+      phone?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      /** @description A photo uploaded through the portal, or null to remove it. */
+      avatarUrl?: string | null;
     };
     /** @enum {string} */
     ReferralRewardType: 'fixed' | 'percentage';
@@ -5995,6 +6012,63 @@ export interface operations {
       };
       /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  PortalController_updateProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMyProfileDto'];
+      };
+    };
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['CustomerProfileDto'];
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid customer access token
+       */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
         headers: {
           [name: string]: unknown;
         };

@@ -17,6 +17,9 @@ export interface SceneProps {
   progress: number;
 }
 
+/** The demo player the scenes follow, with her stock portrait. */
+const SAVANNAH = '/avatars/players/01.webp';
+
 const card =
   'border-lp-line bg-lp-raised rounded-2xl border shadow-[0_30px_70px_-40px_rgb(18_26_43/0.45)]';
 const at = (progress: number, from: number) => progress >= from;
@@ -44,8 +47,14 @@ export function ChatScene({ progress }: SceneProps) {
   return (
     <div className={cn(card, 'w-full max-w-md overflow-hidden')}>
       <div className="border-lp-line flex items-center gap-3 border-b px-4 py-3">
-        <span className="bg-lp-chip/40 relative grid size-10 place-items-center rounded-full text-sm font-bold">
-          SP
+        <span className="relative size-10 shrink-0">
+          <Image
+            src={SAVANNAH}
+            alt=""
+            width={128}
+            height={128}
+            className="size-10 rounded-full object-cover"
+          />
           <span className="bg-lp-ok ring-lp-raised absolute right-0 bottom-0 size-2.5 rounded-full ring-2" />
         </span>
         <div>
@@ -247,8 +256,8 @@ export function ProgressScene({ progress }: SceneProps) {
 /* 5. And brings her friends -------------------------------------------- */
 
 const FRIENDS = [
-  { initials: 'JB', name: 'Jolene Brooks', tone: 'bg-sky-200' },
-  { initials: 'WH', name: 'Wade Harper', tone: 'bg-lp-chip/50' },
+  { name: 'Lacey Brooks', photo: '/avatars/players/06.webp' },
+  { name: 'Colt Harper', photo: '/avatars/players/07.webp' },
 ];
 
 export function FriendsScene({ progress }: SceneProps) {
@@ -256,21 +265,26 @@ export function FriendsScene({ progress }: SceneProps) {
   return (
     <div className={cn(card, 'w-full max-w-sm p-6')}>
       <div className="flex items-center justify-center py-4">
-        <span className="bg-lp-chip/40 ring-lp-raised relative z-10 grid size-16 place-items-center rounded-full text-lg font-bold ring-4">
-          SP
-        </span>
+        <Image
+          src={SAVANNAH}
+          alt=""
+          width={128}
+          height={128}
+          className="ring-lp-raised relative z-10 size-16 rounded-full object-cover ring-4"
+        />
         {FRIENDS.map((friend, index) => (
-          <span
-            key={friend.initials}
+          <Image
+            key={friend.name}
+            src={friend.photo}
+            alt=""
+            width={128}
+            height={128}
             className={cn(
-              'ring-lp-raised -ml-3 grid size-14 place-items-center rounded-full font-bold ring-4',
-              friend.tone,
+              'ring-lp-raised -ml-3 size-14 rounded-full object-cover ring-4',
               ease,
               index < joined ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0',
             )}
-          >
-            {friend.initials}
-          </span>
+          />
         ))}
       </div>
       <p className="mt-2 text-center text-sm">

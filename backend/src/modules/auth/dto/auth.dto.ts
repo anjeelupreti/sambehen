@@ -1,4 +1,4 @@
-import { ApiProperty, getSchemaPath } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, getSchemaPath } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, MaxLength, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { AuthRealm, StaffRole } from '@common/constants/app.constants';
@@ -107,6 +107,18 @@ export class CustomerProfileDto {
 
   @ApiProperty({ type: String, nullable: true })
   avatarUrl!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  phone?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  city?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  state?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  country?: string | null;
 
   @ApiProperty({ description: 'Account status' })
   status!: string;
