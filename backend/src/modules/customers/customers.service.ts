@@ -1,4 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
+import {
+  AutoLabel,
+  isBigSpenderSql,
+  isInactiveSql,
+  isNewSql,
+  isVipSql,
+} from '@modules/labels/auto-labels';
+import { LabelsService } from '@modules/labels/labels.service';
 import { ConfigService } from '@nestjs/config';
 import { and, eq, gte, inArray, isNull, ne, sql, SQL, count, sum } from 'drizzle-orm';
 import { AuthRealm, CustomerStatus, SortOrder, StaffRole } from '@common/constants/app.constants';
@@ -41,6 +49,7 @@ import { TrendQueryDto, TrendGranularity, TrendResponseDto } from '../dashboard/
 @Injectable()
 export class CustomersService {
   constructor(
+    private readonly labelsService: LabelsService,
     @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
     private readonly customerRepository: CustomerRepository,
     private readonly transactionRepository: TransactionRepository,
@@ -103,6 +112,14 @@ export class CustomersService {
       );
     }
 
+    if (filters.labelId) conditions.push(this.labelsService.hasLabelSql(filters.labelId));
+    if (filters.autoLabel === AutoLabel.VIP) conditions.push(isVipSql);
+    if (filters.autoLabel === AutoLabel.NEW) conditions.push(isNewSql);
+    if (filters.autoLabel === AutoLabel.INACTIVE) conditions.push(isInactiveSql);
+    if (filters.autoLabel === AutoLabel.BIG_SPENDER) {
+      conditions.push(isBigSpenderSql(await this.labelsService.bigSpenderThreshold(actor)));
+    }
+
     const range = this.dateRange(filters);
     if (range.from) conditions.push(gte(customers.registeredAt, range.from));
     if (range.to) conditions.push(sql`${customers.registeredAt} <= ${range.to}`);
@@ -131,13 +148,20 @@ export class CustomersService {
 
     // Owner names and money aggregates are resolved for the page only, so
     // the list query stays a plain indexed scan rather than a wide join.
-    const [ownerNames, totals] = await Promise.all([
+    const ids = result.data.map((row) => row.id);
+    const [ownerNames, totals, labels, autoLabels] = await Promise.all([
       this.resolveOwnerNames(result.data),
-      this.transactionRepository.totalsForCustomers(result.data.map((row) => row.id)),
+      this.transactionRepository.totalsForCustomers(ids),
+      this.labelsService.labelsFor(ids),
+      this.labelsService.autoLabelsFor(actor, ids),
     ]);
 
     return {
-      data: result.data.map((row) => this.toResponse(row, ownerNames, totals.get(row.id))),
+      data: result.data.map((row) => ({
+        ...this.toResponse(row, ownerNames, totals.get(row.id)),
+        labels: labels.get(row.id) ?? [],
+        autoLabels: autoLabels.get(row.id) ?? [],
+      })),
       meta: result.meta,
       summary,
     };
@@ -199,11 +223,17 @@ export class CustomersService {
       throw new ResourceNotFoundException(ErrorCode.CUSTOMER_NOT_FOUND, 'Customer not found');
     }
 
-    const [ownerNames, totals] = await Promise.all([
+    const [ownerNames, totals, labels, autoLabels] = await Promise.all([
       this.resolveOwnerNames([customer]),
       this.transactionRepository.totalsForCustomers([customer.id]),
+      this.labelsService.labelsFor([customer.id]),
+      this.labelsService.autoLabelsFor(actor, [customer.id]),
     ]);
-    return this.toResponse(customer, ownerNames, totals.get(customer.id));
+    return {
+      ...this.toResponse(customer, ownerNames, totals.get(customer.id)),
+      labels: labels.get(customer.id) ?? [],
+      autoLabels: autoLabels.get(customer.id) ?? [],
+    };
   }
 
   /**
@@ -709,6 +739,8 @@ export class CustomersService {
       username: customer.username,
       fullName: customer.fullName,
       avatarUrl: customer.avatarUrl,
+      labels: [],
+      autoLabels: [],
       phone: customer.phone,
       city: customer.city,
       state: customer.state,

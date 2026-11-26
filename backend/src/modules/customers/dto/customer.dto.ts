@@ -1,4 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AutoLabel } from '@modules/labels/auto-labels';
+import { LabelDto } from '@modules/labels/dto/label.dto';
 import {
   IsString,
   IsEmail,
@@ -272,6 +274,20 @@ export const CUSTOMER_SORT_FIELDS = [
 ] as const;
 
 export class CustomerFilterDto extends BaseFilterDto {
+  @ApiPropertyOptional({ format: 'uuid', description: 'Only players carrying this label.' })
+  @IsUUID('4')
+  @IsOptional()
+  labelId?: string;
+
+  @ApiPropertyOptional({
+    enum: AutoLabel,
+    enumName: 'AutoLabel',
+    description: 'Only players carrying this automatic label.',
+  })
+  @IsEnum(AutoLabel)
+  @IsOptional()
+  autoLabel?: AutoLabel;
+
   @ApiPropertyOptional({ enum: CustomerStatus, enumName: 'CustomerStatus' })
   @IsEnum(CustomerStatus)
   @IsOptional()
@@ -353,6 +369,12 @@ export class CustomerResponseDto {
 
   @ApiProperty({ type: String, nullable: true, description: 'Profile photo URL.' })
   avatarUrl!: string | null;
+
+  @ApiProperty({ type: [LabelDto] })
+  labels!: LabelDto[];
+
+  @ApiProperty({ enum: AutoLabel, enumName: 'AutoLabel', isArray: true })
+  autoLabels!: AutoLabel[];
 
   @ApiProperty({ type: String, nullable: true })
   phone!: string | null;

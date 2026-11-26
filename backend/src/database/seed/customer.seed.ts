@@ -214,5 +214,17 @@ export async function seedCustomers(db: DrizzleDB, staff: ISeededStaff): Promise
     });
   }
 
+  // Spread sign-up dates so "new player" means something in the demo: a
+  // handful joined this week, the rest over the past year.
+  const day = 86_400_000;
+  for (const [position, customer] of seeded.entries()) {
+    if (customer.status === CustomerStatus.PENDING) continue;
+    const daysAgo = position % 7 === 0 ? 2 + (position % 10) : 35 + ((position * 23) % 330);
+    await db
+      .update(customers)
+      .set({ registeredAt: new Date(now - daysAgo * day) })
+      .where(eq(customers.id, customer.id));
+  }
+
   return seeded;
 }

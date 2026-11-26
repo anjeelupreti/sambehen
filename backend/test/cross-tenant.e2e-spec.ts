@@ -190,6 +190,25 @@ describe('Cross-tenant isolation (e2e)', () => {
         .expect(404);
     });
 
+    it("refuses labelling another chain's customer", async () => {
+      const labels = await get('/api/v1/team/labels', tokens.manager2).expect(200);
+      await request(app.getHttpServer())
+        .put(`/api/v1/team/customers/${ids.manager1Customer}/labels`)
+        .set('Authorization', `Bearer ${tokens.manager2}`)
+        .send({ labelIds: labels.body.data.slice(0, 1).map((l: { id: string }) => l.id) })
+        .expect(404);
+    });
+
+    it("refuses marking another chain's conversation unread", async () => {
+      const inbox = await get('/api/v1/team/conversations?limit=1', tokens.manager1).expect(200);
+      const conversationId = inbox.body.data[0]?.id;
+      if (!conversationId) return;
+      await request(app.getHttpServer())
+        .post(`/api/v1/team/conversations/${conversationId}/unread`)
+        .set('Authorization', `Bearer ${tokens.manager2}`)
+        .expect(404);
+    });
+
     it('drops out-of-scope ids from a bulk operation rather than acting on them', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/team/customers/bulk/status')
@@ -318,6 +337,24 @@ describe('Cross-tenant isolation (e2e)', () => {
 
   /** Capability denials, where 403 IS the right answer. */
   describe('role capabilities', () => {
+    it('lets only the master create labels', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/team/labels')
+        .set('Authorization', `Bearer ${tokens.store11}`)
+        .send({ name: 'Not allowed', color: 'blue' })
+        .expect(403);
+    });
+
+    it('filters the inbox by automatic label inside the scope', async () => {
+      const all = await get('/api/v1/team/conversations?limit=100', tokens.manager2).expect(200);
+      const vip = await get(
+        '/api/v1/team/conversations?limit=100&vip=true',
+        tokens.manager2,
+      ).expect(200);
+      expect(vip.body.meta.total).toBeLessThanOrEqual(all.body.meta.total);
+      for (const row of vip.body.data) expect(row.autoLabels).toContain('vip');
+    });
+
     it('refuses a store creating staff', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/team/staff')

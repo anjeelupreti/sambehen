@@ -22,7 +22,7 @@ export default async function MessagesPage() {
     <div className="-m-4 h-[calc(100svh-3.5rem)] sm:-m-6">
       <MessagesWorkspace
         initialConversations={data}
-        viewer={{ id: actor.id, username: actor.username }}
+        viewer={{ id: actor.id, username: actor.username, role: actor.role }}
       />
     </div>
   );

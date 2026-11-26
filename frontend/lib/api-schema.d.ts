@@ -853,6 +853,62 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/team/labels': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every label, with how many of your players carry it */
+    get: operations['LabelsController_list'];
+    put?: never;
+    /** Create a label (master only) */
+    post: operations['LabelsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/labels/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a label and take it off every player (master only) */
+    delete: operations['LabelsController_remove'];
+    options?: never;
+    head?: never;
+    /** Rename or recolour a label (master only) */
+    patch: operations['LabelsController_update'];
+    trace?: never;
+  };
+  '/api/team/customers/{id}/labels': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Set a player's labels
+     * @description Replaces the full set.
+     */
+    put: operations['LabelsController_setForCustomer'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/team/games': {
     parameters: {
       query?: never;
@@ -1297,6 +1353,26 @@ export interface paths {
      * @description Creates the thread on first contact. The staff sender is always recorded internally, even though customer-facing responses omit it.
      */
     post: operations['MessagingController_send'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/conversations/{id}/unread': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark a conversation unread for the current viewer
+     * @description Only for this staff member, so they can come back to it later.
+     */
+    post: operations['MessagingController_markUnread'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2093,6 +2169,16 @@ export interface components {
        */
       newManagerId: string;
     };
+    LabelDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Regular */
+      name: string;
+      /** @enum {string} */
+      color: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'pink' | 'teal' | 'gray';
+    };
+    /** @enum {string} */
+    AutoLabel: 'new' | 'vip' | 'big_spender' | 'inactive';
     /** @enum {string} */
     CustomerStatus: 'pending' | 'active' | 'inactive' | 'suspended' | 'banned';
     CustomerResponseDto: {
@@ -2103,6 +2189,8 @@ export interface components {
       fullName: string | null;
       /** @description Profile photo URL. */
       avatarUrl: string | null;
+      labels: components['schemas']['LabelDto'][];
+      autoLabels: components['schemas']['AutoLabel'][];
       phone: string | null;
       city: string | null;
       state: string | null;
@@ -2556,6 +2644,31 @@ export interface components {
        * @example 150.00
        */
       bonusBalance: string;
+    };
+    LabelWithUsageDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Regular */
+      name: string;
+      /** @enum {string} */
+      color: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'pink' | 'teal' | 'gray';
+      /** @description Players carrying this label, among those the viewer can see. */
+      playerCount: number;
+    };
+    CreateLabelDto: {
+      /** @example Regular */
+      name: string;
+      /** @enum {string} */
+      color: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'pink' | 'teal' | 'gray';
+    };
+    UpdateLabelDto: {
+      name?: string;
+      /** @enum {string} */
+      color?: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'pink' | 'teal' | 'gray';
+    };
+    SetCustomerLabelsDto: {
+      /** @description The full set of labels the player should carry. */
+      labelIds: string[];
     };
     GameResponseDto: {
       /** Format: uuid */
@@ -3038,6 +3151,13 @@ export interface components {
       unreadCount: number;
       /** @description The latest message came from the customer, so a reply is outstanding. */
       awaitingReply: boolean;
+      /**
+       * Format: date-time
+       * @description When the player started waiting for a reply; null when nobody is waiting.
+       */
+      waitingSince: string | null;
+      labels: components['schemas']['LabelDto'][];
+      autoLabels: components['schemas']['AutoLabel'][];
       /** Format: uuid */
       managerId: string | null;
       /** Format: uuid */
@@ -3071,7 +3191,19 @@ export interface components {
        * @example 9
        */
       awaitingReply: number;
+      /**
+       * @description Conversations with a player who holds a VIP tier.
+       * @example 4
+       */
+      vipConversations: number;
+      /**
+       * @description Conversations with a player who joined in the last 14 days.
+       * @example 3
+       */
+      newCustomerConversations: number;
     };
+    /** @enum {string} */
+    InboxSort: 'attention' | 'waiting' | 'recent';
     /** @enum {string} */
     MessageSenderType: 'customer' | 'staff' | 'system';
     MessageAttachmentDto: {
@@ -5049,6 +5181,10 @@ export interface operations {
         dateTo?: string;
         /** @description Rolling window ending now. Takes precedence over dateFrom/dateTo. */
         lastNDays?: number;
+        /** @description Only players carrying this label. */
+        labelId?: string;
+        /** @description Only players carrying this automatic label. */
+        autoLabel?: components['schemas']['AutoLabel'];
         status?: components['schemas']['CustomerStatus'];
         /** @description Activity-based, not the status column: true means status is active AND last seen within the configured window (ACTIVE_CUSTOMER_WINDOW_DAYS, default 30). */
         isActive?: boolean;
@@ -6583,6 +6719,303 @@ export interface operations {
        *     Missing, expired or invalid customer access token
        */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  LabelsController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['LabelWithUsageDto'][];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  LabelsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateLabelDto'];
+      };
+    };
+    responses: {
+      /** @description Resource created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['LabelDto'];
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid team access token
+       */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /**
+       * @description Authenticated, but the role lacks this capability
+       *
+       *     Requires role: master
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Uniqueness or state conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  LabelsController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            /** @example null */
+            data?: Record<string, never> | null;
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid team access token
+       */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /**
+       * @description Authenticated, but the role lacks this capability
+       *
+       *     Requires role: master
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  LabelsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateLabelDto'];
+      };
+    };
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['LabelDto'];
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid team access token
+       */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /**
+       * @description Authenticated, but the role lacks this capability
+       *
+       *     Requires role: master
+       */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Uniqueness or state conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  LabelsController_setForCustomer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetCustomerLabelsDto'];
+      };
+    };
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['LabelDto'][];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -8494,6 +8927,16 @@ export interface operations {
         /** @description Only conversations belonging to active customers (status active and seen within the activity window). */
         activeCustomersOnly?: boolean;
         assignedStaffId?: string;
+        /** @description attention: unread first, then the longest wait for a reply. waiting: longest wait first. recent: newest activity first. */
+        sort?: components['schemas']['InboxSort'];
+        /** @description Only players who hold a VIP tier today. */
+        vip?: boolean;
+        /** @description Only players who joined in the last 14 days. */
+        newCustomers?: boolean;
+        /** @description Only big spenders (top 10% by money in, last 30 days). */
+        bigSpenders?: boolean;
+        /** @description Only players carrying this label. */
+        labelId?: string;
         /** @description Master only. */
         managerId?: string;
         /** @description Master, or a manager's own store. */
@@ -8655,6 +9098,49 @@ export interface operations {
       };
       /** @description Rate limit exceeded */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  MessagingController_markUnread: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            /** @example null */
+            data?: Record<string, never> | null;
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
         headers: {
           [name: string]: unknown;
         };

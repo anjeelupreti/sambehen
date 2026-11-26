@@ -46,6 +46,24 @@ export const ApiOkData = <TModel extends Type<unknown>>(
   );
 
 /** 201 with the created object in `data`. */
+/** 200 whose `data` is a plain array of `model` (no pagination). */
+export const ApiOkArray = <TModel extends Type<unknown>>(
+  model: TModel,
+  description = 'Request completed successfully',
+): MethodDecorator =>
+  applyDecorators(
+    ApiExtraModels(ApiResponseDto, model),
+    ApiOkResponse({
+      description,
+      schema: {
+        allOf: [
+          { $ref: getSchemaPath(ApiResponseDto) },
+          { properties: { data: { type: 'array', items: { $ref: getSchemaPath(model) } } } },
+        ],
+      },
+    }),
+  );
+
 export const ApiCreatedData = <TModel extends Type<unknown>>(
   model: TModel,
   description = 'Resource created successfully',

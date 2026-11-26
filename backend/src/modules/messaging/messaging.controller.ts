@@ -7,6 +7,7 @@ import { ResponseMessage } from '@common/decorators/response-message.decorator';
 import { ParseUUIDPipe } from '@common/pipes/parse-uuid.pipe';
 import {
   ApiOkData,
+  ApiOkMessage,
   ApiOkList,
   ApiCreatedData,
   ApiErrors,
@@ -96,6 +97,23 @@ export class MessagingController {
     @Body() dto: StartConversationDto,
   ): Promise<MessageResponseDto> {
     return this.messagingService.sendAsStaff(actor, dto.customerId, dto);
+  }
+
+  @Post(':id/unread')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Conversation marked as unread')
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOperation({
+    summary: 'Mark a conversation unread for the current viewer',
+    description: 'Only for this staff member, so they can come back to it later.',
+  })
+  @ApiOkMessage()
+  @ApiErrors(401, 404)
+  async markUnread(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.messagingService.markUnread(actor, id);
   }
 
   @Post(':id/read')

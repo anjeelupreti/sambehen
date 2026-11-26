@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { listLabels } from '@/app/(app)/messages/label-actions';
+import { CustomerLabels } from '@/components/customers/customer-labels';
 import { ChatAvatar } from '@/components/chat/avatar';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -104,6 +106,12 @@ export default async function CustomerDetailPage({
               {customer.fullName ? (
                 <p className="text-muted-foreground text-sm">{customer.username}</p>
               ) : null}
+              <CustomerLabels
+                customerId={customer.id}
+                initial={customer.labels}
+                autoLabels={customer.autoLabels}
+                labels={await listLabels()}
+              />
             </div>
           </div>
 

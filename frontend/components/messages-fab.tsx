@@ -17,7 +17,11 @@ type Inbox = 'customers' | 'team';
  * leaving the page. Hidden on /messages, which already shows everything.
  * The views stay mounted while the panel is closed so the badge stays live.
  */
-export function MessagesFab({ viewer }: { viewer: { id: string; username: string } }) {
+export function MessagesFab({
+  viewer,
+}: {
+  viewer: { id: string; username: string; role: string };
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [inbox, setInbox] = useState<Inbox>('customers');

@@ -49,6 +49,7 @@ import { EmailingModule } from '@modules/emailing/emailing.module';
 import { ExportsModule } from '@modules/exports/exports.module';
 import { AuditLogsModule } from '@modules/audit/audit-logs.module';
 import { ContactModule } from '@modules/contact/contact.module';
+import { LabelsModule } from '@modules/labels/labels.module';
 
 import { CorrelationIdMiddleware } from '@common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middleware';
@@ -149,6 +150,7 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
     ExportsModule,
     AuditLogsModule,
     ContactModule,
+    LabelsModule,
   ],
   providers: [
     // Order matters. Guards run first (authenticate, then authorize), then

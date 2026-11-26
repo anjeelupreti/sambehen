@@ -4,7 +4,7 @@ import { apiGet, apiList, apiMutate } from '@/lib/api';
 import { fromCustomerThreadForStaff } from '@/components/chat/mappers';
 import type { ChatMessage, ThreadPage } from '@/components/chat/types';
 import { getAccessToken, getActor } from '@/lib/session';
-import type { Conversation, Message, MessageAttachment } from '@/lib/types';
+import type { Conversation, ConversationSummary, Message, MessageAttachment } from '@/lib/types';
 
 /**
  * Server actions for customer conversations, as staff see them.
@@ -18,13 +18,73 @@ import type { Conversation, Message, MessageAttachment } from '@/lib/types';
  * conversation when none exists.
  */
 
-/** The inbox, scoped by the API to what the caller may see. */
-export async function listConversations(): Promise<Conversation[]> {
+export type InboxChip = 'all' | 'unread' | 'awaiting' | 'vip' | 'new' | 'big';
+export type InboxSort = 'attention' | 'waiting' | 'recent';
+
+export interface InboxQuery {
+  chip?: InboxChip;
+  sort?: InboxSort;
+  labelId?: string;
+  storeId?: string;
+  managerId?: string;
+  search?: string;
+  page?: number;
+}
+
+export interface InboxPage {
+  data: Conversation[];
+  hasMore: boolean;
+  summary: ConversationSummary | null;
+}
+
+const PAGE_SIZE = 40;
+
+/**
+ * One page of the inbox, filtered and sorted by the API so it stays fast
+ * however many conversations there are. The summary counts the inbox
+ * before any chip is applied, for the chip badges.
+ */
+export async function listInbox(query: InboxQuery = {}): Promise<InboxPage> {
+  const chip = query.chip ?? 'all';
   try {
-    const { data } = await apiList<Conversation>('/team/conversations', { query: { limit: 100 } });
-    return data;
+    const result = await apiList<Conversation, ConversationSummary>('/team/conversations', {
+      query: {
+        limit: PAGE_SIZE,
+        page: query.page ?? 1,
+        sort: query.sort ?? 'attention',
+        search: query.search?.trim() || undefined,
+        labelId: query.labelId || undefined,
+        storeId: query.storeId || undefined,
+        managerId: query.managerId || undefined,
+        unreadOnly: chip === 'unread' || undefined,
+        awaitingReply: chip === 'awaiting' || undefined,
+        vip: chip === 'vip' || undefined,
+        newCustomers: chip === 'new' || undefined,
+        bigSpenders: chip === 'big' || undefined,
+      },
+    });
+    return {
+      data: result.data,
+      hasMore: Boolean(result.meta?.hasNextPage),
+      summary: result.summary ?? null,
+    };
   } catch {
-    return [];
+    return { data: [], hasMore: false, summary: null };
+  }
+}
+
+/** The inbox's first page with default filters, for callers that just want the list. */
+export async function listConversations(): Promise<Conversation[]> {
+  return (await listInbox()).data;
+}
+
+/** Marks a conversation unread again, for this viewer only. */
+export async function markConversationUnread(conversationId: string): Promise<boolean> {
+  try {
+    await apiMutate<unknown>(`/team/conversations/${conversationId}/unread`, 'POST');
+    return true;
+  } catch {
+    return false;
   }
 }
 

@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { LabelsService } from '@modules/labels/labels.service';
+import { isBigSpenderSql, isNewSql, isVipSql } from '@modules/labels/auto-labels';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { and, count, desc, eq, inArray, isNull, sql, SQL } from 'drizzle-orm';
@@ -29,6 +31,7 @@ import {
   SendMessageDto,
   MarkReadDto,
   ConversationFilterDto,
+  InboxSort,
   MessageThreadQueryDto,
   ConversationResponseDto,
   ConversationSummaryDto,
@@ -75,6 +78,7 @@ export class MessagingService {
     private readonly scopeService: ScopeService,
     private readonly configService: ConfigService,
     private readonly events: EventEmitter2,
+    private readonly labelsService: LabelsService,
   ) {}
 
   /**
@@ -152,6 +156,13 @@ export class MessagingService {
       conditions.push(sql`${this.unreadExpression(actor.id)} > 0`);
     }
 
+    if (filters.vip) conditions.push(isVipSql);
+    if (filters.newCustomers) conditions.push(isNewSql);
+    if (filters.labelId) conditions.push(this.labelsService.hasLabelSql(filters.labelId));
+    if (filters.bigSpenders) {
+      conditions.push(isBigSpenderSql(await this.labelsService.bigSpenderThreshold(actor)));
+    }
+
     if (filters.search) {
       const term = `%${filters.search.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
       conditions.push(
@@ -173,6 +184,36 @@ export class MessagingService {
   ): Promise<IPaginatedResult<ConversationResponseDto, ConversationSummaryDto>> {
     const conditions = await this.buildInboxConditions(actor, filters);
     const where = and(...conditions);
+    // The chip counts describe the inbox before any chip is applied, so
+    // "VIP (5)" still reads 5 while the "Unread" chip is selected.
+    const baseConditions = await this.buildInboxConditions(actor, {
+      ...filters,
+      unreadOnly: undefined,
+      awaitingReply: undefined,
+      vip: undefined,
+      newCustomers: undefined,
+      bigSpenders: undefined,
+      labelId: undefined,
+    });
+    const awaiting = sql`(${conversations.lastCustomerMessageAt} IS NOT NULL
+      AND (${conversations.lastStaffMessageAt} IS NULL
+           OR ${conversations.lastCustomerMessageAt} > ${conversations.lastStaffMessageAt}))`;
+    const recent = desc(sql`COALESCE(${conversations.lastMessageAt}, ${conversations.createdAt})`);
+    const order =
+      filters.sort === InboxSort.RECENT
+        ? [recent]
+        : filters.sort === InboxSort.WAITING
+          ? [
+              desc(awaiting),
+              sql`CASE WHEN ${awaiting} THEN ${conversations.lastCustomerMessageAt} END ASC NULLS LAST`,
+              recent,
+            ]
+          : [
+              desc(sql`(${this.unreadExpression(actor.id)} > 0)`),
+              desc(awaiting),
+              sql`CASE WHEN ${awaiting} THEN ${conversations.lastCustomerMessageAt} END ASC NULLS LAST`,
+              recent,
+            ];
 
     const page = Math.max(1, filters.page ?? 1);
     const limit = Math.max(1, filters.limit ?? 25);
@@ -196,13 +237,14 @@ export class MessagingService {
             AND (${conversations.lastStaffMessageAt} IS NULL
                  OR ${conversations.lastCustomerMessageAt} > ${conversations.lastStaffMessageAt})
           )`,
+          waitingSince: sql<Date | null>`CASE WHEN ${awaiting} THEN ${conversations.lastCustomerMessageAt} END`,
           managerId: customers.managerId,
           storeId: customers.storeId,
         })
         .from(conversations)
         .innerJoin(customers, eq(conversations.customerId, customers.id))
         .where(where)
-        .orderBy(desc(sql`COALESCE(${conversations.lastMessageAt}, ${conversations.createdAt})`))
+        .orderBy(...order)
         .limit(limit)
         .offset((page - 1) * limit),
       this.db
@@ -215,8 +257,20 @@ export class MessagingService {
     const total = Number(totalRow?.value ?? 0);
     const totalPages = Math.ceil(total / limit);
 
+    const customerIds = rows.map((row) => row.customerId);
+    const [labels, autoLabels] = await Promise.all([
+      this.labelsService.labelsFor(customerIds),
+      this.labelsService.autoLabelsFor(actor, customerIds),
+    ]);
+
     return {
-      data: rows.map((row) => ({ ...row, unreadCount: Number(row.unreadCount) })),
+      data: rows.map((row) => ({
+        ...row,
+        unreadCount: Number(row.unreadCount),
+        waitingSince: row.waitingSince ? new Date(row.waitingSince) : null,
+        labels: labels.get(row.customerId) ?? [],
+        autoLabels: autoLabels.get(row.customerId) ?? [],
+      })),
       meta: {
         total,
         page,
@@ -225,7 +279,7 @@ export class MessagingService {
         hasNextPage: page < totalPages,
         hasPreviousPage: page > 1,
       },
-      summary: await this.summarise(actor, conditions),
+      summary: await this.summarise(actor, baseConditions),
     };
   }
 
@@ -256,6 +310,8 @@ export class MessagingService {
             AND (${conversations.lastStaffMessageAt} IS NULL
                  OR ${conversations.lastCustomerMessageAt} > ${conversations.lastStaffMessageAt})
         )`,
+        vipConversations: sql<number>`count(*) FILTER (WHERE ${isVipSql})`,
+        newCustomerConversations: sql<number>`count(*) FILTER (WHERE ${isNewSql})`,
         responsesToday: sql<number>`(
           SELECT COUNT(*) FROM ${messages} m
           WHERE m.conversation_id IN (
@@ -278,6 +334,8 @@ export class MessagingService {
       responsesToday: Number(row?.responsesToday ?? 0),
       conversationsToday: Number(row?.conversationsToday ?? 0),
       awaitingReply: Number(row?.awaitingReply ?? 0),
+      vipConversations: Number(row?.vipConversations ?? 0),
+      newCustomerConversations: Number(row?.newCustomerConversations ?? 0),
     };
   }
 
@@ -436,6 +494,34 @@ export class MessagingService {
    * The customer has the thread open: everything up to now counts as read
    * for them, and the team's read ticks follow.
    */
+  /**
+   * Marks a conversation unread again for this viewer only, so they can
+   * come back to it: their read position moves to just before the
+   * player's latest message.
+   */
+  async markUnread(actor: ICurrentStaff, conversationId: string): Promise<void> {
+    const scope = await this.scopeService.customerScope(actor);
+    const [conversation] = await this.db
+      .select({ lastCustomerMessageAt: conversations.lastCustomerMessageAt })
+      .from(conversations)
+      .innerJoin(customers, eq(conversations.customerId, customers.id))
+      .where(and(eq(conversations.id, conversationId), isNull(customers.deletedAt), scope))
+      .limit(1);
+    if (!conversation) {
+      throw new ResourceNotFoundException(ErrorCode.NOT_FOUND, 'Conversation not found');
+    }
+    if (!conversation.lastCustomerMessageAt) return;
+
+    const before = new Date(conversation.lastCustomerMessageAt.getTime() - 1);
+    await this.db
+      .insert(conversationReadStates)
+      .values({ conversationId, staffId: actor.id, lastReadAt: before, lastReadMessageId: null })
+      .onConflictDoUpdate({
+        target: [conversationReadStates.conversationId, conversationReadStates.staffId],
+        set: { lastReadAt: before, lastReadMessageId: null },
+      });
+  }
+
   async markReadByCustomer(customerId: string): Promise<{ readAt: Date | null }> {
     const conversation = await this.findConversationByCustomer(customerId);
     if (!conversation) return { readAt: null };

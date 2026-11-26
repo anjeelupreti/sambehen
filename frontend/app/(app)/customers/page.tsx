@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { listLabels } from '@/app/(app)/messages/label-actions';
+import { LabelChips } from '@/components/chat/label-chips';
 import { ChatAvatar } from '@/components/chat/avatar';
 import Link from 'next/link';
 import { BuildingIcon, DownloadIcon, GlobeIcon } from 'lucide-react';
@@ -57,8 +59,20 @@ const ACTIVITY_OPTIONS = [
   { value: 'false', label: 'Dormant' },
 ];
 
+const AUTO_LABEL_OPTIONS = [
+  { value: 'vip', label: 'VIP' },
+  { value: 'big_spender', label: 'Big spender' },
+  { value: 'new', label: 'New' },
+  { value: 'inactive', label: 'Inactive' },
+];
+
 /** Chips describe what is filtered; every one here has a control above. */
 const ACTIVE_FILTERS = [
+  {
+    param: 'autoLabel',
+    label: 'Group',
+    labels: Object.fromEntries(AUTO_LABEL_OPTIONS.map((o) => [o.value, o.label])),
+  },
   { param: 'search', label: 'Search' },
   { param: 'status', label: 'Status' },
   { param: 'isActive', label: 'Activity', labels: { true: 'Recent', false: 'Dormant' } },
@@ -103,10 +117,25 @@ export default async function CustomersPage({
       country: first('country'),
       dateFrom: first('dateFrom'),
       dateTo: first('dateTo'),
+      labelId: first('labelId'),
+      autoLabel: first('autoLabel'),
       sortBy: first('sortBy'),
       sortOrder: first('sortOrder'),
     },
   });
+
+  const labelOptions = (await listLabels()).map((label) => ({
+    value: label.id,
+    label: label.name,
+  }));
+  const activeFilters = [
+    ...ACTIVE_FILTERS,
+    {
+      param: 'labelId',
+      label: 'Label',
+      labels: Object.fromEntries(labelOptions.map((option) => [option.value, option.label])),
+    },
+  ];
 
   const owners = ownersPromise
     ? (await ownersPromise).data
@@ -148,9 +177,25 @@ export default async function CustomersPage({
 
       <Card className="gap-0 py-0">
         <CardContent className="px-0">
-          <FilterBar active={ACTIVE_FILTERS}>
+          <FilterBar active={activeFilters}>
             <SearchField placeholder="Search username, name, email…" />
             <FilterSelect param="status" label="Status" options={STATUS_OPTIONS} />
+            <FilterSelect
+              param="autoLabel"
+              label="Group"
+              options={AUTO_LABEL_OPTIONS}
+              anyLabel="Any group"
+              className="w-[150px]"
+            />
+            {labelOptions.length > 0 && (
+              <FilterSelect
+                param="labelId"
+                label="Label"
+                options={labelOptions}
+                anyLabel="Any label"
+                className="w-[160px]"
+              />
+            )}
             <FilterSelect
               param="isActive"
               label="Activity"
@@ -215,6 +260,13 @@ export default async function CustomersPage({
                           {customer.fullName ? (
                             <p className="text-muted-foreground text-xs">{customer.username}</p>
                           ) : null}
+                          <LabelChips
+                            labels={customer.labels}
+                            autoLabels={customer.autoLabels}
+                            max={3}
+                            size="xs"
+                            className="mt-1"
+                          />
                         </div>
                       </div>
                     </TableCell>

@@ -69,7 +69,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </main>
         </div>
 
-        <MessagesFab viewer={{ id: actor.id, username: actor.username }} />
+        <MessagesFab viewer={{ id: actor.id, username: actor.username, role: actor.role }} />
       </div>
     </ChatSocketProvider>
   );

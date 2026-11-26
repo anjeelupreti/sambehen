@@ -9,6 +9,7 @@ import { seedGamesAndTransactions } from './transactions.seed';
 import { seedEngagement } from './engagement.seed';
 import { seedReferrals } from './referrals.seed';
 import { seedMessaging } from './messaging.seed';
+import { seedLabels } from './labels.seed';
 
 /**
  * Database seed store — `npm run db:seed`.
@@ -72,6 +73,13 @@ async function main(): Promise<void> {
       logger.log(
         `  referrals: ${referrals.programs} programs, ${referrals.codes} codes, ${referrals.referrals} referrals`,
       );
+
+      const labelled = await seedLabels(
+        tx as unknown as DrizzleDB,
+        staff.master.id,
+        seededCustomers,
+      );
+      logger.log(`  labels: ${labelled.labels} labels, ${labelled.assignments} on players`);
 
       const messaging = await seedMessaging(tx as unknown as DrizzleDB, staff, seededCustomers);
       logger.log(

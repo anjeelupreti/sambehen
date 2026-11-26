@@ -19,7 +19,7 @@ export function MessagesWorkspace({
   viewer,
 }: {
   initialConversations: Conversation[];
-  viewer: { id: string; username: string };
+  viewer: { id: string; username: string; role: string };
 }) {
   const [inbox, setInbox] = useState<Inbox>('customers');
   const [unread, setUnread] = useState<Record<Inbox, number>>({ customers: 0, team: 0 });

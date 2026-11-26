@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { LabelsModule } from '@modules/labels/labels.module';
 import { CustomersController } from './customers.controller';
 import { MilestonesService } from './milestones.service';
 import { PortalController } from './portal.controller';
@@ -13,7 +14,7 @@ import { TransactionRepository } from '@database/repositories/transaction.reposi
  * sanctioned writer of the ownership columns ScopeService depends on.
  */
 @Module({
-  imports: [StaffModule, ReferralsModule],
+  imports: [StaffModule, ReferralsModule, LabelsModule],
   controllers: [CustomersController, PortalController],
   providers: [CustomersService, CustomerImportService, TransactionRepository, MilestonesService],
   exports: [CustomersService],

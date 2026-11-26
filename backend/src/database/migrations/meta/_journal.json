@@ -113,6 +113,13 @@
       "when": 1795514670634,
       "tag": "0015_customer_avatars",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795679837950,
+      "tag": "0016_customer_labels",
+      "breakpoints": true
     }
   ]
 }

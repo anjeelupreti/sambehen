@@ -4,8 +4,10 @@ import { MessagingService } from './messaging.service';
 import { MessagingGateway } from './messaging.gateway';
 import { StaffMessagingController } from './staff-messaging.controller';
 import { StaffMessagingService } from './staff-messaging.service';
+import { LabelsModule } from '@modules/labels/labels.module';
 
 @Module({
+  imports: [LabelsModule],
   controllers: [MessagingController, CustomerMessagingController, StaffMessagingController],
   providers: [MessagingService, MessagingGateway, StaffMessagingService],
   exports: [MessagingService, StaffMessagingService],

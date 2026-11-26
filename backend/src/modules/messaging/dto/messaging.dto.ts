@@ -1,4 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { LabelDto } from '@modules/labels/dto/label.dto';
+import { AutoLabel } from '@modules/labels/auto-labels';
 import {
   IsString,
   IsEnum,
@@ -95,6 +97,12 @@ export class MarkReadDto {
   lastReadMessageId?: string;
 }
 
+export enum InboxSort {
+  ATTENTION = 'attention',
+  WAITING = 'waiting',
+  RECENT = 'recent',
+}
+
 export class ConversationFilterDto extends BaseFilterDto {
   @ApiPropertyOptional({ enum: ConversationStatus, enumName: 'ConversationStatus' })
   @IsEnum(ConversationStatus)
@@ -134,6 +142,36 @@ export class ConversationFilterDto extends BaseFilterDto {
   @IsUUID('4')
   @IsOptional()
   assignedStaffId?: string;
+
+  @ApiPropertyOptional({
+    enum: InboxSort,
+    enumName: 'InboxSort',
+    description:
+      'attention: unread first, then the longest wait for a reply. waiting: longest wait first. recent: newest activity first.',
+  })
+  @IsEnum(InboxSort)
+  @IsOptional()
+  sort?: InboxSort;
+
+  @ApiPropertyOptional({ description: 'Only players who hold a VIP tier today.' })
+  @IsBoolean()
+  @IsOptional()
+  vip?: boolean;
+
+  @ApiPropertyOptional({ description: 'Only players who joined in the last 14 days.' })
+  @IsBoolean()
+  @IsOptional()
+  newCustomers?: boolean;
+
+  @ApiPropertyOptional({ description: 'Only big spenders (top 10% by money in, last 30 days).' })
+  @IsBoolean()
+  @IsOptional()
+  bigSpenders?: boolean;
+
+  @ApiPropertyOptional({ format: 'uuid', description: 'Only players carrying this label.' })
+  @IsUUID('4')
+  @IsOptional()
+  labelId?: string;
 
   @ApiPropertyOptional({ format: 'uuid', description: 'Master only.' })
   @IsUUID('4')
@@ -248,6 +286,20 @@ export class ConversationResponseDto {
   })
   awaitingReply!: boolean;
 
+  @ApiProperty({
+    type: String,
+    format: 'date-time',
+    nullable: true,
+    description: 'When the player started waiting for a reply; null when nobody is waiting.',
+  })
+  waitingSince!: Date | null;
+
+  @ApiProperty({ type: [LabelDto] })
+  labels!: LabelDto[];
+
+  @ApiProperty({ enum: AutoLabel, enumName: 'AutoLabel', isArray: true })
+  autoLabels!: AutoLabel[];
+
   @ApiProperty({ type: String, format: 'uuid', nullable: true })
   managerId!: string | null;
 
@@ -277,6 +329,15 @@ export class ConversationSummaryDto {
 
   @ApiProperty({ example: 9, description: 'Latest message is from the customer.' })
   awaitingReply!: number;
+
+  @ApiProperty({ example: 4, description: 'Conversations with a player who holds a VIP tier.' })
+  vipConversations!: number;
+
+  @ApiProperty({
+    example: 3,
+    description: 'Conversations with a player who joined in the last 14 days.',
+  })
+  newCustomerConversations!: number;
 }
 
 export class UnreadCountDto {
