@@ -12,6 +12,16 @@ import {
   type LabelColor,
 } from '@/app/(app)/messages/label-actions';
 import { LABEL_DOTS, LABEL_STYLES } from '@/components/chat/label-chips';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -69,6 +79,7 @@ export function ManageLabelsDialog({
   const [name, setName] = useState('');
   const [color, setColor] = useState<LabelColor>('blue');
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState<Label | null>(null);
 
   const run = async (action: () => Promise<{ ok: boolean; message?: string }>, done?: string) => {
     setBusy(true);
@@ -88,9 +99,7 @@ export function ManageLabelsDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Labels</DialogTitle>
-          <DialogDescription>
-            Labels are shared by every store. Staff can add them to their players.
-          </DialogDescription>
+          <DialogDescription>Add, rename, recolour or delete labels.</DialogDescription>
         </DialogHeader>
 
         <form
@@ -156,13 +165,7 @@ export function ManageLabelsDialog({
                 variant="ghost"
                 aria-label={`Delete ${label.name}`}
                 disabled={busy}
-                onClick={() => {
-                  if (
-                    window.confirm(`Delete "${label.name}"? It comes off every player who has it.`)
-                  ) {
-                    void run(() => deleteLabel(label.id), 'Label deleted.');
-                  }
-                }}
+                onClick={() => setDeleting(label)}
               >
                 <Trash2Icon className="size-4" />
               </Button>
@@ -170,6 +173,30 @@ export function ManageLabelsDialog({
           ))}
         </ul>
       </DialogContent>
+
+      <AlertDialog open={deleting !== null} onOpenChange={(value) => !value && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete “{deleting?.name}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              It comes off {deleting?.playerCount ?? 0}{' '}
+              {deleting?.playerCount === 1 ? 'player' : 'players'}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-white"
+              onClick={() => {
+                if (deleting) void run(() => deleteLabel(deleting.id), 'Label deleted.');
+                setDeleting(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

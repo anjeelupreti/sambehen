@@ -1,4 +1,4 @@
-import { CrownIcon } from 'lucide-react';
+import { CrownIcon, XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -60,12 +60,15 @@ export function LabelChips({
   max,
   size = 'sm',
   className,
+  onRemove,
 }: {
   labels?: ChipLabel[];
   autoLabels?: string[];
   max?: number;
   size?: 'xs' | 'sm';
   className?: string;
+  /** Shows a remove button on the operator's own labels. */
+  onRemove?: (labelId: string) => void;
 }) {
   const chips = [
     ...Object.keys(AUTO)
@@ -75,12 +78,14 @@ export function LabelChips({
         name: AUTO[key].name,
         className: AUTO[key].className,
         vip: key === 'vip',
+        removable: false,
       })),
     ...labels.map((label) => ({
       key: label.id,
       name: label.name,
       className: LABEL_STYLES[label.color] ?? LABEL_STYLES.gray,
       vip: false,
+      removable: true,
     })),
   ];
   if (!chips.length) return null;
@@ -97,6 +102,16 @@ export function LabelChips({
         <span key={chip.key} className={cn(chipClass, chip.className)}>
           {chip.vip && <CrownIcon className={size === 'xs' ? 'size-2.5' : 'size-3'} aria-hidden />}
           {chip.name}
+          {onRemove && chip.removable && (
+            <button
+              type="button"
+              onClick={() => onRemove(chip.key)}
+              aria-label={`Remove ${chip.name}`}
+              className="-mr-1 grid size-4 place-items-center rounded-full opacity-70 outline-none hover:bg-black/10 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-current dark:hover:bg-white/15"
+            >
+              <XIcon className="size-3" />
+            </button>
+          )}
         </span>
       ))}
       {hidden > 0 && (

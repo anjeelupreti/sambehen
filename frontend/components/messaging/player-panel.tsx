@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ExternalLinkIcon, XIcon } from 'lucide-react';
 
-import { getPlayer, type Label } from '@/app/(app)/messages/label-actions';
+import { getPlayer, setPlayerLabels, type Label } from '@/app/(app)/messages/label-actions';
+import { toast } from 'sonner';
 import { ChatAvatar } from '@/components/chat/avatar';
 import { LabelChips, type ChipLabel } from '@/components/chat/label-chips';
 import { Badge } from '@/components/ui/badge';
@@ -94,7 +95,25 @@ export function PlayerPanel({
       <section aria-label="Labels" className="border-t px-5 py-4">
         <h3 className="text-muted-foreground mb-2 text-xs font-semibold">Labels</h3>
         <div className="flex flex-wrap items-center gap-1">
-          <LabelChips labels={player.labels} autoLabels={player.autoLabels} />
+          <LabelChips
+            labels={player.labels}
+            autoLabels={player.autoLabels}
+            onRemove={async (labelId) => {
+              const previous = player.labels;
+              const next = previous.filter((label) => label.id !== labelId);
+              setPlayer({ ...player, labels: next });
+              const result = await setPlayerLabels(
+                player.id,
+                next.map((label) => label.id),
+              );
+              if (!result.ok || !result.labels) {
+                setPlayer({ ...player, labels: previous });
+                toast.error(result.message ?? 'Labels didn’t save.');
+                return;
+              }
+              onLabelsChange(player.id, result.labels);
+            }}
+          />
           <LabelPicker
             customerId={player.id}
             value={player.labels}
