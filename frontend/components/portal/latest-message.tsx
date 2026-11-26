@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
+import { LiveUnreadPill } from '@/components/customer/live-unread';
 import { Button } from '@/components/ui/button';
-import { formatCount, formatDate } from '@/lib/money';
+import { formatDate } from '@/lib/money';
 import type { Message } from '@/lib/types';
 
 /** The newest message in the player's thread, and the way to reply. */
@@ -15,11 +16,7 @@ export function LatestMessage({ message, unread }: { message: Message | null; un
         <h2 id="messages-title" className="text-base font-semibold">
           Messages
         </h2>
-        {unread > 0 && (
-          <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-semibold">
-            {formatCount(unread)} new
-          </span>
-        )}
+        <LiveUnreadPill />
       </div>
 
       {message ? (

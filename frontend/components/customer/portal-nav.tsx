@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboardIcon, MessageSquareIcon, UserIcon, type LucideIcon } from 'lucide-react';
 
+import { useLiveUnread } from './live-unread';
 import { cn } from '@/lib/utils';
 
 const ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -27,8 +28,9 @@ function Badge({ count }: { count: number }) {
 }
 
 /** The portal's sections in the header, from tablet width up. */
-export function PortalTopNav({ unread }: { unread: number }) {
+export function PortalTopNav() {
   const pathname = usePathname();
+  const unread = useLiveUnread();
   return (
     <nav aria-label="Portal" className="hidden items-center gap-1 md:flex">
       {ITEMS.map(({ href, label, icon: Icon }) => {
@@ -60,8 +62,9 @@ export function PortalTopNav({ unread }: { unread: number }) {
  * screen on phones, within reach of a thumb. Leaves room for the home
  * indicator on phones that have one.
  */
-export function PortalBottomNav({ unread }: { unread: number }) {
+export function PortalBottomNav() {
   const pathname = usePathname();
+  const unread = useLiveUnread();
   return (
     <nav
       aria-label="Portal"

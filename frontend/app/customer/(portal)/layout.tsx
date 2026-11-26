@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { LogOutIcon } from 'lucide-react';
 
+import { LiveUnreadProvider } from '@/components/customer/live-unread';
 import { PortalBottomNav, PortalTopNav } from '@/components/customer/portal-nav';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { customerGet } from '@/lib/customer-api';
@@ -33,40 +34,42 @@ export default async function CustomerLayout({ children }: { children: React.Rea
 
   return (
     <ChatSocketProvider realm="customer">
-      <div className="flex min-h-svh flex-col">
-        <SkipLink />
-        <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
-          <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-2 px-4 sm:px-6">
-            <Link href="/customer" className="rounded">
-              <Logo />
-            </Link>
+      <LiveUnreadProvider initial={unread}>
+        <div className="flex min-h-svh flex-col">
+          <SkipLink />
+          <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
+            <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-2 px-4 sm:px-6">
+              <Link href="/customer" className="rounded">
+                <Logo />
+              </Link>
 
-            <PortalTopNav unread={unread} />
+              <PortalTopNav />
 
-            <div className="flex items-center gap-1">
-              <ThemeToggle />
-              {/* A plain <a>, not <Link>: production Next.js prefetches visible
+              <div className="flex items-center gap-1">
+                <ThemeToggle />
+                {/* A plain <a>, not <Link>: production Next.js prefetches visible
                 links, and prefetching this route runs it, which clears the
                 session cookies the moment any portal page renders. */}
-              <Button asChild variant="ghost" size="sm" aria-label="Sign out">
-                <a href="/customer/logout">
-                  <LogOutIcon className="size-4" />
-                </a>
-              </Button>
+                <Button asChild variant="ghost" size="sm" aria-label="Sign out">
+                  <a href="/customer/logout">
+                    <LogOutIcon className="size-4" />
+                  </a>
+                </Button>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <main
-          id="main"
-          tabIndex={-1}
-          className="mx-auto w-full max-w-3xl flex-1 p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-10"
-        >
-          {children}
-        </main>
+          <main
+            id="main"
+            tabIndex={-1}
+            className="mx-auto w-full max-w-3xl flex-1 p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-10"
+          >
+            {children}
+          </main>
 
-        <PortalBottomNav unread={unread} />
-      </div>
+          <PortalBottomNav />
+        </div>
+      </LiveUnreadProvider>
     </ChatSocketProvider>
   );
 }
