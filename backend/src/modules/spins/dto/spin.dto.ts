@@ -429,3 +429,24 @@ export class RecentWinnerDto {
   @ApiProperty({ type: String, format: 'date-time', nullable: true })
   announcedAt!: Date | null;
 }
+
+/** A spin event the signed-in player is entered in, for the countdown. */
+export class MySpinEventDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  prizeDescription!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  prizePool!: string | null;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  scheduledAt!: Date;
+
+  @ApiProperty({ enum: ['scheduled', 'live'] })
+  status!: string;
+}

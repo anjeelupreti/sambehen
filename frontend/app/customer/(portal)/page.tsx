@@ -4,6 +4,9 @@ import type { Metadata } from 'next';
 import { ReferralCodeCard } from '@/components/customer/referral-code-card';
 import { ActivityList, type MyTransaction } from '@/components/portal/activity-list';
 import { BalanceCard } from '@/components/portal/balance-card';
+import { PlayResponsibly } from '@/components/portal/play-responsibly';
+import { SpinCountdown } from '@/components/portal/spin-countdown';
+import { WinsTicker } from '@/components/portal/wins-ticker';
 import { LatestMessage } from '@/components/portal/latest-message';
 import { Milestones, type Milestone } from '@/components/portal/milestones';
 import { TierJourney, type VipCriterion } from '@/components/portal/tier-journey';
@@ -16,6 +19,8 @@ import type { Message } from '@/lib/types';
 type CustomerDashboard = components['schemas']['CustomerDashboardDto'];
 type VipStatus = components['schemas']['VipStatusDto'];
 type MyReferral = components['schemas']['MyReferralDto'];
+type WinFeed = components['schemas']['WinFeedDto'];
+type MySpinEvent = components['schemas']['MySpinEventDto'];
 
 export const metadata: Metadata = { title: 'Your account' };
 
@@ -44,13 +49,15 @@ export default async function CustomerOverviewPage() {
 
   // Each section degrades on its own: a failed VIP or message request
   // should not take the balance down with it.
-  const [dashboard, vip, referral, thread, activity, milestones] = await Promise.all([
+  const [dashboard, vip, referral, thread, activity, milestones, wins, spins] = await Promise.all([
     customerGet<CustomerDashboard>('/me/dashboard'),
     customerGet<VipStatus>('/me/vip-status').catch(() => null),
     customerGet<MyReferral>('/me/referral').catch(() => null),
     customerGet<{ data: Message[] }>('/me/messages', { limit: 1 }).catch(() => null),
     customerGet<MyTransaction[]>('/me/transactions', { limit: 8 }).catch(() => []),
     customerGet<Milestone[]>('/me/milestones').catch(() => [] as Milestone[]),
+    customerGet<WinFeed>('/me/wins').catch(() => null),
+    customerGet<MySpinEvent[]>('/me/spin-events').catch(() => [] as MySpinEvent[]),
   ]);
 
   const firstName = actor?.fullName?.trim().split(/\s+/)[0];
@@ -61,6 +68,13 @@ export default async function CustomerOverviewPage() {
 
   return (
     <div className="space-y-4">
+      {wins && wins.recent.length > 0 && (
+        <WinsTicker
+          initial={wins.recent}
+          className="-mx-4 -mt-4 mb-4 md:mx-0 md:mt-0 md:rounded-xl md:border"
+        />
+      )}
+
       <div className="flex items-center gap-3">
         {waving && <img src={waving} alt="" className="-my-2 size-16 shrink-0" />}
         <h1 className="text-2xl font-bold [font-stretch:115%]">
@@ -75,6 +89,8 @@ export default async function CustomerOverviewPage() {
         moneyOut={dashboard.totalWithdrawn}
       />
 
+      {spins[0] && <SpinCountdown event={spins[0]} art={publicAsset('brand/mascot/spin.webp')} />}
+
       <div className="grid gap-4 md:grid-cols-2">
         <TierJourney
           // The API documents criteria as a bare object array; this is its
@@ -85,15 +101,17 @@ export default async function CustomerOverviewPage() {
         <LatestMessage message={thread?.data?.[0] ?? null} unread={dashboard.unreadMessages} />
       </div>
 
-      {milestones.length > 0 && <Milestones milestones={milestones} art={badgeArt} />}
+      <ReferralCodeCard referral={referral} art={publicAsset('brand/mascot/friends.webp')} />
 
-      <ReferralCodeCard referral={referral} />
+      {milestones.length > 0 && <Milestones milestones={milestones} art={badgeArt} />}
 
       <ActivityList
         items={activity}
         total={dashboard.transactionCount}
         emptyArt={publicAsset('brand/mascot/resting.webp')}
       />
+
+      <PlayResponsibly />
     </div>
   );
 }

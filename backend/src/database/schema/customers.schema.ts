@@ -82,6 +82,8 @@ export const customers = pgTable(
 
     /** Excluded from every campaign once true. */
     emailOptOut: boolean('email_opt_out').notNull().default(false),
+    /** Whether the player's big wins may appear, by first name, in the wins feed. */
+    showInWins: boolean('show_in_wins').notNull().default(true),
     notes: text('notes'),
 
     createdByStaffId: uuid('created_by_staff_id').references(() => staffUsers.id, {

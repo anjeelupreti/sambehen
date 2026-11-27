@@ -51,6 +51,7 @@ import { AuditLogsModule } from '@modules/audit/audit-logs.module';
 import { ContactModule } from '@modules/contact/contact.module';
 import { LabelsModule } from '@modules/labels/labels.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { WinsModule } from './modules/wins/wins.module';
 
 import { CorrelationIdMiddleware } from '@common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middleware';
@@ -153,6 +154,7 @@ import { RequestLoggerMiddleware } from '@common/middleware/request-logger.middl
     ContactModule,
     LabelsModule,
     NotificationsModule,
+    WinsModule,
   ],
   providers: [
     // Order matters. Guards run first (authenticate, then authorize), then

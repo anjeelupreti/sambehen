@@ -2,10 +2,12 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestj
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { StaffRole } from '@common/constants/app.constants';
 import { TeamAuth, CustomerAuth } from '@common/decorators/composite-auth.decorator';
-import { CurrentStaff } from '@common/decorators/auth.decorators';
+import { CurrentCustomer, CurrentStaff } from '@common/decorators/auth.decorators';
+import { ICurrentCustomer } from '@common/interfaces/auth.interface';
 import { ResponseMessage } from '@common/decorators/response-message.decorator';
 import { ParseUUIDPipe } from '@common/pipes/parse-uuid.pipe';
 import {
+  ApiOkArray,
   ApiOkData,
   ApiOkList,
   ApiCreatedData,
@@ -26,6 +28,7 @@ import {
   SpinWinnerListItemDto,
   SpinWinnerSummaryDto,
   RecentWinnerDto,
+  MySpinEventDto,
 } from './dto/spin.dto';
 
 /**
@@ -227,5 +230,17 @@ export class CustomerRecentWinnersController {
   @ApiErrors(401, 422)
   findAll(@Query() filters: RecentWinnersFilterDto): Promise<IPaginatedResult<RecentWinnerDto>> {
     return this.spinsService.recentWinners(filters);
+  }
+  @Get('spin-events')
+  @CustomerAuth()
+  @ResponseMessage('Spin events retrieved successfully')
+  @ApiOperation({
+    summary: 'Spin events you are entered in',
+    description: 'Scheduled and live events whose VIP criteria you qualify for, soonest first.',
+  })
+  @ApiOkArray(MySpinEventDto)
+  @ApiErrors(401)
+  mine(@CurrentCustomer() actor: ICurrentCustomer): Promise<MySpinEventDto[]> {
+    return this.spinsService.upcomingFor(actor.id);
   }
 }

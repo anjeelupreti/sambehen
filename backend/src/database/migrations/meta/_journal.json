@@ -127,6 +127,13 @@
       "when": 1795755938593,
       "tag": "0017_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795762699511,
+      "tag": "0018_big_wins",
+      "breakpoints": true
     }
   ]
 }

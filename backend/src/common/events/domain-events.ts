@@ -63,3 +63,18 @@ export class NotificationCreatedEvent {
     },
   ) {}
 }
+
+/** A big win was recorded (or shown again); open player apps add it to the feed. */
+export const WIN_RECORDED = 'win.recorded';
+export class WinRecordedEvent {
+  constructor(
+    readonly win: {
+      id: string;
+      displayName: string;
+      gameName: string | null;
+      gameImageUrl: string | null;
+      amount: string;
+      wonAt: Date;
+    },
+  ) {}
+}

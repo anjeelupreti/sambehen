@@ -31,6 +31,7 @@ import {
   SpinWinnerListItemDto,
   SpinWinnerSummaryDto,
   RecentWinnerDto,
+  MySpinEventDto,
 } from './dto/spin.dto';
 
 /** Statuses that still accept new winners. */
@@ -550,6 +551,40 @@ export class SpinsService {
         hasPreviousPage: page > 1,
       },
     };
+  }
+
+  /**
+   * Upcoming and live spin events the player is entered in: the ones whose
+   * VIP criteria they already qualify for. Soonest first.
+   */
+  async upcomingFor(customerId: string): Promise<MySpinEventDto[]> {
+    const rows = await this.db
+      .select({
+        id: spinEvents.id,
+        name: spinEvents.name,
+        prizeDescription: spinEvents.prizeDescription,
+        prizePool: spinEvents.prizePool,
+        scheduledAt: spinEvents.scheduledAt,
+        status: spinEvents.status,
+      })
+      .from(spinEvents)
+      .innerJoin(
+        vipQualifications,
+        and(
+          eq(vipQualifications.criteriaId, spinEvents.vipCriteriaId),
+          eq(vipQualifications.customerId, customerId),
+        ),
+      )
+      .where(
+        and(
+          isNull(spinEvents.deletedAt),
+          inArray(spinEvents.status, [SpinEventStatus.SCHEDULED, SpinEventStatus.LIVE]),
+          sql`${spinEvents.scheduledAt} > now() - interval '1 day'`,
+        ),
+      )
+      .orderBy(asc(spinEvents.scheduledAt))
+      .limit(5);
+    return rows;
   }
 
   // ── Internals ───────────────────────────────────────────────

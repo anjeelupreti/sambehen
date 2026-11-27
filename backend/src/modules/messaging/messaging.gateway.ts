@@ -1,5 +1,10 @@
 import { Logger } from '@nestjs/common';
-import { NOTIFICATION_CREATED, NotificationCreatedEvent } from '@common/events/domain-events';
+import {
+  NOTIFICATION_CREATED,
+  NotificationCreatedEvent,
+  WIN_RECORDED,
+  WinRecordedEvent,
+} from '@common/events/domain-events';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { OnEvent } from '@nestjs/event-emitter';
@@ -51,6 +56,7 @@ const room = {
   staff: (staffId: string): string => `staff:${staffId}`,
   customer: (customerId: string): string => `customer:${customerId}`,
   masters: (): string => 'role:master',
+  customers: (): string => 'role:customer',
 };
 
 const presenceKey = {
@@ -140,6 +146,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
 
     if (principal.realm === AuthRealm.CUSTOMER) {
       await client.join(room.customer(principal.id));
+      await client.join(room.customers());
     } else {
       await client.join(room.staff(principal.id));
       // Masters see everything, so they subscribe to a single broadcast
@@ -184,6 +191,11 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   // ── Read receipts ───────────────────────────────────────────
+
+  @OnEvent(WIN_RECORDED)
+  handleWin(event: WinRecordedEvent): void {
+    this.server.to(room.customers()).emit('win:new', event.win);
+  }
 
   @OnEvent(NOTIFICATION_CREATED)
   handleNotification(event: NotificationCreatedEvent): void {

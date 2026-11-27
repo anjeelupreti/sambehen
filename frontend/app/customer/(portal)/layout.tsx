@@ -4,7 +4,9 @@ import { LogOutIcon } from 'lucide-react';
 
 import { LiveUnreadProvider } from '@/components/customer/live-unread';
 import { PortalBottomNav, PortalTopNav } from '@/components/customer/portal-nav';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { NightMode } from '@/components/portal/night/night-mode';
+import { WinPop } from '@/components/portal/win-pop';
+import { publicAsset } from '@/lib/public-asset';
 import { customerGet } from '@/lib/customer-api';
 import { Button } from '@/components/ui/button';
 import { getCustomerActor } from '@/lib/customer-session';
@@ -37,6 +39,13 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   return (
     <ChatSocketProvider realm="customer">
       <LiveUnreadProvider initial={unread}>
+        {/* Before first paint, so the portal never flashes the light theme. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.classList.add('night');",
+          }}
+        />
+        <NightMode />
         <div className="flex min-h-svh flex-col">
           <SkipLink />
           <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
@@ -48,7 +57,6 @@ export default async function CustomerLayout({ children }: { children: React.Rea
               <PortalTopNav />
 
               <div className="flex items-center gap-1">
-                <ThemeToggle />
                 <NotificationBell realm="customer" />
                 {/* A plain <a>, not <Link>: production Next.js prefetches visible
                 links, and prefetching this route runs it, which clears the
@@ -74,6 +82,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
             realm="customer"
             className="bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6"
           />
+          <WinPop art={publicAsset('brand/mascot/trophy.webp')} />
           <PortalBottomNav />
         </div>
       </LiveUnreadProvider>

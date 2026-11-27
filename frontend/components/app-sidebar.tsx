@@ -12,6 +12,7 @@ import {
   MessageSquareIcon,
   ScrollTextIcon,
   SparklesIcon,
+  TrophyIcon,
   UserCogIcon,
   UsersIcon,
 } from 'lucide-react';
@@ -59,6 +60,7 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
       // configuration above the list it produces, rather than a separate
       // destination you have to hold in your head alongside it.
       { href: '/spin-winners', label: 'Rewards', icon: SparklesIcon },
+      { href: '/wins', label: 'Big wins', icon: TrophyIcon },
       { href: '/referrals', label: 'Referrals', icon: GiftIcon },
       { href: '/broadcast', label: 'Broadcast', icon: MegaphoneIcon, roles: ['master', 'manager'] },
     ],

@@ -1299,6 +1299,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/me/spin-events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Spin events you are entered in
+     * @description Scheduled and live events whose VIP criteria you qualify for, soonest first.
+     */
+    get: operations['CustomerRecentWinnersController_mine'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/team/conversations': {
     parameters: {
       query?: never;
@@ -2070,6 +2090,82 @@ export interface paths {
     put?: never;
     /** Stop push notifications on this device */
     post: operations['PlayerNotificationsController_unsubscribe'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/wins': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recorded wins for the players you can see, newest first */
+    get: operations['StaffWinsController_list'];
+    put?: never;
+    /**
+     * Record a big win
+     * @description Shown to every player in the wins feed by first name and last initial, unless the player turned that off.
+     */
+    post: operations['StaffWinsController_record'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/team/wins/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a win recorded by mistake */
+    delete: operations['StaffWinsController_remove'];
+    options?: never;
+    head?: never;
+    /** Hide a win from the feed, or show it again */
+    patch: operations['StaffWinsController_update'];
+    trace?: never;
+  };
+  '/api/me/wins': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The wins feed
+     * @description Recent wins and this week’s biggest. Names are first name and last initial only.
+     */
+    get: operations['PlayerWinsController_feed'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/me/wins/visibility': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Show or hide your own wins in the feed */
+    put: operations['PlayerWinsController_visibility'];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -3353,6 +3449,17 @@ export interface components {
       /** Format: date-time */
       announcedAt: string | null;
     };
+    MySpinEventDto: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      prizeDescription: string | null;
+      prizePool: string | null;
+      /** Format: date-time */
+      scheduledAt: string;
+      /** @enum {string} */
+      status: 'scheduled' | 'live';
+    };
     /** @enum {string} */
     ConversationStatus: 'open' | 'closed' | 'archived';
     ConversationResponseDto: {
@@ -4091,6 +4198,66 @@ export interface components {
     };
     PushUnsubscribeDto: {
       endpoint: string;
+    };
+    WinDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      customerId: string;
+      customerName: string;
+      customerUsername: string;
+      customerAvatarUrl: string | null;
+      /** @description Whether the player lets their wins be shown. */
+      customerShowsWins: boolean;
+      gameName: string | null;
+      /** @example 1250.00 */
+      amount: string;
+      /** Format: date-time */
+      wonAt: string;
+      hidden: boolean;
+      recordedBy: string | null;
+    };
+    RecordWinDto: {
+      /** Format: uuid */
+      customerId: string;
+      /** Format: uuid */
+      gameId?: string;
+      /** @example 1250.00 */
+      amount: string;
+      /**
+       * Format: date-time
+       * @description Defaults to now.
+       */
+      wonAt?: string;
+    };
+    UpdateWinDto: {
+      /** @description Hide from the players’ wins feed, or show again. */
+      hidden: boolean;
+    };
+    WinFeedItemDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Jolene H. */
+      displayName: string;
+      gameName: string | null;
+      gameImageUrl: string | null;
+      /** @example 1250.00 */
+      amount: string;
+      /** Format: date-time */
+      wonAt: string;
+      /** @description The signed-in player’s own win. */
+      mine: boolean;
+    };
+    WinFeedDto: {
+      /** @description Newest first, last 30 days. */
+      recent: components['schemas']['WinFeedItemDto'][];
+      /** @description Largest first, last 7 days. */
+      topThisWeek: components['schemas']['WinFeedItemDto'][];
+      /** @description Whether the signed-in player’s wins are shown to others. */
+      showMine: boolean;
+    };
+    WinVisibilityDto: {
+      show: boolean;
     };
   };
   responses: never;
@@ -9180,6 +9347,41 @@ export interface operations {
       };
     };
   };
+  CustomerRecentWinnersController_mine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['MySpinEventDto'][];
+          };
+        };
+      };
+      /**
+       * @description Missing, expired or invalid access token
+       *
+       *     Missing, expired or invalid customer access token
+       */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
   MessagingController_findInbox: {
     parameters: {
       query?: {
@@ -11427,6 +11629,284 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['PushUnsubscribeDto'];
+      };
+    };
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            /** @example null */
+            data?: Record<string, never> | null;
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffWinsController_list: {
+    parameters: {
+      query?: {
+        page?: number;
+        /** @description Rows per page. Capped at 200. */
+        limit?: number;
+        /** @description Free-text search. Matched case-insensitively across the searchable columns of the resource; LIKE wildcards in the term are escaped. */
+        search?: string;
+        /** @description Column to sort by. Each resource overrides this with its own enumerated list of sortable columns; see the specific endpoint. An unrecognised value falls back to the resource's default ordering rather than sorting by an arbitrary column. */
+        sortBy?: string;
+        /** @description Sort direction. Allowed values: `asc`, `desc`. */
+        sortOrder?: components['schemas']['SortOrder'];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['WinDto'][];
+            meta?: components['schemas']['PaginationMetaDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffWinsController_record: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordWinDto'];
+      };
+    };
+    responses: {
+      /** @description Resource created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['WinDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffWinsController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            /** @example null */
+            data?: Record<string, never> | null;
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  StaffWinsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateWinDto'];
+      };
+    };
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['WinDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  PlayerWinsController_feed: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Request completed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['WinFeedDto'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  PlayerWinsController_visibility: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WinVisibilityDto'];
       };
     };
     responses: {

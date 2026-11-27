@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, .night *));
 
 /*
  * App tokens, on the shadcn names every component already references.
@@ -93,6 +93,79 @@
   --sidebar: #121a28;
 }
 
+/*
+ * Night: the player portal's casino-night look. Same brand (cobalt
+ * action, sunflower rewards) on a deeper midnight ground, with gold kept
+ * for wins and money. Set on <html> while the portal is open and wins
+ * over the light/dark choice, which the portal doesn't offer.
+ */
+html.night {
+  color-scheme: dark;
+  --background: #090e1a;
+  --foreground: #edf0f7;
+  --card: #10182b;
+  --card-foreground: #edf0f7;
+  --popover: #141e34;
+  --popover-foreground: #edf0f7;
+  --primary: #7090ff;
+  --primary-foreground: #0a1230;
+  --secondary: #19243f;
+  --secondary-foreground: #edf0f7;
+  --muted: #141d33;
+  --muted-foreground: #9aa5bf;
+  --accent: #19243f;
+  --accent-foreground: #edf0f7;
+  --destructive: #f0716b;
+  --destructive-foreground: #1d0807;
+  --border: #1f2b45;
+  --input: #2b3a5c;
+  --ring: #7090ff;
+  --success: #3dd19b;
+  --warning: #f2c14e;
+  --warning-surface: #2b2414;
+  --highlight: #ffc83d;
+  --highlight-foreground: #3a2a00;
+  --debit: #6f8ff0;
+  --credit: #be8a2c;
+  --sidebar: #0d1424;
+  --gold: #f2c14e;
+  --gold-foreground: #2a1d00;
+  --gold-surface: #2a2110;
+}
+
+html.night body {
+  background:
+    radial-gradient(900px 420px at 50% -180px, rgb(47 91 255 / 0.22), transparent 70%),
+    var(--background);
+  background-attachment: fixed;
+}
+
+/* The wins ticker: one strip of text that loops; still for anyone who prefers less motion. */
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track {
+  animation: ticker var(--ticker-duration, 60s) linear infinite;
+}
+.ticker:hover .ticker-track,
+.ticker:focus-within .ticker-track,
+.ticker:active .ticker-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+  .ticker {
+    overflow-x: auto;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -121,6 +194,9 @@
   --color-highlight: var(--highlight);
   --color-highlight-foreground: var(--highlight-foreground);
   --color-sidebar: var(--sidebar);
+  --color-gold: var(--gold, #ffc83d);
+  --color-gold-foreground: var(--gold-foreground, #3a2a00);
+  --color-gold-surface: var(--gold-surface, #fff3d1);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

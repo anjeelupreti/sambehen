@@ -2,13 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboardIcon, MessageSquareIcon, UserIcon, type LucideIcon } from 'lucide-react';
+import {
+  LayoutDashboardIcon,
+  MessageSquareIcon,
+  TrophyIcon,
+  UserIcon,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { useLiveUnread } from './live-unread';
 import { cn } from '@/lib/utils';
 
 const ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: '/customer', label: 'Overview', icon: LayoutDashboardIcon },
+  { href: '/customer', label: 'Home', icon: LayoutDashboardIcon },
+  { href: '/customer/wins', label: 'Wins', icon: TrophyIcon },
   { href: '/customer/messages', label: 'Messages', icon: MessageSquareIcon },
   { href: '/customer/profile', label: 'Profile', icon: UserIcon },
 ];
@@ -70,7 +77,7 @@ export function PortalBottomNav() {
       aria-label="Portal"
       className="bg-background/95 fixed inset-x-0 bottom-0 z-20 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
-      <ul className="mx-auto grid h-16 max-w-md grid-cols-3">
+      <ul className="mx-auto grid h-16 max-w-md grid-cols-4">
         {ITEMS.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
