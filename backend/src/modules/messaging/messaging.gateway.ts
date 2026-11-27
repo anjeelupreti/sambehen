@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { NOTIFICATION_CREATED, NotificationCreatedEvent } from '@common/events/domain-events';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { OnEvent } from '@nestjs/event-emitter';
@@ -183,6 +184,13 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   // ── Read receipts ───────────────────────────────────────────
+
+  @OnEvent(NOTIFICATION_CREATED)
+  handleNotification(event: NotificationCreatedEvent): void {
+    const target =
+      event.realm === 'team' ? room.staff(event.recipientId) : room.customer(event.recipientId);
+    this.server.to(target).emit('notification:new', event.notification);
+  }
 
   @OnEvent(CONVERSATION_READ)
   handleConversationRead(event: ConversationReadEvent): void {

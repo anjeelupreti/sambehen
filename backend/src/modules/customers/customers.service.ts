@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { CUSTOMER_APPROVED, CustomerApprovedEvent } from '@common/events/domain-events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   AutoLabel,
   isBigSpenderSql,
@@ -49,6 +51,7 @@ import { TrendQueryDto, TrendGranularity, TrendResponseDto } from '../dashboard/
 @Injectable()
 export class CustomersService {
   constructor(
+    private readonly events: EventEmitter2,
     private readonly labelsService: LabelsService,
     @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
     private readonly customerRepository: CustomerRepository,
@@ -539,6 +542,8 @@ export class CustomersService {
       { status: existing.status },
       { status: CustomerStatus.ACTIVE, ownerStaffId: dto.ownerStaffId },
     );
+
+    this.events.emit(CUSTOMER_APPROVED, new CustomerApprovedEvent(id));
 
     const updated = await this.customerRepository.findById(id);
     return this.toResponse(updated as Customer);

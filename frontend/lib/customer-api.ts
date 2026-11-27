@@ -23,7 +23,7 @@ const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 const API_PREFIX = process.env.API_PREFIX ?? '/api/v1';
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined | null>;
   /** Redirect to the customer sign-in on a 401. Defaults to true. */
@@ -109,7 +109,7 @@ export async function customerGet<TData>(
 
 export async function customerMutate<TData>(
   path: string,
-  method: 'POST' | 'PATCH' | 'DELETE',
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   body?: unknown,
 ): Promise<TData> {
   const envelope = await customerRequest<TData>(path, { method, body });

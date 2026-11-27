@@ -1,4 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { CAMPAIGN_FINISHED, CampaignFinishedEvent } from '@common/events/domain-events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { eq, inArray, sql } from 'drizzle-orm';
@@ -38,6 +40,7 @@ export class EmailDispatcherJob {
     private readonly mailerService: MailerService,
     private readonly templateService: EmailTemplateService,
     private readonly configService: ConfigService,
+    private readonly events: EventEmitter2,
   ) {}
 
   @Cron(CronExpression.EVERY_30_SECONDS, { name: 'email-dispatcher' })
@@ -299,7 +302,7 @@ export class EmailDispatcherJob {
    * campaign that half-delivered is never reported as a clean success.
    */
   private async finaliseCompletedCampaigns(): Promise<void> {
-    await this.db.execute(sql`
+    const finished = await this.db.execute(sql`
       UPDATE email_campaigns ec
       SET status = CASE WHEN ec.failed_count > 0 AND ec.sent_count = 0 THEN ${CampaignStatus.FAILED}
                         WHEN ec.failed_count > 0 THEN ${CampaignStatus.PARTIAL}
@@ -313,6 +316,27 @@ export class EmailDispatcherJob {
           WHERE er.campaign_id = ec.id
             AND er.status IN (${RecipientStatus.PENDING}, ${RecipientStatus.SENDING})
         )
+      RETURNING ec.id, ec.created_by_staff_id, ec.subject, ec.status, ec.sent_count, ec.failed_count
     `);
+    for (const row of finished.rows as {
+      id: string;
+      created_by_staff_id: string | null;
+      subject: string;
+      status: string;
+      sent_count: number;
+      failed_count: number;
+    }[]) {
+      this.events.emit(
+        CAMPAIGN_FINISHED,
+        new CampaignFinishedEvent(
+          row.id,
+          row.created_by_staff_id,
+          row.subject,
+          row.status,
+          Number(row.sent_count),
+          Number(row.failed_count),
+        ),
+      );
+    }
   }
 }

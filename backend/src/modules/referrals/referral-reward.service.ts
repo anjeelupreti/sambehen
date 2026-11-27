@@ -1,4 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { REFERRAL_REWARDED, ReferralRewardedEvent } from '@common/events/domain-events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OnEvent } from '@nestjs/event-emitter';
 import { and, count, eq, isNull, sql } from 'drizzle-orm';
 import {
@@ -36,7 +38,10 @@ import {
 export class ReferralRewardService {
   private readonly logger = new Logger(ReferralRewardService.name);
 
-  constructor(@Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
+    private readonly events: EventEmitter2,
+  ) {}
 
   /**
    * Re-evaluates the referral a customer arrived through, if any.
@@ -97,7 +102,18 @@ export class ReferralRewardService {
       return 'none';
     }
 
-    return (await this.grantReward(referral.id, program, deposited)) ? 'rewarded' : 'none';
+    const paid = await this.grantReward(referral.id, program, deposited);
+    if (paid) {
+      this.events.emit(
+        REFERRAL_REWARDED,
+        new ReferralRewardedEvent(
+          paid.referrerCustomerId,
+          paid.refereeCustomerId,
+          paid.referrerReward,
+        ),
+      );
+    }
+    return paid ? 'rewarded' : 'none';
   }
 
   /**
@@ -111,7 +127,11 @@ export class ReferralRewardService {
     referralId: string,
     program: typeof referralPrograms.$inferSelect,
     depositedAmount: string,
-  ): Promise<boolean> {
+  ): Promise<{
+    referrerCustomerId: string;
+    refereeCustomerId: string;
+    referrerReward: string;
+  } | null> {
     const referrerReward = this.rewardAmount(
       program.referrerBonus,
       program.rewardType,
@@ -145,7 +165,7 @@ export class ReferralRewardService {
 
       if (claimed.length === 0) {
         // Someone else already paid this one.
-        return false;
+        return null;
       }
 
       const referral = claimed[0];
@@ -184,7 +204,11 @@ export class ReferralRewardService {
       this.logger.log(
         `Referral ${referral.id} rewarded: referrer ${referrerReward}, referee ${refereeReward}`,
       );
-      return true;
+      return {
+        referrerCustomerId: referral.referrerCustomerId,
+        refereeCustomerId: referral.refereeCustomerId,
+        referrerReward,
+      };
     });
   }
 

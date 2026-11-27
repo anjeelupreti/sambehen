@@ -11,6 +11,8 @@ import { getCustomerActor } from '@/lib/customer-session';
 import { SkipLink } from '@/components/skip-link';
 import { ChatSocketProvider } from '@/components/chat/socket';
 import { Logo } from '@/components/logo';
+import { NotificationBell } from '@/components/notifications/notification-bell';
+import { PermissionPrompt } from '@/components/notifications/permission-prompt';
 
 /**
  * The customer portal shell.
@@ -47,6 +49,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
 
               <div className="flex items-center gap-1">
                 <ThemeToggle />
+                <NotificationBell realm="customer" />
                 {/* A plain <a>, not <Link>: production Next.js prefetches visible
                 links, and prefetching this route runs it, which clears the
                 session cookies the moment any portal page renders. */}
@@ -67,6 +70,10 @@ export default async function CustomerLayout({ children }: { children: React.Rea
             {children}
           </main>
 
+          <PermissionPrompt
+            realm="customer"
+            className="bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6"
+          />
           <PortalBottomNav />
         </div>
       </LiveUnreadProvider>

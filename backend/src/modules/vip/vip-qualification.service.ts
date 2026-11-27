@@ -1,4 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { VIP_TIER_REACHED, VipTierReachedEvent } from '@common/events/domain-events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OnEvent } from '@nestjs/event-emitter';
 import { and, eq, sql } from 'drizzle-orm';
 import { VipMetric } from '@common/constants/app.constants';
@@ -23,7 +25,10 @@ import {
 export class VipQualificationService {
   private readonly logger = new Logger(VipQualificationService.name);
 
-  constructor(@Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
+    private readonly events: EventEmitter2,
+  ) {}
 
   /**
    * The SQL expression for a criteria's metric.
@@ -144,7 +149,7 @@ export class VipQualificationService {
     for (const criteria of relevant) {
       const metric = this.metricExpression(criteria.metric);
 
-      await this.db.execute(sql`
+      const result = await this.db.execute(sql`
         INSERT INTO vip_qualifications (criteria_id, customer_id, achieved_amount, threshold_amount, qualified_at, computed_at)
         SELECT
           ${criteria.id}::uuid,
@@ -163,7 +168,16 @@ export class VipQualificationService {
           achieved_amount = EXCLUDED.achieved_amount,
           threshold_amount = EXCLUDED.threshold_amount,
           computed_at = NOW()
+        RETURNING (xmax = 0) AS inserted
       `);
+      // A new row means this transaction just earned the tier.
+      const rows = (result as unknown as { rows: { inserted: boolean }[] }).rows;
+      if (rows[0]?.inserted) {
+        this.events.emit(
+          VIP_TIER_REACHED,
+          new VipTierReachedEvent(customerId, criteria.tier, criteria.name),
+        );
+      }
       touched += 1;
     }
 

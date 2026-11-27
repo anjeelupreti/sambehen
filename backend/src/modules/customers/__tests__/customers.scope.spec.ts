@@ -4,6 +4,7 @@ import { PgDialect } from 'drizzle-orm/pg-core';
 import { and, SQL } from 'drizzle-orm';
 import { CustomersService } from '../customers.service';
 import { LabelsService } from '@modules/labels/labels.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DRIZZLE_PROVIDER } from '@database/database.provider';
 import { CustomerRepository } from '@database/repositories/customer.repository';
 import { TransactionRepository } from '@database/repositories/transaction.repository';
@@ -55,6 +56,10 @@ describe('CustomersService — scope composition', () => {
         { provide: AuditService, useValue: { record: jest.fn() } },
         { provide: CustomerAssignmentService, useValue: {} },
         { provide: ReferralsService, useValue: { attachReferral: jest.fn() } },
+        {
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn() },
+        },
         {
           provide: LabelsService,
           useValue: { hasLabelSql: jest.fn(), bigSpenderThreshold: jest.fn().mockResolvedValue(0) },

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { LogOutIcon, UserIcon } from 'lucide-react';
+import { BellIcon, LogOutIcon, UserIcon } from 'lucide-react';
 
 import { signOut } from '@/app/(app)/actions';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { StaffRole } from '@/lib/types';
 import { EditProfileModal } from '@/components/forms/edit-profile-modal';
+import { NotificationSettingsDialog } from '@/components/notifications/notification-settings-dialog';
 
 /**
  * Identity and sign-out.
@@ -27,6 +28,7 @@ import { EditProfileModal } from '@/components/forms/edit-profile-modal';
 export function UserMenu({ username, role }: { username: string; role: StaffRole }) {
   const [pending, startTransition] = useTransition();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   return (
     <>
@@ -55,6 +57,11 @@ export function UserMenu({ username, role }: { username: string; role: StaffRole
             My Profile
           </DropdownMenuItem>
 
+          <DropdownMenuItem onSelect={() => setIsNotificationsOpen(true)}>
+            <BellIcon className="size-4" />
+            Notifications
+          </DropdownMenuItem>
+
           <DropdownMenuItem
             disabled={pending}
             onSelect={(event) => {
@@ -70,6 +77,13 @@ export function UserMenu({ username, role }: { username: string; role: StaffRole
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <NotificationSettingsDialog
+        realm="staff"
+        isMaster={role === 'master'}
+        open={isNotificationsOpen}
+        onOpenChange={setIsNotificationsOpen}
+      />
 
       <EditProfileModal
         role={role}

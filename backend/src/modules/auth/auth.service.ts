@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { CUSTOMER_REGISTERED, CustomerRegisteredEvent } from '@common/events/domain-events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 import { AuthRealm, CustomerStatus } from '@common/constants/app.constants';
 import { ErrorCode } from '@common/constants/error-codes';
@@ -56,6 +58,7 @@ export class AuthService {
     private readonly sessionRepository: AuthSessionRepository,
     private readonly tokenService: TokenService,
     private readonly configService: ConfigService,
+    private readonly events: EventEmitter2,
   ) {}
 
   // ── Unified gateway ─────────────────────────────────────────
@@ -196,7 +199,7 @@ export class AuthService {
       );
     }
 
-    await this.customerRepository.create({
+    const created = await this.customerRepository.create({
       email: dto.email,
       username: dto.username,
       passwordHash: await HashUtil.hashPassword(dto.password),
@@ -210,6 +213,10 @@ export class AuthService {
       managerId: null,
       storeId: null,
     });
+    this.events.emit(
+      CUSTOMER_REGISTERED,
+      new CustomerRegisteredEvent(created.id, dto.fullName || dto.username),
+    );
   }
 
   // ── Refresh ─────────────────────────────────────────────────

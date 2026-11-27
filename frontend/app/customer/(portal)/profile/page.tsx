@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Money } from '@/components/money';
 import { Badge } from '@/components/ui/badge';
 import { ProfileEditor } from '@/components/customer/profile-editor';
+import { NotificationSettings } from '@/components/notifications/notification-settings';
 import { customerGet } from '@/lib/customer-api';
 import { formatDateTime } from '@/lib/money';
 import type { components } from '@/lib/api-schema';
@@ -41,6 +42,11 @@ export default async function CustomerProfilePage() {
           }
         />
       </div>
+      <section id="notifications" className="bg-card scroll-mt-20 rounded-2xl border p-5">
+        <h2 className="mb-2 font-semibold">Notifications</h2>
+        <NotificationSettings realm="customer" />
+      </section>
+
       <p className="text-muted-foreground text-xs">
         Last signed in {profile.lastLoginAt ? formatDateTime(profile.lastLoginAt) : 'this session'}.
       </p>

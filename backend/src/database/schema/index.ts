@@ -17,3 +17,4 @@ export * from './messaging.schema';
 export * from './staff-messaging.schema';
 export * from './email.schema';
 export * from './labels.schema';
+export * from './notifications.schema';

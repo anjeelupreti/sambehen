@@ -120,6 +120,13 @@
       "when": 1795679837950,
       "tag": "0016_customer_labels",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795755938593,
+      "tag": "0017_notifications",
+      "breakpoints": true
     }
   ]
 }
