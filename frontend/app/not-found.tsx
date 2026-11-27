@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { primaryButton, secondaryButton, SiteShell } from '@/components/landing/site-shell';
+import { publicAsset } from '@/lib/public-asset';
 
 export const metadata: Metadata = { title: 'Not found' };
 
@@ -23,21 +24,26 @@ export const metadata: Metadata = { title: 'Not found' };
  * for everyone, since the home page sends signed-in people to their app.
  */
 export default function RootNotFound() {
+  // The lost rider, once its art is in public/brand/mascot; until then, the resting one.
+  const lost = publicAsset('brand/mascot/lost.webp');
+
   return (
     <SiteShell>
-      <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-24 text-center sm:py-32">
+      <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-20 text-center sm:py-28">
         <Image
-          src="/brand/mascot/resting.webp"
+          src={lost ?? '/brand/mascot/resting.webp'}
           alt=""
-          width={480}
-          height={480}
-          className="w-40 select-none"
+          width={lost ? 720 : 480}
+          height={lost ? 540 : 480}
+          priority
+          className={lost ? 'w-72 select-none sm:w-96' : 'w-40 select-none'}
         />
-        <h1 className="mt-6 text-4xl font-extrabold [font-stretch:118%] sm:text-5xl">
-          Page not found
+        <p className="text-lp-dim mt-6 text-sm font-semibold tracking-[0.18em] uppercase">404</p>
+        <h1 className="mt-2 text-4xl font-extrabold [font-stretch:118%] sm:text-5xl">
+          This trail goes nowhere
         </h1>
         <p className="text-lp-dim mt-4 text-lg">
-          This page does not exist, or it is not one of yours.
+          The page you’re after doesn’t exist, or it isn’t one of yours.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/" className={primaryButton}>

@@ -79,6 +79,34 @@ const PUBLIC_PATHS = [
   '/offline.html',
 ];
 
+/*
+ * The signed-in areas: the staff app's sections and the player portal.
+ * Anything outside them that isn't a real page should get the 404 page,
+ * not a sign-in screen, so only these send a visitor to /login. Keep in
+ * step with the folders under app/(app) and app/customer.
+ */
+const SIGNED_IN_ROOTS = [
+  '/customer',
+  '/dashboard',
+  '/customers',
+  '/transactions',
+  '/messages',
+  '/games',
+  '/vips',
+  '/vip-criteria',
+  '/spin-events',
+  '/spin-winners',
+  '/wins',
+  '/referrals',
+  '/broadcast',
+  '/staff',
+  '/audit-logs',
+];
+
+function isSignedInArea(pathname: string): boolean {
+  return SIGNED_IN_ROOTS.some((root) => pathname === root || pathname.startsWith(`${root}/`));
+}
+
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
@@ -304,7 +332,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isPublic(pathname)) return NextResponse.next();
+  if (isPublic(pathname) || !isSignedInArea(pathname)) return NextResponse.next();
 
   // ── The customer portal ────────────────────────────────────────────────
   //
