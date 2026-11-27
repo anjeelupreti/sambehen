@@ -13,6 +13,7 @@ import {
   type NotificationRealm,
 } from '@/lib/notification-actions';
 import { KINDS, type KindInfo } from './kinds';
+import { setSoundEnabled, soundEnabled } from './alert';
 import {
   disablePush,
   enablePush,
@@ -89,11 +90,13 @@ export function NotificationSettings({
   const [pushAvailable, setPushAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const [prefs, setPrefs] = useState<Record<string, boolean> | null>(null);
+  const [sound, setSound] = useState(true);
 
   useEffect(() => {
     void pushState().then(setDevice);
     void loadPushKey(realm).then((key) => setPushAvailable(Boolean(key)));
     void loadPreferences(realm).then(setPrefs);
+    setSound(soundEnabled());
   }, [realm]);
 
   const toggleDevice = async (on: boolean) => {
@@ -126,8 +129,8 @@ export function NotificationSettings({
 
   return (
     <div className="divide-y">
-      {pushAvailable && device && (
-        <div className="pb-2">
+      <div className="pb-2">
+        {pushAvailable && device && (
           <Row
             label="Push on this device"
             info={<DeviceHelp state={device} />}
@@ -135,9 +138,18 @@ export function NotificationSettings({
             disabled={busy || device === 'unsupported' || device === 'denied'}
             onChange={toggleDevice}
           />
-        </div>
-      )}
-      <div className={pushAvailable && device ? 'pt-2' : undefined}>
+        )}
+        <Row
+          label="Sound"
+          info={<InfoTip>A short ting when something arrives while Howdi chat is open.</InfoTip>}
+          checked={sound}
+          onChange={(on) => {
+            setSound(on);
+            setSoundEnabled(on);
+          }}
+        />
+      </div>
+      <div className="pt-2">
         {kinds.map((entry) => (
           <Row
             key={entry.kind}

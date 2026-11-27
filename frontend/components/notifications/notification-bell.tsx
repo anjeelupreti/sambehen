@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { kindIcon } from './kinds';
 import { NotificationSettingsDialog } from './notification-settings-dialog';
 import { syncPush } from './push';
+import { flagTitle, playTing, primeSound, watchVisibility } from './alert';
 
 /**
  * The bell: the latest notifications, newest first, kept live over the
@@ -49,7 +50,18 @@ export function NotificationBell({
     void syncPush(realm).catch(() => {});
   }, [realm, refresh]);
 
+  useEffect(() => {
+    const unprime = primeSound();
+    const unwatch = watchVisibility();
+    return () => {
+      unprime();
+      unwatch();
+    };
+  }, []);
+
   useSocketEvent<AppNotification>('notification:new', (notification) => {
+    playTing(notification.id);
+    flagTitle(notification.kind);
     setItems((current) =>
       [
         { ...notification, readAt: null },
