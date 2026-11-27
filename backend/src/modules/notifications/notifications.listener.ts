@@ -249,6 +249,16 @@ export class NotificationsListener {
       body: bonus ? `${bonus} added to your account.` : null,
       link: '/customer',
     });
+    if (Money.isPositive(event.refereeReward)) {
+      await this.notifications.notify({
+        realm: 'customer',
+        recipientIds: [event.refereeCustomerId],
+        kind: Player.REFERRAL_BONUS,
+        title: 'Your welcome bonus is in',
+        body: `${money(event.refereeReward)} bonus added for joining with an invite.`,
+        link: '/customer',
+      });
+    }
   }
 
   @OnEvent(CUSTOMER_APPROVED, { async: true })

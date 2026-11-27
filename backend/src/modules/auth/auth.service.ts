@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { CUSTOMER_REGISTERED, CustomerRegisteredEvent } from '@common/events/domain-events';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ReferralsService } from '@modules/referrals/referrals.service';
 import { ConfigService } from '@nestjs/config';
 import { AuthRealm, CustomerStatus } from '@common/constants/app.constants';
 import { ErrorCode } from '@common/constants/error-codes';
@@ -59,6 +60,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly configService: ConfigService,
     private readonly events: EventEmitter2,
+    private readonly referralsService: ReferralsService,
   ) {}
 
   // ── Unified gateway ─────────────────────────────────────────
@@ -213,6 +215,12 @@ export class AuthService {
       managerId: null,
       storeId: null,
     });
+    if (dto.referralCode) {
+      // A bad or stale invite never blocks the signup itself.
+      await this.referralsService
+        .attachReferral(created.id, dto.referralCode)
+        .catch(() => undefined);
+    }
     this.events.emit(
       CUSTOMER_REGISTERED,
       new CustomerRegisteredEvent(created.id, dto.fullName || dto.username),

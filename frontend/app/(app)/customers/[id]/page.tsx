@@ -10,6 +10,8 @@ import { ChartCard } from '@/components/charts/chart-card';
 import { TrendChart } from '@/components/charts/trend-chart';
 import { TrendControls } from '@/components/charts/trend-controls';
 import { CustomerActions } from '@/components/customer-actions';
+import { getActor } from '@/lib/session';
+import { assignableOwners } from '../owners';
 import { RecordTransactionModal } from '@/components/forms/record-transaction-modal';
 import { Money } from '@/components/money';
 import { StatCard } from '@/components/stat-card';
@@ -67,7 +69,7 @@ export default async function CustomerDetailPage({
     throw error;
   }
 
-  const [recent, { data: games }, trends] = await Promise.all([
+  const [recent, { data: games }, trends, owners] = await Promise.all([
     apiList<Transaction>('/team/transactions', {
       query: { customerId: id, limit: 10, sortBy: 'occurredAt', sortOrder: 'desc' },
     }),
@@ -75,6 +77,7 @@ export default async function CustomerDetailPage({
     apiGet<TrendResponse>(`/team/customers/${id}/trends`, {
       query: { granularity, lastNDays: range },
     }),
+    getActor().then((actor) => assignableOwners(actor?.role)),
   ]);
 
   return (
@@ -126,7 +129,7 @@ export default async function CustomerDetailPage({
                 fullName: customer.fullName,
               }}
             />
-            <CustomerActions customer={customer} hideView={true} />
+            <CustomerActions customer={customer} hideView={true} owners={owners} />
           </div>
         </header>
       </div>

@@ -25,6 +25,7 @@ export async function registerPlayer(
   const password = String(formData.get('password') ?? '');
   const fullName = String(formData.get('fullName') ?? '').trim();
   const phone = String(formData.get('phone') ?? '').trim();
+  const referralCode = String(formData.get('referralCode') ?? '').trim();
 
   const fieldErrors: Record<string, string> = {};
   if (!email) fieldErrors.email = 'Enter your email address';
@@ -44,6 +45,7 @@ export async function registerPlayer(
         password,
         ...(fullName ? { fullName } : {}),
         ...(phone ? { phone } : {}),
+        ...(referralCode ? { referralCode } : {}),
       },
       anonymous: true,
       redirectOnUnauthorized: false,

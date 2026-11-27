@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ReferralsModule } from '@modules/referrals/referrals.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
@@ -7,6 +8,7 @@ import { AuthService } from './auth.service';
  * SharedAuthModule, so this module only owns its controller and service.
  */
 @Module({
+  imports: [ReferralsModule],
   controllers: [AuthController],
   providers: [AuthService],
   exports: [AuthService],

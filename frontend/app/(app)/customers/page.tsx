@@ -8,6 +8,7 @@ import { BuildingIcon, DownloadIcon, GlobeIcon } from 'lucide-react';
 import { ApproveCustomerButton } from '@/components/approve-customer-button';
 import { ClickableRow } from '@/components/clickable-row';
 import { CustomerActions } from '@/components/customer-actions';
+import { assignableOwners } from './owners';
 import { CustomerHoverCard } from '@/components/customer-hover-card';
 import { ImportCustomersModal } from '@/components/customers/import-customers-modal';
 import { DateRangeFilter } from '@/components/filters/date-range-filter';
@@ -35,7 +36,7 @@ import {
 import { apiList } from '@/lib/api';
 import { formatCount, formatDate } from '@/lib/money';
 import { getActor } from '@/lib/session';
-import type { Customer, CustomerSummary, Staff } from '@/lib/types';
+import type { Customer, CustomerSummary } from '@/lib/types';
 import { CUSTOMER_STATUS_VARIANT } from '@/lib/status';
 
 export const metadata: Metadata = { title: 'Customers' };
@@ -95,13 +96,7 @@ export default async function CustomersPage({
 
   const actor = await getActor();
 
-  // Who a new customer can be assigned to. A store is never asked, so the
-  // list is not fetched for them. Masters and managers see the scoped staff
-  // list minus masters, who sit above the chain and cannot own customers.
-  const ownersPromise =
-    actor && actor.role !== 'store'
-      ? apiList<Staff>('/team/staff', { query: { limit: 100, isActive: true } })
-      : null;
+  const ownersPromise = assignableOwners(actor?.role);
 
   // Filters pass straight through to the API, which validates them and
   // returns 422 on anything it does not accept. There is no second
@@ -137,16 +132,7 @@ export default async function CustomersPage({
     },
   ];
 
-  const owners = ownersPromise
-    ? (await ownersPromise).data
-        .filter((member) => member.role !== 'master')
-        .map((member) => ({
-          id: member.id,
-          username: member.username,
-          role: member.role,
-          parentId: member.parentId,
-        }))
-    : [];
+  const owners = await ownersPromise;
 
   return (
     <div className="space-y-6">
@@ -305,7 +291,7 @@ export default async function CustomersPage({
                       {customer.status === 'pending' ? (
                         <ApproveCustomerButton customerId={customer.id} owners={owners} />
                       ) : (
-                        <CustomerActions customer={customer} compact />
+                        <CustomerActions customer={customer} compact owners={owners} />
                       )}
                     </TableCell>
                   </ClickableRow>

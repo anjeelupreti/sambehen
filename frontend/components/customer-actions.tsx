@@ -7,12 +7,15 @@ import {
   KeyRoundIcon,
   MoreHorizontalIcon,
   PauseCircleIcon,
+  StoreIcon,
 } from 'lucide-react';
 
 import { changeCustomerStatus, resetCustomerPassword } from '@/app/(app)/customers/actions';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { OneTimeSecretDialog } from '@/components/one-time-secret-dialog';
 import { EditCustomerModal } from '@/components/forms/edit-customer-modal';
+import { AssignOwnerDialog } from '@/components/customers/assign-owner-dialog';
+import type { AssignableOwner } from '@/components/forms/new-customer-modal';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -40,8 +43,11 @@ export function CustomerActions({
   customer,
   hideView,
   compact,
+  owners,
 }: {
   customer: Customer;
+  /** Who the player can be moved to. Left out for stores, who can't move players. */
+  owners?: AssignableOwner[];
   hideView?: boolean;
   /**
    * For table rows: the row itself opens the customer, so only the menu is
@@ -56,6 +62,8 @@ export function CustomerActions({
   const [pending, setPending] = useState<Pending>(null);
   const [issuedPassword, setIssuedPassword] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const canAssign = Boolean(owners?.length) && status !== 'pending';
   const router = useRouter();
 
   const confirmStatus = (next: Pending) => setPending(next);
@@ -105,6 +113,13 @@ export function CustomerActions({
               <DropdownMenuItem onSelect={() => setIsEditing(true)}>
                 <EditIcon className="size-4" />
                 Edit details
+              </DropdownMenuItem>
+            )}
+
+            {canAssign && (
+              <DropdownMenuItem onSelect={() => setIsAssigning(true)}>
+                <StoreIcon className="size-4" />
+                Assign to store…
               </DropdownMenuItem>
             )}
 
@@ -193,6 +208,17 @@ export function CustomerActions({
       />
 
       <EditCustomerModal customer={customer} open={isEditing} onOpenChange={setIsEditing} />
+
+      {canAssign && owners && (
+        <AssignOwnerDialog
+          customerId={customerId}
+          username={username}
+          currentOwnerId={customer.storeId ?? customer.managerId ?? null}
+          owners={owners}
+          open={isAssigning}
+          onOpenChange={setIsAssigning}
+        />
+      )}
     </>
   );
 }

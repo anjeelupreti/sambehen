@@ -70,12 +70,24 @@ export class ReferralRewardService {
     }
 
     // Only debits count towards the threshold: money the referee actually
-    // put in. A credit paid back out must not keep them qualified.
+    // put in. A correction against a debit takes that money back out, so a
+    // mis-keyed deposit that was later corrected never qualifies anyone.
     const [totals] = await this.db
       .select({
-        qualifyingDebit: sql<string>`COALESCE(SUM(${transactions.amount}) FILTER (
-          WHERE ${transactions.type} = ${TransactionType.DEBIT}
-        ), 0)::text`,
+        qualifyingDebit: sql<string>`GREATEST(
+          COALESCE(SUM(${transactions.amount}) FILTER (
+            WHERE ${transactions.type} = ${TransactionType.DEBIT}
+          ), 0)
+          - COALESCE(SUM(${transactions.amount}) FILTER (
+            WHERE ${transactions.parentTransactionId} IS NOT NULL
+              AND EXISTS (
+                SELECT 1 FROM transactions parent
+                WHERE parent.id = ${sql.raw('"transactions"."parent_transaction_id"')}
+                  AND parent.type = ${TransactionType.DEBIT}
+              )
+          ), 0),
+          0
+        )::text`,
       })
       .from(transactions)
       .where(and(eq(transactions.customerId, refereeCustomerId), isNull(transactions.deletedAt)));
@@ -110,6 +122,7 @@ export class ReferralRewardService {
           paid.referrerCustomerId,
           paid.refereeCustomerId,
           paid.referrerReward,
+          paid.refereeReward,
         ),
       );
     }
@@ -131,6 +144,7 @@ export class ReferralRewardService {
     referrerCustomerId: string;
     refereeCustomerId: string;
     referrerReward: string;
+    refereeReward: string;
   } | null> {
     const referrerReward = this.rewardAmount(
       program.referrerBonus,
@@ -208,6 +222,7 @@ export class ReferralRewardService {
         referrerCustomerId: referral.referrerCustomerId,
         refereeCustomerId: referral.refereeCustomerId,
         referrerReward,
+        refereeReward,
       };
     });
   }

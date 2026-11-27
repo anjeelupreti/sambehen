@@ -4,11 +4,13 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 
 import { FormAlert, PasswordField, SubmitButton, TextField } from '@/components/auth/fields';
+import { formatMoney } from '@/lib/money';
 import { registerPlayer, type RegisterState } from './actions';
+import type { Invite } from './page';
 
 const INITIAL: RegisterState = { error: null, fieldErrors: {}, success: false };
 
-export function RegisterForm() {
+export function RegisterForm({ invite }: { invite: Invite | null }) {
   const [state, formAction] = useActionState(registerPlayer, INITIAL);
 
   if (state.success) {
@@ -37,8 +39,31 @@ export function RegisterForm() {
         Create a player account
       </h1>
 
+      {invite && (
+        <div className="border-lp-line bg-lp-sunk mt-5 rounded-xl border px-4 py-3 text-sm">
+          {invite.isValid ? (
+            <>
+              <p className="font-semibold">You’re invited</p>
+              {Number(invite.refereeBonus) > 0 ? (
+                <p className="text-lp-dim mt-0.5">
+                  Get a {formatMoney(invite.refereeBonus)} bonus
+                  {Number(invite.minQualifyingDebit) > 0
+                    ? ` once you’ve deposited ${formatMoney(invite.minQualifyingDebit)}.`
+                    : ' after your first deposit.'}
+                </p>
+              ) : (
+                <p className="text-lp-dim mt-0.5">Your friend gets the credit when you join.</p>
+              )}
+            </>
+          ) : (
+            <p className="text-lp-dim">This invite link has expired. You can still sign up.</p>
+          )}
+        </div>
+      )}
+
       <form action={formAction} className="mt-8 space-y-5" noValidate>
         {state.error && <FormAlert>{state.error}</FormAlert>}
+        {invite?.isValid && <input type="hidden" name="referralCode" value={invite.code} />}
 
         <TextField
           id="fullName"

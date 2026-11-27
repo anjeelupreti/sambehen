@@ -32,6 +32,7 @@ export class ReferralRewardedEvent {
     readonly referrerCustomerId: string,
     readonly refereeCustomerId: string,
     readonly referrerReward: string,
+    readonly refereeReward: string = '0',
   ) {}
 }
 

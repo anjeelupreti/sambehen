@@ -162,6 +162,16 @@ export class RegisterCustomerDto {
   @MaxLength(120)
   @IsOptional()
   country?: string;
+
+  @ApiPropertyOptional({
+    maxLength: 32,
+    description:
+      'Invite code or link slug the player arrived through. An unusable code is ignored rather than failing the signup.',
+  })
+  @IsString()
+  @MaxLength(32)
+  @IsOptional()
+  referralCode?: string;
 }
 
 /**

@@ -17,7 +17,7 @@ export function AuthShell({
 }: {
   children: ReactNode;
   /** The pose in the sky panel. */
-  mascot?: 'waving' | 'door';
+  mascot?: 'waving' | 'door' | 'friends';
 }) {
   return (
     <div

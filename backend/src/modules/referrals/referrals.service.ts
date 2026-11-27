@@ -161,6 +161,14 @@ export class ReferralsService {
     dto: UpdateReferralProgramDto,
   ): Promise<ReferralProgramResponseDto> {
     const existing = await this.requireProgram(id);
+    const validFrom = existing.validFrom;
+    const validTo = dto.validTo === undefined ? existing.validTo : dto.validTo;
+    if (validTo && new Date(validTo) < new Date(validFrom)) {
+      throw new BusinessException(
+        ErrorCode.VIP_INVALID_PERIOD,
+        'validTo must be on or after validFrom',
+      );
+    }
 
     const [updated] = await this.db
       .update(referralPrograms)
@@ -176,7 +184,11 @@ export class ReferralsService {
       { ...dto },
     );
 
-    return this.toProgramResponse(updated, 0);
+    const [codes] = await this.db
+      .select({ value: count() })
+      .from(referralCodes)
+      .where(eq(referralCodes.programId, id));
+    return this.toProgramResponse(updated, Number(codes?.value ?? 0));
   }
 
   // ── Code assignment ─────────────────────────────────────────
@@ -362,6 +374,25 @@ export class ReferralsService {
     }
 
     await this.db.transaction(async (tx) => {
+      // Claim one use first. The condition makes two signups racing for the
+      // last use of a capped code safe: only one of them gets a row back.
+      const claimed = await tx
+        .update(referralCodes)
+        .set({ usageCount: sql`${referralCodes.usageCount} + 1` })
+        .where(
+          and(
+            eq(referralCodes.id, row.code.id),
+            sql`(${referralCodes.maxUses} IS NULL OR ${referralCodes.usageCount} < ${referralCodes.maxUses})`,
+          ),
+        )
+        .returning({ id: referralCodes.id });
+      if (claimed.length === 0) {
+        this.logger.warn(
+          `Referral code "${codeOrSlug}" ran out of uses; signup proceeds without it`,
+        );
+        return;
+      }
+
       await tx.insert(referrals).values({
         codeId: row.code.id,
         programId: row.program.id,
@@ -369,11 +400,6 @@ export class ReferralsService {
         refereeCustomerId,
         status: ReferralStatus.PENDING,
       });
-
-      await tx
-        .update(referralCodes)
-        .set({ usageCount: sql`${referralCodes.usageCount} + 1` })
-        .where(eq(referralCodes.id, row.code.id));
 
       await tx
         .update(customers)
@@ -496,7 +522,18 @@ export class ReferralsService {
       .select({ code: referralCodes, program: referralPrograms })
       .from(referralCodes)
       .innerJoin(referralPrograms, eq(referralCodes.programId, referralPrograms.id))
-      .where(and(eq(referralCodes.customerId, customerId), eq(referralCodes.isActive, true)))
+      .where(
+        and(
+          eq(referralCodes.customerId, customerId),
+          eq(referralCodes.isActive, true),
+          eq(referralPrograms.isActive, true),
+          isNull(referralPrograms.deletedAt),
+          sql`${referralPrograms.validFrom} <= CURRENT_DATE`,
+          sql`(${referralPrograms.validTo} IS NULL OR ${referralPrograms.validTo} >= CURRENT_DATE)`,
+          sql`(${referralCodes.expiresAt} IS NULL OR ${referralCodes.expiresAt} > now())`,
+          sql`(${referralCodes.maxUses} IS NULL OR ${referralCodes.usageCount} < ${referralCodes.maxUses})`,
+        ),
+      )
       .orderBy(desc(referralCodes.createdAt))
       .limit(1);
 
