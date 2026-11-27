@@ -44,6 +44,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Howdi" />
+        {/* The browser offers installing once, often before React has
+            loaded; this keeps that offer for the in-app "Add" button. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__howdiInstall=e});",
+          }}
+        />
       </head>
       <body className="antialiased">
         <ThemeProvider>

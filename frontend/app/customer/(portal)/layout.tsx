@@ -12,7 +12,7 @@ import { SkipLink } from '@/components/skip-link';
 import { ChatSocketProvider } from '@/components/chat/socket';
 import { Logo } from '@/components/logo';
 import { NotificationBell } from '@/components/notifications/notification-bell';
-import { PermissionPrompt } from '@/components/notifications/permission-prompt';
+import { AppPrompts } from '@/components/pwa/app-prompts';
 
 /**
  * The customer portal shell.
@@ -70,7 +70,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
             {children}
           </main>
 
-          <PermissionPrompt
+          <AppPrompts
             realm="customer"
             className="bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6"
           />

@@ -12,7 +12,7 @@ import { getActor } from '@/lib/session';
 import { SkipLink } from '@/components/skip-link';
 import { Logo } from '@/components/logo';
 import { NotificationBell } from '@/components/notifications/notification-bell';
-import { PermissionPrompt } from '@/components/notifications/permission-prompt';
+import { AppPrompts } from '@/components/pwa/app-prompts';
 
 /**
  * The signed-in shell.
@@ -72,7 +72,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </main>
         </div>
 
-        <PermissionPrompt realm="staff" className="bottom-24 sm:right-6" />
+        <AppPrompts realm="staff" className="bottom-24 sm:right-6" />
         <MessagesFab viewer={{ id: actor.id, username: actor.username, role: actor.role }} />
       </div>
     </ChatSocketProvider>
