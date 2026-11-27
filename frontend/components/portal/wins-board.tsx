@@ -16,12 +16,10 @@ const name = (win: FeedWin) => (win.mine ? 'You' : win.displayName);
 function Leader({ win, rank }: { win: FeedWin; rank: number }) {
   if (rank === 1) {
     return (
-      <li className="relative col-span-2 flex items-center gap-4 overflow-hidden rounded-2xl border border-gold/40 bg-[radial-gradient(120%_120%_at_0%_0%,rgb(242_193_78/0.22),transparent_60%),var(--card)] p-4">
+      <li className="bg-card relative col-span-2 flex items-center gap-4 overflow-hidden rounded-2xl border border-gold/50 p-4">
         <GameMark name={win.gameName} src={win.gameImageUrl} className="size-14" />
         <div className="min-w-0 flex-1">
-          <p className="text-3xl font-bold text-gold tabular-nums [font-stretch:115%]">
-            {winAmount(win.amount)}
-          </p>
+          <p className="font-slab text-3xl text-gold">{winAmount(win.amount)}</p>
           <p className="truncate text-sm">
             <span className="font-semibold">{name(win)}</span>
             {win.gameName && <span className="text-muted-foreground"> · {win.gameName}</span>}
@@ -45,9 +43,7 @@ function Leader({ win, rank }: { win: FeedWin; rank: number }) {
           #{rank}
         </span>
       </div>
-      <p className="mt-3 text-xl font-bold text-gold tabular-nums [font-stretch:115%]">
-        {winAmount(win.amount)}
-      </p>
+      <p className="font-slab mt-3 text-xl text-gold">{winAmount(win.amount)}</p>
       <p className="truncate text-sm font-semibold">{name(win)}</p>
       {win.gameName && <p className="text-muted-foreground truncate text-xs">{win.gameName}</p>}
     </li>
@@ -111,7 +107,7 @@ export function WinsBoard({
             id="top-title"
             className="text-[11px] font-bold tracking-[0.16em] text-gold uppercase"
           >
-            This week’s biggest
+            <span aria-hidden>★ </span>This week’s biggest
           </h2>
           <ol className="grid grid-cols-2 gap-3">
             {top.slice(0, 3).map((win, index) => (
@@ -147,9 +143,7 @@ export function WinsBoard({
                     {mounted && ` · ${ago(win.wonAt)}`}
                   </p>
                 </div>
-                <span className="text-lg font-bold text-gold tabular-nums">
-                  {winAmount(win.amount)}
-                </span>
+                <span className="font-slab text-lg text-gold">{winAmount(win.amount)}</span>
               </li>
             ))}
           </ul>

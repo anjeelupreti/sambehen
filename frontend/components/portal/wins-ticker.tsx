@@ -11,7 +11,7 @@ function Item({ win }: { win: FeedWin }) {
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       <span className="font-semibold text-foreground">{win.mine ? 'You' : win.displayName}</span>
       <span className="text-muted-foreground">won</span>
-      <span className="font-bold text-gold tabular-nums">{winAmount(win.amount)}</span>
+      <span className="font-slab text-gold">{winAmount(win.amount)}</span>
       {win.gameName && <span className="text-muted-foreground">on {win.gameName}</span>}
     </span>
   );
@@ -43,11 +43,11 @@ export function WinsTicker({ initial, className }: { initial: FeedWin[]; classNa
         .map((win) => `${win.mine ? 'You' : win.displayName} won ${winAmount(win.amount)}`)
         .join(', ')}. See all wins.`}
       className={cn(
-        'ticker focus-visible:ring-ring/70 flex h-10 items-center overflow-hidden border-y border-gold/20 bg-[#0c1222]/90 text-[13px] outline-none focus-visible:ring-[3px]',
+        'ticker marquee-bulbs focus-visible:ring-ring/70 flex h-11 items-center overflow-hidden bg-[#060a13] text-[13px] outline-none focus-visible:ring-[3px]',
         className,
       )}
     >
-      <span className="relative z-10 flex h-full shrink-0 items-center gap-2 bg-[#0c1222] pr-3 pl-4 text-[11px] font-bold tracking-[0.14em] text-gold uppercase shadow-[12px_0_12px_-4px_#0c1222]">
+      <span className="font-slab relative z-10 flex h-[calc(100%-12px)] shrink-0 items-center bg-[#060a13] pr-3 pl-4 text-[13px] tracking-wide text-gold uppercase">
         Big wins
       </span>
       <span

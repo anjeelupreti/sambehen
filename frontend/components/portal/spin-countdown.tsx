@@ -21,7 +21,7 @@ function parts(ms: number) {
 function Tile({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="grid h-12 w-12 place-items-center rounded-lg border border-gold/25 bg-[#0b1120] text-2xl font-bold text-gold tabular-nums shadow-[inset_0_-12px_16px_-12px_rgb(0_0_0/0.8)] [font-stretch:115%] sm:h-14 sm:w-14">
+      <span className="font-slab relative grid h-14 w-13 place-items-center overflow-hidden rounded-md border border-white/10 bg-[#060a13] text-[1.7rem] leading-none text-gold before:absolute before:inset-x-0 before:top-1/2 before:h-px before:bg-black/70 sm:h-16 sm:w-15 sm:text-3xl">
         {String(value).padStart(2, '0')}
       </span>
       <span className="text-muted-foreground text-[10px] font-semibold tracking-[0.12em] uppercase">
@@ -49,13 +49,13 @@ export function SpinCountdown({ event, art }: { event: MySpinEvent; art: string 
   return (
     <section
       aria-labelledby="spin-title"
-      className="relative overflow-hidden rounded-2xl border border-gold/25 bg-[radial-gradient(120%_90%_at_100%_0%,#2a2110_0%,transparent_55%),linear-gradient(160deg,#141f3c,#0f172b)] p-5"
+      className="bg-card relative overflow-hidden rounded-2xl border border-gold/30 p-5"
     >
       {art && (
         <img
           src={art}
           alt=""
-          className="pointer-events-none absolute -right-3 -bottom-3 size-28 opacity-95 sm:size-32"
+          className="pointer-events-none absolute -right-2 -bottom-2 size-32 sm:size-36"
         />
       )}
       <div className="relative">
@@ -68,11 +68,11 @@ export function SpinCountdown({ event, art }: { event: MySpinEvent; art: string 
           </h2>
         </div>
         {(prize || event.prizeDescription) && (
-          <p className="mt-2 pr-24 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-3 pr-28 text-sm">
             {prize && (
-              <span className="text-2xl font-bold text-foreground tabular-nums [font-stretch:115%]">
+              <span className="font-slab text-foreground text-3xl">
                 {prize}
-                <span className="text-muted-foreground ml-1.5 text-sm font-medium [font-stretch:100%]">
+                <span className="text-muted-foreground ml-1.5 font-lp text-sm font-medium">
                   prize pool
                 </span>
               </span>

@@ -7,6 +7,7 @@ import { PortalBottomNav, PortalTopNav } from '@/components/customer/portal-nav'
 import { NightMode } from '@/components/portal/night/night-mode';
 import { WinPop } from '@/components/portal/win-pop';
 import { publicAsset } from '@/lib/public-asset';
+import { slab } from '@/lib/fonts';
 import { customerGet } from '@/lib/customer-api';
 import { Button } from '@/components/ui/button';
 import { getCustomerActor } from '@/lib/customer-session';
@@ -46,7 +47,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
           }}
         />
         <NightMode />
-        <div className="flex min-h-svh flex-col">
+        <div className={`${slab.variable} flex min-h-svh flex-col`}>
           <SkipLink />
           <header className="bg-background/95 sticky top-0 z-10 border-b backdrop-blur">
             <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-2 px-4 sm:px-6">

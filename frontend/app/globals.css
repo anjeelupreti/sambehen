@@ -134,10 +134,27 @@ html.night {
 }
 
 html.night body {
-  background:
-    radial-gradient(900px 420px at 50% -180px, rgb(47 91 255 / 0.22), transparent 70%),
-    var(--background);
-  background-attachment: fixed;
+  background: var(--background);
+}
+
+/* A row of marquee bulbs along the top and bottom edge of a band. */
+.marquee-bulbs {
+  background-image:
+    radial-gradient(circle, rgb(242 193 78 / 0.55) 1.2px, transparent 1.7px),
+    radial-gradient(circle, rgb(242 193 78 / 0.55) 1.2px, transparent 1.7px);
+  background-size: 12px 8px;
+  background-position:
+    0 0,
+    6px 100%;
+  background-repeat: repeat-x;
+}
+
+/* A ticket: half-round notches cut into both sides. */
+.ticket {
+  --notch: 10px;
+  mask:
+    radial-gradient(circle var(--notch) at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat;
 }
 
 /* The wins ticker: one strip of text that loops; still for anyone who prefers less motion. */
@@ -234,6 +251,7 @@ html.night body {
 
 @theme inline {
   --font-lp: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-slab: var(--font-alfa), Rockwell, Georgia, serif;
 }
 
 /* The landing hero's one moment: a transaction lands, its figures update. */

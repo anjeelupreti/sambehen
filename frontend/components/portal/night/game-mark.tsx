@@ -36,7 +36,7 @@ export function GameMark({
     <span
       aria-hidden
       className={cn(
-        'relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br text-sm font-bold tracking-wide text-gold ring-1 ring-gold/20',
+        'font-slab relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl text-sm text-gold ring-1 ring-gold/25',
         tone(label),
         className,
       )}

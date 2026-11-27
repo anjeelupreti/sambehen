@@ -42,16 +42,16 @@ export function WinPop({ art }: { art: string | null }) {
       role="status"
       className="animate-in fade-in-0 slide-in-from-bottom-3 fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 md:right-6 md:bottom-6 md:left-auto md:w-80"
     >
-      <div className="relative flex items-center gap-3 rounded-2xl border border-gold/30 bg-[linear-gradient(135deg,#1a2550,#10182b_70%)] p-3 pr-10 shadow-[0_12px_40px_-12px_rgb(242_193_78/0.35)]">
+      <div className="bg-card relative flex items-center gap-3 rounded-2xl border border-gold/40 p-3 pr-10 shadow-lg shadow-black/40">
         {art && <img src={art} alt="" className="-my-3 size-16 shrink-0" />}
         <Link href="/customer/wins" className="min-w-0 flex-1" onClick={() => setWin(null)}>
           <p className="truncate text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">{win.displayName}</span> just won
           </p>
-          <p className="truncate text-xl font-bold text-gold tabular-nums [font-stretch:115%]">
+          <p className="font-slab truncate text-xl text-gold">
             {winAmount(win.amount)}
             {win.gameName && (
-              <span className="text-muted-foreground ml-1.5 text-sm font-medium [font-stretch:100%]">
+              <span className="text-muted-foreground ml-1.5 font-lp text-sm font-medium">
                 on {win.gameName}
               </span>
             )}

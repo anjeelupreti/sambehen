@@ -77,7 +77,7 @@ export default async function CustomerOverviewPage() {
 
       <div className="flex items-center gap-3">
         {waving && <img src={waving} alt="" className="-my-2 size-16 shrink-0" />}
-        <h1 className="text-2xl font-bold [font-stretch:115%]">
+        <h1 className="font-slab text-[1.75rem] leading-tight">
           {firstName ? `Howdy, ${firstName}` : 'Howdy'}
         </h1>
       </div>

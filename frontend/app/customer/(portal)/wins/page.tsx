@@ -17,7 +17,7 @@ export default async function WinsPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold [font-stretch:115%]">Big wins</h1>
+      <h1 className="font-slab text-[1.75rem] leading-tight">Big wins</h1>
       <WinsBoard recent={feed.recent} top={feed.topThisWeek} showMine={feed.showMine} />
       <PlayResponsibly />
     </div>

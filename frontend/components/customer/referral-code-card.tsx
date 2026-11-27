@@ -76,7 +76,7 @@ export function ReferralCodeCard({
   return (
     <section
       aria-labelledby="invite-title"
-      className="relative overflow-hidden rounded-2xl border border-gold/20 bg-[radial-gradient(110%_100%_at_100%_0%,rgb(242_193_78/0.16),transparent_60%),var(--card)] p-5"
+      className="bg-card relative overflow-hidden rounded-2xl border border-gold/30 p-5"
     >
       {art && (
         <img
@@ -87,15 +87,18 @@ export function ReferralCodeCard({
       )}
 
       <div className="relative pr-24 sm:pr-28">
-        <h2 id="invite-title" className="text-muted-foreground text-sm font-semibold">
-          Invite a friend
+        <h2
+          id="invite-title"
+          className="font-slab text-[13px] tracking-[0.14em] text-gold uppercase"
+        >
+          {bonus ? '★ Reward ★' : 'Invite friends'}
         </h2>
         {bonus ? (
-          <p className="mt-1 leading-tight">
-            <span className="text-3xl font-bold text-gold [font-stretch:115%]">
-              Get {winAmount(bonus)}
+          <p className="mt-2 leading-tight">
+            <span className="font-slab block text-5xl">{winAmount(bonus)}</span>
+            <span className="text-muted-foreground mt-1 block text-sm">
+              for every friend who joins with your invite
             </span>
-            <span className="text-muted-foreground block text-sm">for every friend who joins</span>
           </p>
         ) : (
           <p className="mt-1 text-xl font-bold">Bring your crew</p>
@@ -123,10 +126,7 @@ export function ReferralCodeCard({
           aria-valuemax={goal}
           aria-valuenow={referred}
         >
-          <div
-            className="h-full rounded-full bg-[linear-gradient(90deg,#b8862b,#f2c14e)]"
-            style={{ width: `${percent}%` }}
-          />
+          <div className="h-full rounded-full bg-gold" style={{ width: `${percent}%` }} />
         </div>
       </div>
 
