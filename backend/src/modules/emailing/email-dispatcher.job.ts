@@ -67,12 +67,34 @@ export class EmailDispatcherJob {
    * endpoint can verify it without storing anything, and a customer cannot
    * unsubscribe anyone but themselves by editing the URL.
    */
+  private unsubscribeToken(customerId: string): string {
+    const secret = this.configService.getOrThrow<string>('jwt.secret');
+    return HashUtil.sha256(`${customerId}:${secret}`).slice(0, 32);
+  }
+
+  /**
+   * The footer link: the web app's unsubscribe page, which confirms in
+   * plain words. (It used to point at the API path on the web app's
+   * domain, which doesn't exist there and bounced people to sign-in.)
+   */
   private unsubscribeUrl(customerId: string): string {
     const base = this.configService.get<string>('mail.publicUrl', 'http://localhost:3000');
-    const secret = this.configService.getOrThrow<string>('jwt.secret');
-    const token = HashUtil.sha256(`${customerId}:${secret}`).slice(0, 32);
+    return `${base.replace(/\/$/, '')}/unsubscribe/${customerId}/${this.unsubscribeToken(customerId)}`;
+  }
 
-    return `${base.replace(/\/$/, '')}/api/v1/public/unsubscribe/${customerId}/${token}`;
+  /**
+   * One-click unsubscribe headers (RFC 8058), which Gmail and Yahoo expect
+   * on bulk marketing mail. Mail clients POST to the API directly, so they
+   * need the API's public address; without one configured, no header.
+   */
+  private unsubscribeHeaders(customerId: string): Record<string, string> | undefined {
+    const api = this.configService.get<string>('mail.apiPublicUrl', '');
+    if (!api) return undefined;
+    const url = `${api.replace(/\/$/, '')}/api/v1/public/unsubscribe/${customerId}/${this.unsubscribeToken(customerId)}`;
+    return {
+      'List-Unsubscribe': `<${url}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    };
   }
 
   /**
@@ -187,12 +209,13 @@ export class EmailDispatcherJob {
     let sent = 0;
     let failed = 0;
 
-    for (const row of rows) {
-      const campaign = campaigns.get(row.campaign_id);
-      if (!campaign) continue;
-
-      // Rendered per recipient rather than once per campaign: the
-      // greeting and the unsubscribe token are both recipient-specific.
+    // Rendered per recipient rather than once per campaign: the greeting
+    // and the unsubscribe token are both recipient-specific. Then sent as
+    // one batch, which keeps inside the provider's rate limit.
+    const ready = rows.filter((row) => campaigns.has(row.campaign_id));
+    const messages = ready.map((row) => {
+      const campaign = campaigns.get(row.campaign_id)!;
+      const optional = this.templateService.allowsUnsubscribe(campaign.emailKind as EmailKind);
       const rendered = this.templateService.render({
         kind: campaign.emailKind as EmailKind,
         subject: campaign.subject,
@@ -200,13 +223,18 @@ export class EmailDispatcherJob {
         recipientName: names.get(row.customer_id),
         unsubscribeUrl: this.unsubscribeUrl(row.customer_id),
       });
-
-      const result = await this.mailerService.send({
+      return {
         to: row.email,
         subject: campaign.subject,
         text: rendered.text,
         html: rendered.html,
-      });
+        headers: optional ? this.unsubscribeHeaders(row.customer_id) : undefined,
+      };
+    });
+    const results = await this.mailerService.sendMany(messages);
+
+    for (const [index, row] of ready.entries()) {
+      const result = results[index];
 
       if (result.success) {
         await this.db
@@ -273,7 +301,8 @@ export class EmailDispatcherJob {
   private async finaliseCompletedCampaigns(): Promise<void> {
     await this.db.execute(sql`
       UPDATE email_campaigns ec
-      SET status = CASE WHEN ec.failed_count > 0 THEN ${CampaignStatus.PARTIAL}
+      SET status = CASE WHEN ec.failed_count > 0 AND ec.sent_count = 0 THEN ${CampaignStatus.FAILED}
+                        WHEN ec.failed_count > 0 THEN ${CampaignStatus.PARTIAL}
                         ELSE ${CampaignStatus.SENT} END,
           completed_at = NOW(),
           updated_at = NOW()

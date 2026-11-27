@@ -73,7 +73,9 @@ export function AudienceBuilder({
     });
   };
 
-  const sendable = preview ? preview.totalRecipients - preview.excluded : 0;
+  // totalRecipients is already the mailable count; excluded comes on top of it.
+  const sendable = preview ? preview.totalRecipients : 0;
+  const selected = preview ? preview.totalRecipients + preview.excluded : 0;
 
   return (
     <div className="space-y-4">
@@ -155,7 +157,7 @@ export function AudienceBuilder({
         />
         <TextField
           name="lastNDays"
-          label="Active within (days)"
+          label="Joined in the last (days)"
           inputMode="numeric"
           value={filter.lastNDays ? String(filter.lastNDays) : ''}
           onChange={(v) => set({ lastNDays: v ? Number(v) : undefined })}
@@ -186,7 +188,7 @@ export function AudienceBuilder({
               </Badge>
             ) : null}
             <span className="text-muted-foreground text-xs">
-              of {formatCount(preview.totalRecipients)} selected
+              of {formatCount(selected)} selected
             </span>
           </div>
         ) : null}

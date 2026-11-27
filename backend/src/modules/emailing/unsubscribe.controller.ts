@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Param } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Inject, Param, Post } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -51,6 +51,33 @@ export class UnsubscribeController {
     @Param('customerId', ParseUUIDPipe) customerId: string,
     @Param('token') token: string,
   ): Promise<{ unsubscribed: boolean }> {
+    return this.optOut(customerId, token, 'unsubscribe_link');
+  }
+
+  /**
+   * One-click unsubscribe (RFC 8058): what Gmail and Yahoo call when a
+   * reader presses "Unsubscribe" next to the sender's name.
+   */
+  @Post(':customerId/:token')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @ResponseMessage('You have been unsubscribed')
+  @ApiOperation({ summary: 'One-click unsubscribe from a mail client' })
+  @ApiOkData(Object, 'Unsubscribed')
+  @ApiErrors(404, 429)
+  async oneClick(
+    @Param('customerId', ParseUUIDPipe) customerId: string,
+    @Param('token') token: string,
+  ): Promise<{ unsubscribed: boolean }> {
+    return this.optOut(customerId, token, 'one_click');
+  }
+
+  private async optOut(
+    customerId: string,
+    token: string,
+    source: string,
+  ): Promise<{ unsubscribed: boolean }> {
     const secret = this.configService.getOrThrow<string>('jwt.secret');
     const expected = HashUtil.sha256(`${customerId}:${secret}`).slice(0, 32);
 
@@ -84,7 +111,7 @@ export class UnsubscribeController {
       entityType: 'customer',
       entityId: customerId,
       after: { emailOptOut: true },
-      metadata: { source: 'unsubscribe_link' },
+      metadata: { source },
     });
 
     return { unsubscribed: true };

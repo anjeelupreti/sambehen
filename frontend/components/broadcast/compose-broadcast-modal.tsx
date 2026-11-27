@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { MegaphoneIcon } from 'lucide-react';
+import { MegaphoneIcon, SendIcon } from 'lucide-react';
+import { toast } from 'sonner';
 
 import {
   createCampaign,
   sendCampaign,
   type EmailKind,
   type RecipientFilter,
+  sendTestEmail,
 } from '@/app/(app)/broadcast/actions';
 import { AudienceBuilder } from '@/components/broadcast/audience-builder';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -55,11 +57,14 @@ export function ComposeBroadcastModal() {
   const [emailKind, setEmailKind] = useState<EmailKind>('promotional');
   const [filter, setFilter] = useState<RecipientFilter>({});
   const [preview, setPreview] = useState<RecipientPreview | null>(null);
+  const [sendAt, setSendAt] = useState('');
+  const [testing, setTesting] = useState(false);
 
   const create = useAction(createCampaign);
   const send = useAction(sendCampaign);
 
-  const sendable = preview ? preview.totalRecipients - preview.excluded : 0;
+  // totalRecipients is already the mailable count.
+  const sendable = preview ? preview.totalRecipients : 0;
   const ready = subject.trim().length > 0 && bodyText.trim().length > 0 && sendable > 0;
 
   const reset = () => {
@@ -68,6 +73,23 @@ export function ComposeBroadcastModal() {
     setEmailKind('promotional');
     setFilter({});
     setPreview(null);
+    setSendAt('');
+  };
+
+  const sendTest = async () => {
+    if (!subject.trim() || !bodyText.trim()) {
+      toast.error('Write a subject and message first.');
+      return;
+    }
+    setTesting(true);
+    const result = await sendTestEmail({
+      subject: subject.trim(),
+      bodyText: bodyText.trim(),
+      emailKind,
+    });
+    setTesting(false);
+    if (result.sent) toast.success(`Test sent to ${result.to}.`);
+    else toast.error(result.error ? `Test not sent: ${result.error}` : 'Test not sent.');
   };
 
   const doSend = async () => {
@@ -78,6 +100,7 @@ export function ComposeBroadcastModal() {
       subject: subject.trim(),
       bodyText: bodyText.trim(),
       emailKind,
+      scheduledAt: sendAt ? new Date(sendAt).toISOString() : undefined,
     });
     if (!draft.ok || !draft.data) return { ok: false };
 
@@ -154,6 +177,35 @@ export function ComposeBroadcastModal() {
           ) : null}
         </div>
 
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="grid gap-1.5">
+            <Label htmlFor="sendAt">
+              Send later <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <input
+              id="sendAt"
+              type="datetime-local"
+              value={sendAt}
+              min={new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
+                .toISOString()
+                .slice(0, 16)}
+              onChange={(event) => setSendAt(event.target.value)}
+              className="border-input focus-visible:border-ring focus-visible:ring-ring/70 h-9 rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9"
+            disabled={testing}
+            onClick={() => void sendTest()}
+          >
+            <SendIcon className="size-4" />
+            {testing ? 'Sending test…' : 'Send a test to me'}
+          </Button>
+        </div>
+
         <div className="border-t pt-4">
           <AudienceBuilder
             filter={filter}
@@ -174,7 +226,11 @@ export function ComposeBroadcastModal() {
         open={confirming}
         onOpenChange={setConfirming}
         title={`Send to ${formatCount(sendable)} customers?`}
-        description="This queues the email for delivery immediately. It cannot be recalled once sending starts."
+        description={
+          sendAt
+            ? `It goes out on ${new Date(sendAt).toLocaleString()}. You can cancel it until then.`
+            : 'It starts going out right away and cannot be recalled once sent.'
+        }
         confirmLabel="Send broadcast"
         onConfirm={doSend}
       />

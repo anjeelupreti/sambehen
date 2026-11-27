@@ -1634,6 +1634,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/team/email/campaigns/test': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send the message to yourself
+     * @description Sends what is composed to the signed-in staff member only, right away.
+     */
+    post: operations['EmailingController_sendTest'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/team/email/campaigns': {
     parameters: {
       query?: never;
@@ -1745,7 +1765,8 @@ export interface paths {
      */
     get: operations['UnsubscribeController_unsubscribe'];
     put?: never;
-    post?: never;
+    /** One-click unsubscribe from a mail client */
+    post: operations['UnsubscribeController_oneClick'];
     delete?: never;
     options?: never;
     head?: never;
@@ -3620,33 +3641,20 @@ export interface components {
        */
       sampleSize: number;
     };
-    /** @enum {string} */
+    /**
+     * @description What kind of message this is. Decides the layout, accent colour and
+     *     whether an unsubscribe footer appears — not merely cosmetic, since it
+     *     changes what the message is allowed to contain.
+     *
+     *     Allowed values:
+     *     - `promotional` — offers and campaigns. Carries an unsubscribe footer.
+     *     - `informational` — statements, summaries, general notices. Unsubscribable.
+     *     - `notification` — something happened on the account: a win, a bonus, a VIP tier.
+     *     - `transactional` — account and security mail. Never unsubscribable.
+     *     - `alert` — needs attention: a failure, a suspension, a problem.
+     * @enum {string}
+     */
     EmailKind: 'promotional' | 'informational' | 'notification' | 'transactional' | 'alert';
-    /** @enum {string} */
-    CampaignStatus: 'draft' | 'queued' | 'sending' | 'sent' | 'partial' | 'failed' | 'cancelled';
-    CampaignResponseDto: {
-      /** Format: uuid */
-      id: string;
-      subject: string;
-      emailKind: components['schemas']['EmailKind'];
-      status: components['schemas']['CampaignStatus'];
-      /** @example 412 */
-      recipientCount: number;
-      /** @example 398 */
-      sentCount: number;
-      /** @example 14 */
-      failedCount: number;
-      /** Format: date-time */
-      scheduledAt: string | null;
-      /** Format: date-time */
-      startedAt: string | null;
-      /** Format: date-time */
-      completedAt: string | null;
-      /** Format: uuid */
-      createdByStaffId: string | null;
-      /** Format: date-time */
-      createdAt: string;
-    };
     CreateCampaignDto: {
       /** @example August promotions */
       subject: string;
@@ -3673,6 +3681,31 @@ export interface components {
        * @description Send later. The dispatcher picks the campaign up once due.
        */
       scheduledAt?: string;
+    };
+    /** @enum {string} */
+    CampaignStatus: 'draft' | 'queued' | 'sending' | 'sent' | 'partial' | 'failed' | 'cancelled';
+    CampaignResponseDto: {
+      /** Format: uuid */
+      id: string;
+      subject: string;
+      emailKind: components['schemas']['EmailKind'];
+      status: components['schemas']['CampaignStatus'];
+      /** @example 412 */
+      recipientCount: number;
+      /** @example 398 */
+      sentCount: number;
+      /** @example 14 */
+      failedCount: number;
+      /** Format: date-time */
+      scheduledAt: string | null;
+      /** Format: date-time */
+      startedAt: string | null;
+      /** Format: date-time */
+      completedAt: string | null;
+      /** Format: uuid */
+      createdByStaffId: string | null;
+      /** Format: date-time */
+      createdAt: string;
     };
     RecipientFilterDto: {
       /**
@@ -9829,6 +9862,59 @@ export interface operations {
       };
     };
   };
+  EmailingController_sendTest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateCampaignDto'];
+      };
+    };
+    responses: {
+      /** @description Whether it was sent, and to which address */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['Object'];
+          };
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Authenticated, but the role lacks this capability */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Validation failed, or a business rule rejected semantically valid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
   EmailingController_findAll: {
     parameters: {
       query?: {
@@ -10198,6 +10284,49 @@ export interface operations {
       path: {
         customerId: string;
         /** @description Signature from the email footer. */
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Unsubscribed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'] & {
+            data?: components['schemas']['Object'];
+          };
+        };
+      };
+      /** @description Resource does not exist, or lies outside the actor's scope. Cross-scope access returns 404 rather than 403 so the API never confirms that another chain's record exists. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+      /** @description Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ApiResponseDto'];
+        };
+      };
+    };
+  };
+  UnsubscribeController_oneClick: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        customerId: string;
         token: string;
       };
       cookie?: never;

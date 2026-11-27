@@ -63,6 +63,22 @@ export class EmailingController {
     return this.emailingService.previewRecipients(actor, dto);
   }
 
+  @Post('campaigns/test')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Test sent')
+  @ApiOperation({
+    summary: 'Send the message to yourself',
+    description: 'Sends what is composed to the signed-in staff member only, right away.',
+  })
+  @ApiOkData(Object, 'Whether it was sent, and to which address')
+  @ApiErrors(401, 403, 422)
+  sendTest(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Body() dto: CreateCampaignDto,
+  ): Promise<{ sent: boolean; to: string; error?: string }> {
+    return this.emailingService.sendTest(actor, dto);
+  }
+
   @Post('campaigns')
   @ResponseMessage('Campaign created successfully')
   @ApiOperation({
@@ -126,8 +142,11 @@ export class EmailingController {
   @ApiOperation({ summary: 'List campaigns' })
   @ApiOkList(CampaignResponseDto)
   @ApiErrors(401, 403, 422)
-  findAll(@Query() filters: CampaignFilterDto): Promise<IPaginatedResult<CampaignResponseDto>> {
-    return this.emailingService.findAll(filters);
+  findAll(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Query() filters: CampaignFilterDto,
+  ): Promise<IPaginatedResult<CampaignResponseDto>> {
+    return this.emailingService.findAll(actor, filters);
   }
 
   @Get('campaigns/:id')
@@ -136,8 +155,11 @@ export class EmailingController {
   @ApiOperation({ summary: 'Get a campaign' })
   @ApiOkData(CampaignResponseDto)
   @ApiErrors(401, 403, 404)
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<CampaignResponseDto> {
-    return this.emailingService.findOne(id);
+  findOne(
+    @CurrentStaff() actor: ICurrentStaff,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CampaignResponseDto> {
+    return this.emailingService.findOne(actor, id);
   }
 
   @Get('campaigns/:id/recipients')
@@ -157,11 +179,18 @@ export class EmailingController {
   @ApiOkList(CampaignRecipientDto)
   @ApiErrors(401, 403, 404, 422)
   recipients(
+    @CurrentStaff() actor: ICurrentStaff,
     @Param('id', ParseUUIDPipe) id: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('status') status?: RecipientStatus,
   ): Promise<IPaginatedResult<CampaignRecipientDto>> {
-    return this.emailingService.findRecipients(id, Number(page) || 1, Number(limit) || 50, status);
+    return this.emailingService.findRecipients(
+      actor,
+      id,
+      Number(page) || 1,
+      Number(limit) || 50,
+      status,
+    );
   }
 }

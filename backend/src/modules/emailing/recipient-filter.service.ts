@@ -83,6 +83,9 @@ export class RecipientFilterService {
       conditions.push(
         eq(customers.emailOptOut, false),
         sql`${customers.email} IS NOT NULL AND ${customers.email} <> ''`,
+        // Banned, suspended and not-yet-approved players are never mailed.
+        // They still count in "excluded", so the sender sees they were left out.
+        inArray(customers.status, [CustomerStatus.ACTIVE, CustomerStatus.INACTIVE]),
       );
     }
 

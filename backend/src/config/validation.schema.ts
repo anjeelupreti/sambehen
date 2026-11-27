@@ -70,6 +70,8 @@ export const validationSchema = Joi.object({
     .email({ tlds: { allow: false } })
     .default('no-reply@sambehen.local'),
   MAIL_FROM_NAME: Joi.string().default('Howdi chat'),
+  /** Public origin of this API, for one-click unsubscribe in marketing mail. */
+  API_PUBLIC_URL: Joi.string().uri().allow('').optional(),
   /** Public origin of the file bucket; player photos must live under it. */
   R2_PUBLIC_URL: Joi.string().uri().allow('').optional(),
   /** Where demo requests from the public contact form are sent. */

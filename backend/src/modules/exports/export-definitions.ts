@@ -336,8 +336,8 @@ export class ExportDefinitions implements OnModuleInit {
         { header: 'Completed', path: 'completedAt', format: 'datetime' },
         { header: 'Created', path: 'createdAt', format: 'datetime' },
       ],
-      fetch: async (_actor, filters, page) =>
-        (await this.emailingService.findAll(asPage(filters, page) as never)).data,
+      fetch: async (actor, filters, page) =>
+        (await this.emailingService.findAll(actor, asPage(filters, page) as never)).data,
     });
 
     this.exportService.register({
@@ -355,7 +355,7 @@ export class ExportDefinitions implements OnModuleInit {
         { header: 'Error', path: 'error', width: 40 },
         { header: 'Sent At', path: 'sentAt', format: 'datetime' },
       ],
-      fetch: async (_actor, filters, page) => {
+      fetch: async (actor, filters, page) => {
         // The only export scoped to a single parent record. Without a
         // campaign this would dump every recipient of every campaign ever
         // sent, so it refuses rather than guessing.
@@ -378,6 +378,7 @@ export class ExportDefinitions implements OnModuleInit {
 
         return (
           await this.emailingService.findRecipients(
+            actor,
             campaignId,
             paged.page,
             paged.limit,

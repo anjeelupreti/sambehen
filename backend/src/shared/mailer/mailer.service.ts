@@ -7,6 +7,8 @@ export interface ISendMailInput {
   subject: string;
   text: string;
   html?: string;
+  /** Extra headers, e.g. List-Unsubscribe on marketing mail. */
+  headers?: Record<string, string>;
 }
 
 export interface ISendMailResult {
@@ -18,6 +20,9 @@ export interface ISendMailResult {
 }
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
+const RESEND_BATCH_ENDPOINT = 'https://api.resend.com/emails/batch';
+/** Resend accepts at most this many messages in one batch call. */
+export const MAX_BATCH = 100;
 
 /**
  * Mail transport: Resend's HTTPS API when `RESEND_API_KEY` is set, SMTP
@@ -81,6 +86,7 @@ export class MailerService implements OnModuleInit {
         subject: input.subject,
         text: input.text,
         html: input.html,
+        headers: input.headers,
       });
 
       return { success: true, messageId: info.messageId, retryable: false };
@@ -105,6 +111,7 @@ export class MailerService implements OnModuleInit {
           subject: input.subject,
           text: input.text,
           html: input.html,
+          ...(input.headers ? { headers: input.headers } : {}),
         }),
         signal: AbortSignal.timeout(15_000),
       });
@@ -125,6 +132,77 @@ export class MailerService implements OnModuleInit {
       // Network failure or timeout: worth another attempt.
       const message = error instanceof Error ? error.message : String(error);
       return { success: false, error: message, retryable: true };
+    }
+  }
+
+  /**
+   * Sends many messages, one result per message in the same order.
+   *
+   * With Resend this is a single call to the batch endpoint (up to 100
+   * messages), which keeps a campaign inside Resend's rate limit of a few
+   * requests a second; sending them one by one tripped it and burned
+   * retries. A batch is accepted or rejected as a whole, so on failure
+   * every message gets the same result. Over SMTP it falls back to sending
+   * one at a time.
+   */
+  async sendMany(inputs: ISendMailInput[]): Promise<ISendMailResult[]> {
+    if (!inputs.length) return [];
+    if (!this.resendApiKey) {
+      const results: ISendMailResult[] = [];
+      for (const input of inputs) results.push(await this.send(input));
+      return results;
+    }
+
+    const from = this.configService.get<string>('mail.from', 'no-reply@sambehen.local');
+    const fromName = this.configService.get<string>('mail.fromName', 'Howdi chat');
+    const results: ISendMailResult[] = [];
+    for (let start = 0; start < inputs.length; start += MAX_BATCH) {
+      const chunk = inputs.slice(start, start + MAX_BATCH);
+      results.push(...(await this.sendResendBatch(chunk, `${fromName} <${from}>`)));
+    }
+    return results;
+  }
+
+  private async sendResendBatch(
+    inputs: ISendMailInput[],
+    from: string,
+  ): Promise<ISendMailResult[]> {
+    try {
+      const response = await fetch(RESEND_BATCH_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(
+          inputs.map((input) => ({
+            from,
+            to: [input.to],
+            subject: input.subject,
+            text: input.text,
+            html: input.html,
+            ...(input.headers ? { headers: input.headers } : {}),
+          })),
+        ),
+        signal: AbortSignal.timeout(30_000),
+      });
+      const body = (await response.json().catch(() => ({}))) as {
+        data?: { id?: string }[];
+        message?: string;
+      };
+      if (response.ok) {
+        return inputs.map((_, index) => ({
+          success: true,
+          messageId: body.data?.[index]?.id,
+          retryable: false,
+        }));
+      }
+      const retryable = response.status === 429 || response.status >= 500;
+      const error = `Resend ${response.status}: ${body.message ?? response.statusText}`;
+      return inputs.map(() => ({ success: false, error, retryable }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return inputs.map(() => ({ success: false, error: message, retryable: true }));
     }
   }
 

@@ -1,6 +1,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { and, count, desc, eq, isNull, sql, SQL } from 'drizzle-orm';
-import { AuthRealm, CampaignStatus, RecipientStatus } from '@common/constants/app.constants';
+import {
+  AuthRealm,
+  CampaignStatus,
+  RecipientStatus,
+  StaffRole,
+} from '@common/constants/app.constants';
 import { ErrorCode } from '@common/constants/error-codes';
 import {
   BusinessException,
@@ -15,7 +20,9 @@ import {
   EmailCampaign,
 } from '@database/schema/email.schema';
 import { AuditService } from '@shared/audit/audit.service';
-import { EmailKind } from '@shared/mailer/email-template.service';
+import { EmailKind, EmailTemplateService } from '@shared/mailer/email-template.service';
+import { MailerService } from '@shared/mailer/mailer.service';
+import { staffUsers } from '@database/schema/staff-users.schema';
 import { RecipientFilterService } from './recipient-filter.service';
 import {
   CreateCampaignDto,
@@ -42,7 +49,57 @@ export class EmailingService {
     @Inject(DRIZZLE_PROVIDER) private readonly db: DrizzleDB,
     private readonly recipientFilterService: RecipientFilterService,
     private readonly auditService: AuditService,
+    private readonly mailerService: MailerService,
+    private readonly templateService: EmailTemplateService,
   ) {}
+
+  /**
+   * Which campaigns a staff member may see and act on: the master sees
+   * every campaign; a manager only their own. Without this a manager could
+   * read another chain's campaign, recipient addresses included, and
+   * cancel it.
+   */
+  private campaignScope(actor: ICurrentStaff): SQL | undefined {
+    return actor.role === StaffRole.MASTER
+      ? undefined
+      : eq(emailCampaigns.createdByStaffId, actor.id);
+  }
+
+  /**
+   * Sends the message as composed to the sender's own address, straight
+   * away and outside any campaign, so they can see it in a real inbox
+   * before it goes to players.
+   */
+  async sendTest(
+    actor: ICurrentStaff,
+    dto: CreateCampaignDto,
+  ): Promise<{ sent: boolean; to: string; error?: string }> {
+    const [staff] = await this.db
+      .select({
+        email: staffUsers.email,
+        firstName: staffUsers.firstName,
+        username: staffUsers.username,
+      })
+      .from(staffUsers)
+      .where(eq(staffUsers.id, actor.id))
+      .limit(1);
+    if (!staff?.email) {
+      return { sent: false, to: '', error: 'Your account has no email address.' };
+    }
+    const rendered = this.templateService.render({
+      kind: dto.emailKind ?? EmailKind.PROMOTIONAL,
+      subject: dto.subject,
+      body: dto.bodyHtml ?? dto.bodyText,
+      recipientName: staff.firstName ?? staff.username,
+    });
+    const result = await this.mailerService.send({
+      to: staff.email,
+      subject: `[Test] ${dto.subject}`,
+      text: rendered.text,
+      html: rendered.html,
+    });
+    return { sent: result.success, to: staff.email, error: result.error };
+  }
 
   /**
    * Count and sample for a filter, before anything is composed or sent.
@@ -102,7 +159,7 @@ export class EmailingService {
     campaignId: string,
     dto: SendCampaignDto,
   ): Promise<CampaignResponseDto> {
-    const campaign = await this.requireCampaign(campaignId);
+    const campaign = await this.requireCampaign(actor, campaignId);
 
     if (campaign.status !== CampaignStatus.DRAFT) {
       throw new BusinessException(
@@ -164,7 +221,7 @@ export class EmailingService {
    * happen.
    */
   async cancelCampaign(actor: ICurrentStaff, campaignId: string): Promise<CampaignResponseDto> {
-    const campaign = await this.requireCampaign(campaignId);
+    const campaign = await this.requireCampaign(actor, campaignId);
 
     if (!CANCELLABLE.includes(campaign.status)) {
       throw new BusinessException(
@@ -200,8 +257,13 @@ export class EmailingService {
     return this.toResponse(updated);
   }
 
-  async findAll(filters: CampaignFilterDto): Promise<IPaginatedResult<CampaignResponseDto>> {
+  async findAll(
+    actor: ICurrentStaff,
+    filters: CampaignFilterDto,
+  ): Promise<IPaginatedResult<CampaignResponseDto>> {
     const conditions: SQL[] = [isNull(emailCampaigns.deletedAt)];
+    const scope = this.campaignScope(actor);
+    if (scope) conditions.push(scope);
 
     if (filters.status) conditions.push(eq(emailCampaigns.status, filters.status));
     if (filters.createdByStaffId) {
@@ -243,18 +305,19 @@ export class EmailingService {
     };
   }
 
-  async findOne(campaignId: string): Promise<CampaignResponseDto> {
-    return this.toResponse(await this.requireCampaign(campaignId));
+  async findOne(actor: ICurrentStaff, campaignId: string): Promise<CampaignResponseDto> {
+    return this.toResponse(await this.requireCampaign(actor, campaignId));
   }
 
   /** Per-recipient delivery results, for diagnosing a partial send. */
   async findRecipients(
+    actor: ICurrentStaff,
     campaignId: string,
     page = 1,
     limit = 50,
     status?: RecipientStatus,
   ): Promise<IPaginatedResult<CampaignRecipientDto>> {
-    await this.requireCampaign(campaignId);
+    await this.requireCampaign(actor, campaignId);
 
     const conditions: SQL[] = [eq(emailCampaignRecipients.campaignId, campaignId)];
     if (status) conditions.push(eq(emailCampaignRecipients.status, status));
@@ -295,11 +358,13 @@ export class EmailingService {
     };
   }
 
-  private async requireCampaign(id: string): Promise<EmailCampaign> {
+  private async requireCampaign(actor: ICurrentStaff, id: string): Promise<EmailCampaign> {
     const [row] = await this.db
       .select()
       .from(emailCampaigns)
-      .where(and(eq(emailCampaigns.id, id), isNull(emailCampaigns.deletedAt)))
+      .where(
+        and(eq(emailCampaigns.id, id), isNull(emailCampaigns.deletedAt), this.campaignScope(actor)),
+      )
       .limit(1);
 
     if (!row) {

@@ -19,4 +19,6 @@ export default registerAs('mail', () => ({
   fromName: process.env.MAIL_FROM_NAME || 'Howdi chat',
   /** Public origin used to build unsubscribe and download links in emails. */
   publicUrl: process.env.APP_PUBLIC_URL || 'http://localhost:3000',
+  /** Public origin of this API, for the one-click unsubscribe header mail clients call directly. */
+  apiPublicUrl: process.env.API_PUBLIC_URL || '',
 }));

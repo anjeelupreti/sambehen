@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AutoRefresh } from '@/components/broadcast/auto-refresh';
 
 import { CampaignActions } from '@/components/broadcast/campaign-actions';
 import { ComposeBroadcastModal } from '@/components/broadcast/compose-broadcast-modal';
@@ -75,6 +76,7 @@ export default async function BroadcastPage({
         <div>
           <h1 className="text-2xl font-semibold">Broadcast</h1>
         </div>
+        <AutoRefresh active={totals.inFlight > 0} />
         <div className="flex items-center gap-2">
           <ExportButton exportKey="email-campaigns" />
           <ComposeBroadcastModal />
@@ -129,6 +131,28 @@ export default async function BroadcastPage({
                       <Badge variant={STATUS_VARIANT[campaign.status] ?? 'outline'}>
                         {campaign.status}
                       </Badge>
+                      {campaign.status === 'queued' && campaign.scheduledAt ? (
+                        <p className="text-muted-foreground mt-1 text-xs whitespace-nowrap">
+                          Sends {formatDateTime(campaign.scheduledAt)}
+                        </p>
+                      ) : null}
+                      {campaign.status === 'sending' && campaign.recipientCount > 0 ? (
+                        <div
+                          className="bg-muted mt-1.5 h-1.5 w-28 overflow-hidden rounded-full"
+                          role="progressbar"
+                          aria-label="Sending progress"
+                          aria-valuemin={0}
+                          aria-valuemax={campaign.recipientCount}
+                          aria-valuenow={campaign.sentCount + campaign.failedCount}
+                        >
+                          <div
+                            className="bg-primary h-full rounded-full transition-[width]"
+                            style={{
+                              width: `${Math.round(((campaign.sentCount + campaign.failedCount) / campaign.recipientCount) * 100)}%`,
+                            }}
+                          />
+                        </div>
+                      ) : null}
                     </TableCell>
                     <TableCell className="tabular text-right">
                       {formatCount(campaign.recipientCount)}

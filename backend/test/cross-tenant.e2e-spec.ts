@@ -337,6 +337,36 @@ describe('Cross-tenant isolation (e2e)', () => {
 
   /** Capability denials, where 403 IS the right answer. */
   describe('role capabilities', () => {
+    it("keeps a manager out of another sender's broadcast", async () => {
+      const draft = await request(app.getHttpServer())
+        .post('/api/v1/team/email/campaigns')
+        .set('Authorization', `Bearer ${tokens.master}`)
+        .send({ subject: 'Master only', bodyText: 'Not for managers' })
+        .expect(201);
+      const id = draft.body.data.id;
+      await get(`/api/v1/team/email/campaigns/${id}`, tokens.manager2).expect(404);
+      await get(`/api/v1/team/email/campaigns/${id}/recipients`, tokens.manager2).expect(404);
+      await request(app.getHttpServer())
+        .post(`/api/v1/team/email/campaigns/${id}/cancel`)
+        .set('Authorization', `Bearer ${tokens.manager2}`)
+        .expect(404);
+      const list = await get('/api/v1/team/email/campaigns?limit=100', tokens.manager2).expect(200);
+      expect(list.body.data.some((c: { id: string }) => c.id === id)).toBe(false);
+    });
+
+    it('never counts banned, suspended or pending players as broadcast recipients', async () => {
+      const preview = await request(app.getHttpServer())
+        .post('/api/v1/team/email/recipients/preview')
+        .set('Authorization', `Bearer ${tokens.master}`)
+        .send({ sampleSize: 50 })
+        .expect(200);
+      const ids = preview.body.data.sample.map((r: { customerId: string }) => r.customerId);
+      for (const id of ids) {
+        const customer = await get(`/api/v1/team/customers/${id}`, tokens.master).expect(200);
+        expect(['active', 'inactive']).toContain(customer.body.data.status);
+      }
+    });
+
     it('lets only the master create labels', async () => {
       await request(app.getHttpServer())
         .post('/api/v1/team/labels')

@@ -43,11 +43,29 @@ export async function previewRecipients(
   );
 }
 
+/** Sends the message as written to the signed-in staff member only. */
+export async function sendTestEmail(input: {
+  subject: string;
+  bodyText: string;
+  emailKind?: EmailKind;
+}): Promise<{ sent: boolean; to: string; error?: string }> {
+  try {
+    return await apiMutate<{ sent: boolean; to: string; error?: string }>(
+      '/team/email/campaigns/test',
+      'POST',
+      input,
+    );
+  } catch {
+    return { sent: false, to: '', error: 'The test could not be sent.' };
+  }
+}
+
 export async function createCampaign(input: {
   subject: string;
   bodyText: string;
   bodyHtml?: string;
   emailKind?: EmailKind;
+  scheduledAt?: string;
 }): Promise<ActionResult<Campaign>> {
   const result = await runAction(
     () => apiMutate<Campaign>('/team/email/campaigns', 'POST', input),
