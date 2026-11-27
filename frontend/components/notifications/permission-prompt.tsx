@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { InfoTip } from '@/components/ui/info-tip';
 import { loadPushKey, type NotificationRealm } from '@/lib/notification-actions';
 import { cn } from '@/lib/utils';
-import { enablePush, pushSupported } from './push';
+import { enablePush, PushError, pushSupported } from './push';
 
 const SNOOZE_KEY = 'howdi:push-prompt-snoozed';
 const SNOOZE_DAYS = 7;
@@ -64,8 +64,13 @@ export function PermissionPrompt({
       const state = await enablePush(realm);
       if (state === 'on') toast.success('Notifications are on');
       else if (state === 'off') snooze();
-    } catch {
-      toast.error('That didn’t work. Try again from notification settings.');
+    } catch (error) {
+      toast.error(
+        error instanceof PushError
+          ? error.message
+          : 'That didn’t work. Try again from notification settings.',
+        { duration: 10_000 },
+      );
     } finally {
       setBusy(false);
       setShow(false);

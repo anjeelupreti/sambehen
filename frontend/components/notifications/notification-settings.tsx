@@ -13,7 +13,14 @@ import {
   type NotificationRealm,
 } from '@/lib/notification-actions';
 import { KINDS, type KindInfo } from './kinds';
-import { disablePush, enablePush, needsHomeScreen, pushState, type PushState } from './push';
+import {
+  disablePush,
+  enablePush,
+  needsHomeScreen,
+  PushError,
+  pushState,
+  type PushState,
+} from './push';
 
 function DeviceHelp({ state }: { state: PushState }) {
   if (state === 'unsupported') {
@@ -93,8 +100,11 @@ export function NotificationSettings({
     setBusy(true);
     try {
       setDevice(on ? await enablePush(realm) : await disablePush(realm));
-    } catch {
-      toast.error('That didn’t work. Try again.');
+    } catch (error) {
+      toast.error(error instanceof PushError ? error.message : 'That didn’t work. Try again.', {
+        duration: 10_000,
+      });
+      setDevice(await pushState().catch(() => 'off' as const));
     } finally {
       setBusy(false);
     }
