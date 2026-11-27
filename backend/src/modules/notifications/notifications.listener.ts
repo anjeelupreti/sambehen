@@ -129,9 +129,18 @@ export class NotificationsListener {
     });
   }
 
+  private async activeMasters(): Promise<string[]> {
+    const rows = await this.db
+      .select({ id: staffUsers.id })
+      .from(staffUsers)
+      .where(and(eq(staffUsers.role, StaffRole.MASTER), eq(staffUsers.isActive, true)));
+    return rows.map((row) => row.id);
+  }
+
   /**
-   * Nudges the store when a player has waited too long. Once per wait: a
-   * player who writes again after a reply starts a new wait.
+   * Nudges the player's store (or manager) and every master when a player
+   * has waited too long. Once per wait: a player who writes again after a
+   * reply starts a new wait.
    */
   @Cron(CronExpression.EVERY_MINUTE, { name: 'notify-waiting-players' })
   async nudgeWaiting(): Promise<void> {
@@ -157,10 +166,12 @@ export class NotificationsListener {
             sql`${conversations.lastCustomerMessageAt} > now() - interval '1 day'`,
           ),
         );
+      if (!rows.length) return;
+      const masters = await this.activeMasters();
 
       for (const row of rows) {
         const owner = row.storeId ?? row.managerId;
-        if (!owner || !row.waitingSince) continue;
+        if (!row.waitingSince) continue;
         const already = await this.notifications.sentSince(
           'team',
           Staff.PLAYER_WAITING,
@@ -171,7 +182,7 @@ export class NotificationsListener {
         if (already) continue;
         await this.notifications.notify({
           realm: 'team',
-          recipientIds: [owner],
+          recipientIds: owner ? [owner, ...masters] : masters,
           kind: Staff.PLAYER_WAITING,
           title: `${row.name} is waiting`,
           body: `No reply for ${WAITING_NUDGE_MINUTES} minutes.`,
@@ -293,13 +304,9 @@ export class NotificationsListener {
 
   @OnEvent(CUSTOMER_REGISTERED, { async: true })
   async onRegistered(event: CustomerRegisteredEvent): Promise<void> {
-    const masters = await this.db
-      .select({ id: staffUsers.id })
-      .from(staffUsers)
-      .where(and(eq(staffUsers.role, StaffRole.MASTER), eq(staffUsers.isActive, true)));
     await this.notifications.notify({
       realm: 'team',
-      recipientIds: masters.map((row) => row.id),
+      recipientIds: await this.activeMasters(),
       kind: Staff.REGISTRATION,
       title: 'New registration to approve',
       body: event.name,

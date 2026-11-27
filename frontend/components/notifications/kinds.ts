@@ -34,7 +34,7 @@ export const KINDS: Record<NotificationRealm, KindInfo[]> = {
       kind: 'player_waiting',
       label: 'Waiting players',
       icon: ClockIcon,
-      info: 'When one of your players has had no reply for 15 minutes.',
+      info: 'When a player has had no reply for 15 minutes. Goes to their store or manager, and to masters.',
     },
     { kind: 'team_message', label: 'Team messages', icon: UsersIcon },
     {
