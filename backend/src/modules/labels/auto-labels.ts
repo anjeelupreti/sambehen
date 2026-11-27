@@ -42,8 +42,13 @@ export const isVipSql: SQL<boolean> = sql<boolean>`EXISTS (
 
 export const isNewSql: SQL<boolean> = sql<boolean>`(${REGISTERED_AT} >= now() - make_interval(days => ${NEW_PLAYER_DAYS}))`;
 
-export const isInactiveSql: SQL<boolean> = sql<boolean>`(${LAST_ACTIVITY_AT} IS NULL
-  OR ${LAST_ACTIVITY_AT} < now() - make_interval(days => ${INACTIVE_DAYS}))`;
+/**
+ * Nothing recorded for 30 days. A player who joined inside that window and
+ * hasn't played yet is new, not inactive.
+ */
+export const isInactiveSql: SQL<boolean> = sql<boolean>`(
+  COALESCE(${LAST_ACTIVITY_AT}, ${REGISTERED_AT}) < now() - make_interval(days => ${INACTIVE_DAYS})
+)`;
 
 /** Money in over the spend window: debits that aren't corrections. */
 export const recentSpendSql: SQL<string> = sql<string>`(

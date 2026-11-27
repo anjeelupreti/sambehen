@@ -8,7 +8,7 @@ import { FormModal } from '@/components/forms/form-modal';
 import { SelectField } from '@/components/forms/form-field';
 import { Button } from '@/components/ui/button';
 import { useAction } from '@/hooks/use-action';
-import type { AssignableOwner } from '@/components/forms/new-customer-modal';
+import { ownerOptions, type AssignableOwner } from '@/components/forms/new-customer-modal';
 
 /**
  * Approves a pending self-registration.
@@ -26,11 +26,15 @@ export function ApproveCustomerButton({
 }) {
   const [open, setOpen] = useState(false);
   const [ownerStaffId, setOwnerStaffId] = useState('');
+  const [missing, setMissing] = useState(false);
   const { run, pending, fieldErrors } = useAction(approveCustomer);
 
   const close = (next: boolean) => {
     setOpen(next);
-    if (!next) setOwnerStaffId('');
+    if (!next) {
+      setOwnerStaffId('');
+      setMissing(false);
+    }
   };
 
   return (
@@ -48,7 +52,10 @@ export function ApproveCustomerButton({
         submitLabel="Approve"
         pending={pending}
         onSubmit={async () => {
-          if (!ownerStaffId) return;
+          if (!ownerStaffId) {
+            setMissing(true);
+            return;
+          }
           const result = await run(customerId, ownerStaffId);
           if (result.ok) close(false);
         }}
@@ -58,13 +65,13 @@ export function ApproveCustomerButton({
           label="Assign to"
           required
           value={ownerStaffId}
-          onChange={setOwnerStaffId}
-          options={owners.map((owner) => ({
-            value: owner.id,
-            label: `${owner.username} · ${owner.role}`,
-          }))}
+          onChange={(value) => {
+            setOwnerStaffId(value);
+            setMissing(false);
+          }}
+          options={ownerOptions(owners)}
           placeholder="Choose a manager or store"
-          error={fieldErrors.ownerStaffId}
+          error={missing ? 'Choose who will look after this player.' : fieldErrors.ownerStaffId}
         />
       </FormModal>
     </>

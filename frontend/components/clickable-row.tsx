@@ -18,6 +18,12 @@ import { cn } from '@/lib/utils';
  * in: the first cell keeps a real `<a>`. This is an enlargement of the hit
  * area, not a replacement for the link — a row with no link in it would be
  * unreachable by keyboard and invisible to a screen reader.
+ *
+ * Events from dialogs, menus and select lists opened from the row also
+ * reach this handler: React bubbles events through portals to their React
+ * parent even though the popup is elsewhere in the page. Picking an owner
+ * in the "Approve" dialog used to open the player's page that way, so
+ * anything outside the row's own DOM is ignored too.
  */
 const INTERACTIVE = 'a, button, input, select, textarea, [role="menuitem"], [role="button"]';
 
@@ -36,6 +42,7 @@ export function ClickableRow({
     <TableRow
       className={cn('hover:bg-muted/50 cursor-pointer transition-colors', className)}
       onClick={(event) => {
+        if (!event.currentTarget.contains(event.target as Node)) return;
         if ((event.target as HTMLElement).closest(INTERACTIVE)) return;
         router.push(href);
       }}
@@ -43,6 +50,7 @@ export function ClickableRow({
         // Middle-click opens in a new tab, matching what the row's own link
         // would do.
         if (event.button !== 1) return;
+        if (!event.currentTarget.contains(event.target as Node)) return;
         if ((event.target as HTMLElement).closest(INTERACTIVE)) return;
         window.open(href, '_blank', 'noopener');
       }}

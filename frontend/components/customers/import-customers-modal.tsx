@@ -1,5 +1,6 @@
 'use client';
 
+import { ownerOptions } from '@/components/forms/new-customer-modal';
 import { useRef, useState } from 'react';
 import { DownloadIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 
@@ -252,10 +253,7 @@ export function ImportCustomersModal({
                     required={needsOwner}
                     value={ownerStaffId}
                     onChange={setOwnerStaffId}
-                    options={owners.map((owner) => ({
-                      value: owner.id,
-                      label: `${owner.username} · ${owner.role}`,
-                    }))}
+                    options={ownerOptions(owners)}
                     placeholder={needsOwner ? 'Choose a manager or store' : 'Keep for myself'}
                     error={commit.fieldErrors.ownerStaffId}
                   />

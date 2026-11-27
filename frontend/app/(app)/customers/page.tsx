@@ -140,7 +140,12 @@ export default async function CustomersPage({
   const owners = ownersPromise
     ? (await ownersPromise).data
         .filter((member) => member.role !== 'master')
-        .map((member) => ({ id: member.id, username: member.username, role: member.role }))
+        .map((member) => ({
+          id: member.id,
+          username: member.username,
+          role: member.role,
+          parentId: member.parentId,
+        }))
     : [];
 
   return (

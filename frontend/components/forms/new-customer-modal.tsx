@@ -27,6 +27,35 @@ export interface AssignableOwner {
   id: string;
   username: string;
   role: string;
+  /** A store's manager, so stores can be listed under them. */
+  parentId?: string | null;
+}
+
+/**
+ * Owners as select options: each manager followed by their own stores, in
+ * name order, so the chain reads the way it is organised.
+ */
+export function ownerOptions(owners: AssignableOwner[]): { value: string; label: string }[] {
+  const byName = (a: AssignableOwner, b: AssignableOwner) => a.username.localeCompare(b.username);
+  const managers = owners.filter((owner) => owner.role === 'manager').sort(byName);
+  const stores = owners.filter((owner) => owner.role === 'store').sort(byName);
+  const managerName = new Map(managers.map((manager) => [manager.id, manager.username]));
+  const placed = new Set<string>();
+  const options: { value: string; label: string }[] = [];
+  const addStore = (store: AssignableOwner) => {
+    placed.add(store.id);
+    const parent = store.parentId ? managerName.get(store.parentId) : undefined;
+    options.push({
+      value: store.id,
+      label: parent ? `${store.username} (store under ${parent})` : `${store.username} (store)`,
+    });
+  };
+  for (const manager of managers) {
+    options.push({ value: manager.id, label: `${manager.username} (manager)` });
+    stores.filter((store) => store.parentId === manager.id).forEach(addStore);
+  }
+  stores.filter((store) => !placed.has(store.id)).forEach(addStore);
+  return options;
 }
 
 /**
@@ -143,10 +172,7 @@ export function NewCustomerModal({
             required={needsOwner}
             value={form.ownerStaffId}
             onChange={(v) => set('ownerStaffId', v)}
-            options={owners.map((owner) => ({
-              value: owner.id,
-              label: `${owner.username} · ${owner.role}`,
-            }))}
+            options={ownerOptions(owners)}
             placeholder={needsOwner ? 'Choose a manager or store' : 'Keep for myself'}
             error={fieldErrors.ownerStaffId}
             hint={
